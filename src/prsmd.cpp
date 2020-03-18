@@ -25,6 +25,7 @@
 #include <zeep/el/parser.hpp>
 #include <zeep/rest/controller.hpp>
 #include <zeep/http/daemon.hpp>
+#include <zeep/serialize.hpp>
 
 #include <pqxx/pqxx>
 
@@ -69,6 +70,7 @@ struct Session
 	std::string name;
 	std::string user;
 	std::string token;
+	boost::posix_time::ptime created;
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -76,176 +78,10 @@ struct Session
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("token", token);
+		   & zeep::make_nvp("token", token)
+		   & zeep::make_nvp("created", created);
 	}
 };
-
-// struct Opname
-// {
-// 	string				id;
-// 	string				datum;
-// 	map<string,float>	standen;
-
-// 	template<typename Archive>
-// 	void serialize(Archive& ar, unsigned long version)
-// 	{
-// 		ar & zeep::make_nvp("id", id)
-// 		   & zeep::make_nvp("datum", datum)
-// 		   & zeep::make_nvp("standen", standen);
-// 	}
-// };
-
-// struct Teller
-// {
-// 	string id;
-// 	string naam;
-// 	string naam_kort;
-// 	int schaal;
-
-// 	template<typename Archive>
-// 	void serialize(Archive& ar, unsigned long)
-// 	{
-// 		ar & zeep::make_nvp("id", id)
-// 		   & zeep::make_nvp("naam", naam)
-// 		   & zeep::make_nvp("korteNaam", naam_kort)
-// 		   & zeep::make_nvp("schaal", schaal);
-// 	}
-// };
-
-// enum class aggregatie_type
-// {
-// 	dag, week, maand, jaar
-// };
-
-// void to_element(json& e, aggregatie_type aggregatie)
-// {
-// 	switch (aggregatie)
-// 	{
-// 		case aggregatie_type::dag:		e = "dag"; break;
-// 		case aggregatie_type::week:		e = "week"; break;
-// 		case aggregatie_type::maand:	e = "maand"; break;
-// 		case aggregatie_type::jaar:		e = "jaar"; break;
-// 	}
-// }
-
-// void from_element(const json& e, aggregatie_type& aggregatie)
-// {
-// 	if (e == "dag")				aggregatie = aggregatie_type::dag;
-// 	else if (e == "week")		aggregatie = aggregatie_type::week;
-// 	else if (e == "maand")		aggregatie = aggregatie_type::maand;
-// 	else if (e == "jaar")		aggregatie = aggregatie_type::jaar;
-// 	else throw runtime_error("Ongeldige aggregatie");
-// }
-
-// enum class grafiek_type
-// {
-// 	warmte,
-// 	electriciteit,
-// 	electriciteit_hoog,
-// 	electriciteit_laag,
-// 	electriciteit_verbruik,
-// 	electriciteit_levering,
-// 	electriciteit_verbruik_hoog,
-// 	electriciteit_verbruik_laag,
-// 	electriciteit_levering_hoog,
-// 	electriciteit_levering_laag
-// };
-
-// void to_element(json& e, grafiek_type type)
-// {
-// 	switch (type)
-// 	{
-// 		case grafiek_type::warmte:						e = "warmte"; break;
-// 		case grafiek_type::electriciteit:				e = "electriciteit"; break;
-// 		case grafiek_type::electriciteit_hoog:			e = "electriciteit-hoog"; break;
-// 		case grafiek_type::electriciteit_laag:			e = "electriciteit-laag"; break;
-// 		case grafiek_type::electriciteit_verbruik:		e = "electriciteit-verbruik"; break;
-// 		case grafiek_type::electriciteit_levering:		e = "electriciteit-levering"; break;
-// 		case grafiek_type::electriciteit_verbruik_hoog:	e = "electriciteit-verbruik-hoog"; break;
-// 		case grafiek_type::electriciteit_verbruik_laag:	e = "electriciteit-verbruik-laag"; break;
-// 		case grafiek_type::electriciteit_levering_hoog:	e = "electriciteit-levering-hoog"; break;
-// 		case grafiek_type::electriciteit_levering_laag:	e = "electriciteit-levering-laag"; break;
-// 	}
-// }
-
-// void from_element(const json& e, grafiek_type& type)
-// {
-// 		 if (e == "warmte")						 type = grafiek_type::warmte;						
-// 	else if (e == "electriciteit")				 type = grafiek_type::electriciteit;				
-// 	else if (e == "electriciteit-hoog")			 type = grafiek_type::electriciteit_hoog;			
-// 	else if (e == "electriciteit-laag")			 type = grafiek_type::electriciteit_laag;			
-// 	else if (e == "electriciteit-verbruik")		 type = grafiek_type::electriciteit_verbruik;		
-// 	else if (e == "electriciteit-levering")		 type = grafiek_type::electriciteit_levering;		
-// 	else if (e == "electriciteit-verbruik-hoog") type = grafiek_type::electriciteit_verbruik_hoog;	
-// 	else if (e == "electriciteit-verbruik-laag") type = grafiek_type::electriciteit_verbruik_laag;	
-// 	else if (e == "electriciteit-levering-hoog") type = grafiek_type::electriciteit_levering_hoog;	
-// 	else if (e == "electriciteit-levering-laag") type = grafiek_type::electriciteit_levering_laag;	
-// 	else throw runtime_error("Ongeldige grafiek type");
-// }
-
-// string selector(grafiek_type g)
-// {
-// 	switch (g)
-// 	{
-// 		case grafiek_type::warmte:
-// 			return "SELECT a.tijd, SUM(c.teken * b.stand) "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b LEFT OUTER JOIN teller c ON b.teller_id = c.id ON a.id = b.opname_id "
-// 				   " WHERE c.id IN (1) GROUP BY a.tijd ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit:
-// 			return "SELECT a.tijd, SUM(c.teken * b.stand) "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b LEFT OUTER JOIN teller c ON b.teller_id = c.id ON a.id = b.opname_id "
-// 				   " WHERE c.id IN (2, 3, 4, 5) GROUP BY a.tijd ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_hoog:
-// 			return "SELECT a.tijd, SUM(c.teken * b.stand) "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b LEFT OUTER JOIN teller c ON b.teller_id = c.id ON a.id = b.opname_id "
-// 				   " WHERE c.id IN (3, 5) GROUP BY a.tijd ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_laag:
-// 			return "SELECT a.tijd, SUM(c.teken * b.stand) "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b LEFT OUTER JOIN teller c ON b.teller_id = c.id ON a.id = b.opname_id "
-// 				   " WHERE c.id IN (2, 4) GROUP BY a.tijd ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_verbruik:
-// 			return "SELECT a.tijd, SUM(b.stand) "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b ON a.id = b.opname_id "
-// 				   " WHERE b.teller_id IN (2, 3) GROUP BY a.tijd ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_levering:
-// 			return "SELECT a.tijd, SUM(b.stand) "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b ON a.id = b.opname_id "
-// 				   " WHERE b.teller_id IN (4, 5) GROUP BY a.tijd ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_verbruik_hoog:
-// 			return "SELECT a.tijd, b.stand "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b ON a.id = b.opname_id "
-// 				   " WHERE b.teller_id = 3 ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_verbruik_laag:
-// 			return "SELECT a.tijd, b.stand "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b ON a.id = b.opname_id "
-// 				   " WHERE b.teller_id = 2 ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_levering_hoog:
-// 			return "SELECT a.tijd, b.stand "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b ON a.id = b.opname_id "
-// 				   " WHERE b.teller_id = 5 ORDER BY a.tijd ASC";
-// 		case grafiek_type::electriciteit_levering_laag:
-// 			return "SELECT a.tijd, b.stand "
-// 				   " FROM opname a LEFT OUTER JOIN tellerstand b ON a.id = b.opname_id "
-// 				   " WHERE b.teller_id = 4 ORDER BY a.tijd ASC";
-// 		default:
-// 			return "";
-// 	}
-// }
-
-// struct GrafiekData
-// {
-// 	string 				type;
-// 	map<string,float>	punten;
-// 	map<string,float>   vsGem;
-
-// 	template<typename Archive>
-// 	void serialize(Archive& ar, unsigned long)
-// 	{
-// 		ar & zeep::make_nvp("type", type)
-// 		   & zeep::make_nvp("punten", punten)
-// 		   & zeep::make_nvp("vsgem", vsGem);
-// 	}
-// };
 
 class my_rest_controller : public zh::rest_controller
 {
@@ -254,24 +90,22 @@ class my_rest_controller : public zh::rest_controller
 		: zh::rest_controller("ajax")
 		, m_connection(connectionString)
 	{
-		// map_post_request("opname", &my_rest_controller::post_opname, "opname");
-		// map_put_request("opname/{id}", &my_rest_controller::put_opname, "id", "opname");
-		// map_get_request("opname/{id}", &my_rest_controller::get_opname, "id");
-		// map_get_request("opname", &my_rest_controller::get_all_opnames);
-		// map_delete_request("opname/{id}", &my_rest_controller::delete_opname, "id");
+		map_get_request("session/{user}", &my_rest_controller::get_all_sessions_for_user, "user");
+		map_post_request("session", &my_rest_controller::post_session, "user", "password", "name");
 
-		map_get_request("session/{user}", &my_rest_controller::get_all_sessions, "user");
-		map_post_request("session", &my_rest_controller::post_session, "user", "password");
+		m_connection.prepare("get-password", "SELECT password, id FROM auth_user WHERE name = $1");
 
-		// map_get_request("data/{type}/{aggr}", &my_rest_controller::get_grafiek, "type", "aggr");
+		m_connection.prepare("get-session-all",
+			R"(SELECT a.id AS id,
+				trim(both '"' from to_json(a.created)::text) AS created,
+				a.name AS session_name,
+				b.name AS user_name
+			   FROM session a, auth_user b
+			   WHERE a.user_id = b.id
+			   ORDER BY a.created ASC)");
 
-		m_connection.prepare("get-password", "SELECT password FROM auth_user WHERE name = $1");
-
-		// m_connection.prepare("get-opname-all",
-		// 	"SELECT a.id AS id, a.tijd AS tijd, b.teller_id AS teller_id, b.stand AS stand"
-		// 	" FROM opname a, tellerstand b"
-		// 	" WHERE a.id = b.opname_id"
-		// 	" ORDER BY a.tijd DESC");
+		m_connection.prepare("create-session",
+			R"(INSERT INTO session (user_id, name, token) values ($1, $2, $3) )");
 
 		// m_connection.prepare("get-opname",
 		// 	"SELECT a.id AS id, a.tijd AS tijd, b.teller_id AS teller_id, b.stand AS stand"
@@ -295,7 +129,7 @@ class my_rest_controller : public zh::rest_controller
 	}
 
 	// CRUD routines
-	std::string post_session(std::string user, std::string password)
+	std::string post_session(std::string user, std::string password, std::string name)
 	{
 		pqxx::transaction tx(m_connection);
 		auto r = tx.prepared("get-password")(user).exec();
@@ -339,21 +173,17 @@ class my_rest_controller : public zh::rest_controller
 		if (not result)
 			throw std::runtime_error("Invalid username/password");
 
+		boost::uuids::uuid tag;
+		tag = boost::uuids::random_generator()();
 
-		return "ok";
-		// pqxx::transaction tx(m_connection);
-		// auto r = tx.prepared("insert-opname").exec();
-		// if (r.empty() or r.size() != 1)
-		// 	throw runtime_error("Kon geen opname aanmaken");
+		std::string token = boost::lexical_cast<std::string>(tag);
+		unsigned long userid = r.front()[1].as<unsigned long>();
 
-		// int opnameId = r.front()[0].as<int>();
+		tx.prepared("create-session")(userid)(name)(token).exec();
 
-		// for (auto stand: opname.standen)
-		// 	tx.prepared("insert-stand")(opnameId)(stol(stand.first))(stand.second).exec();
+		tx.commit();
 
-		// tx.commit();
-
-		// return to_string(opnameId);
+		return token;
 	}
 
 	// void put_opname(string opnameId, Opname opname)
@@ -418,7 +248,27 @@ class my_rest_controller : public zh::rest_controller
 	// 	return result;
 	// }
 
-	std::vector<Session> get_all_sessions(std::string user)
+	std::vector<Session> get_all_sessions()
+	{
+		std::vector<Session> result;
+
+		pqxx::transaction tx(m_connection);
+
+		auto rows = tx.prepared("get-session-all").exec();
+		for (auto row: rows)
+		{
+			Session session;
+			session.id = row[0].as<std::string>();
+			session.created = zeep::value_serializer<boost::posix_time::ptime>::from_string(row[1].as<std::string>());
+			session.name = row[2].as<std::string>();
+			session.user = row[3].as<std::string>();
+			result.push_back(std::move(session));
+		}
+
+		return result;
+	}
+
+	std::vector<Session> get_all_sessions_for_user(std::string user)
 	{
 		boost::uuids::uuid tag;
 		tag = boost::uuids::random_generator()();
@@ -490,6 +340,7 @@ class my_server : public zh::rsrc_based_webapp
 		add_controller(m_rest_controller);
 	
 		mount("", &my_server::welcome);
+		mount("session", &my_server::welcome);
 
 		mount("admin", kRealm, &my_server::admin);
 		// mount("opnames", &my_server::opname);
@@ -525,8 +376,6 @@ void my_server::welcome(const zh::request& request, const zh::scope& scope, zh::
 {
 	zh::scope sub(scope);
 
-	sub.put("page", "index");
-
 	// auto v = m_rest_controller->get_all_opnames();
 	// json opnames;
 	// zeep::to_element(opnames, v);
@@ -544,17 +393,10 @@ void my_server::admin(const zh::request& request, const zh::scope& scope, zh::re
 {
 	zh::scope sub(scope);
 
-	sub.put("page", "admin");
-
-	// auto v = m_rest_controller->get_all_opnames();
-	// json opnames;
-	// zeep::to_element(opnames, v);
-	// sub.put("opnames", opnames);
-
-	// auto u = m_rest_controller->get_tellers();
-	// json tellers;
-	// zeep::to_element(tellers, u);
-	// sub.put("tellers", tellers);
+	auto v = m_rest_controller->get_all_sessions();
+	json sessions;
+	zeep::to_element(sessions, v);
+	sub.put("sessions", sessions);
 
 	create_reply_from_template("admin.html", sub, reply);
 }

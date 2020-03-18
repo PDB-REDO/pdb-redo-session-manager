@@ -13,11 +13,11 @@
 
 <body>
 
-	<!-- <nav z2:replace="menu :: navbar" /> -->
+	<nav z2:replace="~{menu :: navbar('session')}" />
 
-	<div class="container-fluid" style="max-width: 30em;">
+	<div class="container-fluid">
 
-		<h3 class="mt-3">Test</h3>
+		<h3 class="mt-3">User page</h3>
 
 		<!-- <div z2:switch="${opname.id.empty}">
 			<span z2:case="${true}">Nieuwe invoer</span>

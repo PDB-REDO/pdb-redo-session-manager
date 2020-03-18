@@ -1,0 +1,37 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:z2="http://www.hekkelman.com/libzeep/m2"
+	  lang="nl" >
+
+<body>
+
+	<nav z2:fragment="navbar(page)" class="navbar navbar-expand-sm bg-dark navbar-dark">
+		<a href="https://pdb-redo.eu" class="navbar-brand logo">
+			<img src="/images/PDB_logo_rect_medium.svg" z2:src="@{/images/PDB_logo_rect_medium.svg}" height="40" />
+		</a>
+	
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+			aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+	
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+
+				<li class="nav-item" z2:classappend="${page == 'session' ? 'active' : ''}">
+					<a class="nav-link" href="/session">Sessions</a>
+				</li>
+				<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}">
+					<a class="nav-link" href="/admin">Admin</a>
+				</li>
+
+			</ul>
+		</div>
+	</nav>
+	
+</body>
+
+</html>
+
+

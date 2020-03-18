@@ -6,70 +6,12 @@
 	text-align: right;
 }
 
-.grafiek-container {
-	height: 100%;
-	width: 100%;
-	font-size: small;
-}
-
-.grafiek-titel span {
-	display: none;
-}
-
-.grafiek-status-loading .loading,
-.grafiek-status-loaded .loaded,
-.grafiek-status-failed .failed,
-.grafiek-titel .grafiek-naam {
-	display: unset;
-}
-
-.spinner {
-	display: none;
-}
-
-g.tick line {
-	stroke: lightgrey;
-	opacity: 0.7;
-}
-
-
-.head {
-	display: block;
-	height: 5em;
-	line-height: 5em;
-	background-color: #6f1919;
-	color: white;
-	font-size: normal;
-	font-weight: bold;
-}
-
-.head span {
-	display: inline-block;
-	vertical-align: middle;
-	line-height: normal;
-}
-
-.head .error-nr {
-	font-size: xx-large;
-	padding: 0 0.5em 0 0.5em;
-}
-
 .error-head-text {
 	font-size: large;
 }
 
-/* voor kleinere tabel */
-@media only screen and (max-width: 768px)
-{
-	span.datum-groot, button.groot {
-		display: none;
-	}
+.logo img {
+	margin: -15px 0;
+	height: 2em;
+	background-color: white;
 }
-
-@media only screen and (min-width: 768px)
-{
-	span.datum-klein, button.klein {
-		display: none;
-	}
-}
-
