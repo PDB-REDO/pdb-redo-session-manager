@@ -99,7 +99,8 @@ class my_rest_controller : public zh::rest_controller
 			R"(SELECT a.id AS id,
 				trim(both '"' from to_json(a.created)::text) AS created,
 				a.name AS session_name,
-				b.name AS user_name
+				b.name AS user_name,
+				a.token AS token
 			   FROM session a, auth_user b
 			   WHERE a.user_id = b.id
 			   ORDER BY a.created ASC)");
@@ -262,6 +263,7 @@ class my_rest_controller : public zh::rest_controller
 			session.created = zeep::value_serializer<boost::posix_time::ptime>::from_string(row[1].as<std::string>());
 			session.name = row[2].as<std::string>();
 			session.user = row[3].as<std::string>();
+			session.token = row[4].as<std::string>();
 			result.push_back(std::move(session));
 		}
 
