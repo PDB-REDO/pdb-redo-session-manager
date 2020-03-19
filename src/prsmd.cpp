@@ -335,11 +335,12 @@ class my_server : public zh::rsrc_based_webapp
 #endif
 		// : zh::webapp((fs::current_path() / "docroot").string())
 		m_rest_controller(new my_rest_controller(dbConnectString))
-		, m_admin(admin), m_pw(pw)
 	{
 		register_tag_processor<zh::tag_processor_v2>("http://www.hekkelman.com/libzeep/m2");
 
 		add_controller(m_rest_controller);
+
+		set_authenticator(new zh::simple_digest_authentication_validation(kRealm, { { admin, pw }}));
 	
 		mount("", &my_server::welcome);
 		mount("session", &my_server::welcome);
@@ -356,16 +357,6 @@ class my_server : public zh::rsrc_based_webapp
 
 	void welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void admin(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-
-	std::string get_hashed_password(const std::string& username, const std::string& realm)
-	{
-		std::string result;
-
-		if (username == m_admin and realm == kRealm)
-			result = m_pw;
-
-		return result;
-	}
 
   private:
 	my_rest_controller*	m_rest_controller;
@@ -556,11 +547,11 @@ Command should be either:
 		}
 
 		std::string admin = vm["admin-user"].as<std::string>();
-		std::string pwhash = zh::md5(admin + ':' + my_server::kRealm + ':' + vm["admin-password"].as<std::string>()).finalise();
+		std::string password = vm["admin-password"].as<std::string>();
 
-		zh::daemon server([cs=ba::join(vConn, " "), admin, pwhash]()
+		zh::daemon server([cs = ba::join(vConn, " "), admin, password]()
 		{
-			return new my_server(cs, admin, pwhash);
+			return new my_server(cs, admin, password);
 		}, APP_NAME );
 
 		std::string user = "www-data";
