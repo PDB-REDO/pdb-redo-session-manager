@@ -9,6 +9,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
 
 	<title>PDB-REDO Session Manager</title>
+
+	<script z2:src="@{/scripts/test-api.js}"></script>
 </head>
 
 <body>
@@ -18,6 +20,53 @@
 	<div class="container-fluid">
 
 		<h3 class="mt-3">User page</h3>
+
+		<div class="container-fluid" style="max-width: 40em;">
+			<h6>Token generator</h6>
+			<form id="token-form" action="/ajax/session" method="post">
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">user name</span>
+					</div>
+
+					<input class="form-control form-control-sm" maxlength="254"
+						id="user" name="user" type="text" required="true" />
+				</div>
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">password</span>
+					</div>
+					<input class="form-control form-control-sm" maxlength="254"
+						id="password" name="password" type="password" required="true" />
+				</div>
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">session name</span>
+					</div>
+					<input class="form-control form-control-sm" maxlength="254"
+						id="name" name="name" type="text" required="true" />
+				</div>
+				<button type="submit" form="token-form" class="btn btn-primary mt-3">Create</button>
+			</form>
+
+			<hr/>
+			
+			<h6>Token management</h6>
+
+			<form id="delete-token-form" action="/ajax/session" method="post">
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">token</span>
+					</div>
+
+					<input class="form-control form-control-sm" maxlength="254"
+						id="token" name="token" type="text" required="true" />
+				</div>
+				<button type="submit" form="delete-token-form" class="btn btn-primary mt-3">Delete</button>
+			</form>
+
+		</div>
+
 
 		<!-- <div z2:switch="${opname.id.empty}">
 			<span z2:case="${true}">Nieuwe invoer</span>
