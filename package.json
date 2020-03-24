@@ -5,6 +5,9 @@
   "main": "index.js",
   "author": "Maarten L. Hekkelman",
   "license": "BSL-1.0",
+  "scripts": {
+    "build": "webpack --config webpack.config.js"
+  },
   "devDependencies": {
     "@babel/core": "^7.8.7",
     "@babel/polyfill": "^7.8.7",

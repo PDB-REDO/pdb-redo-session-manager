@@ -11,6 +11,7 @@ module.exports = (env) => {
 		entry: {
 			polyfill: '@babel/polyfill',
 			index: SCRIPTS + "index.js",
+			login: SCRIPTS + "login.js",
 			"test-api": SCRIPTS + "test-api.js"
 		},
 
@@ -66,7 +67,6 @@ module.exports = (env) => {
 				jQuery: 'jquery'
 			})
 		]
-
 	};
 
     const PRODUCTIE = env != null && env.PRODUCTIE;

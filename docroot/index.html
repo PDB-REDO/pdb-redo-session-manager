@@ -1,12 +1,10 @@
 <!DOCTYPE html SYSTEM "about:legacy-compat">
 
-<html xmlns="http://www.w3.org/1999/xhtml"
-	  xmlns:z2="http://www.hekkelman.com/libzeep/m2"
-	  lang="nl" >
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
 
 <head z2:replace="~{head::head(~{::title},~{::head/script})}">
 	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
 	<title>PDB-REDO Session Manager</title>
 
@@ -15,13 +13,15 @@
 
 <body>
 
+<script type="text/javascript">
+const username = /*[[${username}]]*/ null;
+</script>
+
 	<nav z2:replace="~{menu :: navbar('session')}" />
 
 	<div class="container-fluid">
 
-		<h3 class="mt-3">User page</h3>
-
-		<div class="container-fluid" style="max-width: 40em;">
+		<div class="container-fluid mt-5" style="max-width: 40em;">
 			<h6>Token generator</h6>
 			<form id="token-form" action="/ajax/session" method="post">
 				<div class="input-group input-group-sm mb-3">
@@ -29,28 +29,28 @@
 						<span class="input-group-text">user name</span>
 					</div>
 
-					<input class="form-control form-control-sm" maxlength="254"
-						id="user" name="user" type="text" required="true" />
+					<input class="form-control form-control-sm" maxlength="254" id="user" name="user" type="text"
+						required="true" z2:value="${username}" />
 				</div>
 				<div class="input-group input-group-sm mb-3">
 					<div class="input-group-prepend">
 						<span class="input-group-text">password</span>
 					</div>
-					<input class="form-control form-control-sm" maxlength="254"
-						id="password" name="password" type="password" required="true" />
+					<input class="form-control form-control-sm" maxlength="254" id="password" name="password"
+						type="password" required="true" />
 				</div>
 				<div class="input-group input-group-sm mb-3">
 					<div class="input-group-prepend">
 						<span class="input-group-text">session name</span>
 					</div>
-					<input class="form-control form-control-sm" maxlength="254"
-						id="name" name="name" type="text" required="true" />
+					<input class="form-control form-control-sm" maxlength="254" id="name" name="name" type="text"
+						required="true" />
 				</div>
 				<button type="submit" form="token-form" class="btn btn-primary mt-3">Create</button>
 			</form>
 
-			<hr/>
-			
+			<hr />
+
 			<h6>Token management</h6>
 
 			<form id="delete-token-form" action="/ajax/session" method="post">
@@ -59,14 +59,12 @@
 						<span class="input-group-text">token</span>
 					</div>
 
-					<input class="form-control form-control-sm" maxlength="254"
-						id="token" name="token" type="text" required="true" />
+					<input class="form-control form-control-sm" maxlength="254" id="token" name="token" type="text"
+						required="true" />
 				</div>
 				<button type="submit" form="delete-token-form" class="btn btn-primary mt-3">Delete</button>
 			</form>
-
 		</div>
-
 
 		<!-- <div z2:switch="${opname.id.empty}">
 			<span z2:case="${true}">Nieuwe invoer</span>
@@ -92,5 +90,9 @@
 		</form> -->
 	</div>
 
+	
+	<div z2:replace="~{login::#login-dialog}"/>
+
 </body>
+
 </html>

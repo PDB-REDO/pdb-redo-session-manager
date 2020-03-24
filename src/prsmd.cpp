@@ -7,6 +7,8 @@
 
 #include <functional>
 #include <tuple>
+#include <thread>
+#include <condition_variable>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -18,6 +20,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
+#include <boost/random/random_device.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/http/md5.hpp>
@@ -26,6 +29,7 @@
 #include <zeep/rest/controller.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/serialize.hpp>
+#include <zeep/http/base64.hpp>
 
 #include <pqxx/pqxx>
 
@@ -51,6 +55,7 @@ namespace el = zeep::el;
 namespace fs = std::filesystem;
 namespace ba = boost::algorithm;
 namespace po = boost::program_options;
+namespace pt = boost::posix_time;
 
 using json = el::element;
 
@@ -58,9 +63,25 @@ using json = el::element;
 
 #define APP_NAME "prsmd"
 
+const std::string
+	kPDB_REDO_Session_Realm("PDB-REDO Session Management"),
+	kPDB_REDO_API_Realm("PDB-REDO API"),
+	kPDB_REDO_Cookie("PDB-REDO_Session");
+
 const int kIterations = 10000, kSaltLength = 16, kKeyLength = 256;
 
 fs::path gExePath;
+
+// --------------------------------------------------------------------
+
+std::string get_random_hash()
+{
+	boost::random::random_device rng;
+
+	uint32_t data[4] = { rng(), rng(), rng(), rng() };
+
+	return zh::md5(data, sizeof(data)).finalise();
+}
 
 // --------------------------------------------------------------------
 
@@ -69,8 +90,14 @@ struct Session
 	std::string id;
 	std::string name;
 	std::string user;
+	std::string realm;
 	std::string token;
 	boost::posix_time::ptime created;
+	boost::posix_time::ptime expires;
+
+	operator bool() const	{ return not id.empty(); }
+
+	bool expired() const	{ return expires > pt::second_clock::local_time(); }
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -78,55 +105,231 @@ struct Session
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("user", user)
+		   & zeep::make_nvp("realm", realm)
 		   & zeep::make_nvp("token", token)
-		   & zeep::make_nvp("created", created);
+		   & zeep::make_nvp("created", created)
+		   & zeep::make_nvp("expires", expires);
 	}
 };
+
+// --------------------------------------------------------------------
+
+class SessionStore
+{
+  public:
+
+	static void init(pqxx::connection& connection)
+	{
+		sInstance = new SessionStore(connection);
+	}
+
+	static SessionStore& instance()
+	{
+		return *sInstance;
+	}
+
+	void stop()
+	{
+		delete sInstance;
+		sInstance = nullptr;
+	}
+
+	Session create(const std::string& name, const std::string& user, const std::string& realm);
+
+	Session get_by_id(const std::string& id);
+	Session get_by_token(const std::string& token);
+	void delete_by_id(const std::string& id);
+
+  private:
+
+	SessionStore(pqxx::connection& connection);
+	~SessionStore();
+
+	SessionStore(const SessionStore&) = delete;
+	SessionStore& operator=(const SessionStore&) = delete;
+
+	void run_clean_thread();
+
+	pqxx::connection& m_connection;
+	bool m_done = false;
+
+	std::condition_variable m_cv;
+	std::mutex m_cv_m;
+	std::thread m_clean;
+
+	static SessionStore* sInstance;
+};
+
+SessionStore* SessionStore::sInstance = nullptr;
+
+SessionStore::SessionStore(pqxx::connection& connection)
+	: m_connection(connection)
+	, m_clean(std::bind(&SessionStore::run_clean_thread, this))
+{
+	m_connection.prepare("create-session",
+		R"(INSERT INTO session (user_id, name, realm, token)
+		   VALUES ($1, $2, $3, $4)
+		   RETURNING id, trim(both '"' from to_json(created)::text) AS created)");
+	
+	m_connection.prepare("get-session-by-id",
+		R"(SELECT a.name, b.name, a.realm, a.token,
+				trim(both '"' from to_json(a.created)::text) AS created,
+				trim(both '"' from to_json(a.expires)::text) AS expires
+		   FROM session LEFT JOIN auth_user b ON a.user_id = b.id
+		   WHERE id = $1)");
+
+	m_connection.prepare("get-session-by-token",
+		R"(SELECT a.name, b.name, a.realm, a.id,
+				trim(both '"' from to_json(a.created)::text) AS created,
+				trim(both '"' from to_json(a.expires)::text) AS expires
+		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
+		   WHERE token = $1)");
+
+	m_connection.prepare("get-user-id",
+		R"(SELECT id FROM auth_user WHERE name = $1)");
+
+	m_connection.prepare("delete-by-id",
+		R"(DELETE FROM session WHERE id = $1)");
+}
+
+SessionStore::~SessionStore()
+{
+	{
+		std::lock_guard<std::mutex> lock(m_cv_m);
+		m_done = true;
+		m_cv.notify_one();
+	}
+
+	m_clean.join();
+}
+
+void SessionStore::run_clean_thread()
+{
+	while (not m_done)
+	{
+		std::unique_lock<std::mutex> lock(m_cv_m);
+		if (m_cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout)
+		{
+			// flush old sessions
+			std::cerr << "timeout!" << std::endl;
+		}
+	}
+
+	std::cerr << "stop!" << std::endl;
+}
+
+Session SessionStore::create(const std::string& name, const std::string& user, const std::string& realm)
+{
+	pqxx::transaction tx(m_connection);
+	auto r = tx.prepared("get-user-id")(user).exec();
+
+	if (r.empty() or r.size() != 1)
+		throw std::runtime_error("Invalid username/password");
+
+	std::string token = get_random_hash();
+	unsigned long userid = r.front()[0].as<unsigned long>();
+
+	r = tx.prepared("create-session")(userid)(name)(realm)(token).exec();
+
+	if (r.empty() or r.size() != 1)
+		throw std::runtime_error("Error creating session");
+	
+	unsigned long tokenid = r.front()[0].as<unsigned long>();
+	std::string created = r.front()[1].as<std::string>();
+
+	tx.commit();
+	
+	return
+	{
+		std::to_string(tokenid),
+		name,
+		user,
+		realm,
+		token,
+		zeep::value_serializer<boost::posix_time::ptime>::from_string(created)
+	};
+}
+
+Session SessionStore::get_by_id(const std::string& id)
+{
+	pqxx::transaction tx(m_connection);
+	auto r = tx.prepared("get-session-by-id")(std::stoul(id)).exec();
+
+	if (r.empty() or r.size() != 1)
+		throw std::runtime_error("Invalid session id");
+
+	const auto& rv = r.front();
+
+	auto name = rv[0].as<std::string>();
+	auto user = rv[1].as<std::string>();
+	auto realm = rv[2].as<std::string>();
+	auto token = rv[3].as<std::string>();
+	auto created = rv[4].as<std::string>();
+	auto expires = rv[5].as<std::string>();
+
+	tx.commit();
+	
+	return
+	{
+		id,
+		name,
+		user,
+		realm,
+		token,
+		zeep::value_serializer<boost::posix_time::ptime>::from_string(created),
+		zeep::value_serializer<boost::posix_time::ptime>::from_string(expires)
+	};
+}
+
+Session SessionStore::get_by_token(const std::string& token)
+{
+	pqxx::transaction tx(m_connection);
+	auto r = tx.prepared("get-session-by-token")(token).exec();
+
+	if (r.empty() or r.size() != 1)
+		return {};
+
+	const auto& rv = r.front();
+
+	auto name = rv[0].as<std::string>();
+	auto user = rv[1].as<std::string>();
+	auto realm = rv[2].as<std::string>();
+	auto id = rv[3].as<std::string>();
+	auto created = rv[4].as<std::string>();
+	auto expires = rv[5].as<std::string>();
+
+	tx.commit();
+	
+	return
+	{
+		id,
+		name,
+		user,
+		realm,
+		token,
+		zeep::value_serializer<boost::posix_time::ptime>::from_string(created),
+		zeep::value_serializer<boost::posix_time::ptime>::from_string(expires)
+	};
+}
+
+void SessionStore::delete_by_id(const std::string& id)
+{
+	pqxx::transaction tx(m_connection);
+	auto r = tx.prepared("delete-by-id")(id).exec();
+	tx.commit();
+}
+
+// --------------------------------------------------------------------
 
 class my_rest_controller : public zh::rest_controller
 {
   public:
-	my_rest_controller(const std::string& connectionString)
+	my_rest_controller(pqxx::connection& connection)
 		: zh::rest_controller("ajax")
-		, m_connection(connectionString)
+		, m_connection(connection)
 	{
 		map_get_request("session/{user}", &my_rest_controller::get_all_sessions_for_user, "user");
 		map_post_request("session", &my_rest_controller::post_session, "user", "password", "name");
-
-		m_connection.prepare("get-password", "SELECT password, id FROM auth_user WHERE name = $1");
-
-		m_connection.prepare("get-session-all",
-			R"(SELECT a.id AS id,
-				trim(both '"' from to_json(a.created)::text) AS created,
-				a.name AS session_name,
-				b.name AS user_name,
-				a.token AS token
-			   FROM session a, auth_user b
-			   WHERE a.user_id = b.id
-			   ORDER BY a.created ASC)");
-
-		m_connection.prepare("create-session",
-			R"(INSERT INTO session (user_id, name, token) values ($1, $2, $3) )");
-
-		// m_connection.prepare("get-opname",
-		// 	"SELECT a.id AS id, a.tijd AS tijd, b.teller_id AS teller_id, b.stand AS stand"
-		// 	" FROM opname a, tellerstand b"
-		// 	" WHERE a.id = b.opname_id AND a.id = $1");
-
-		// m_connection.prepare("get-last-opname",
-		// 	"SELECT a.id AS id, a.tijd AS tijd, b.teller_id AS teller_id, b.stand AS stand"
-		// 	" FROM opname a, tellerstand b"
-		// 	" WHERE a.id = b.opname_id AND a.id = (SELECT MAX(id) FROM opname)");
-
-		// m_connection.prepare("insert-opname", "INSERT INTO opname DEFAULT VALUES RETURNING id");
-		// m_connection.prepare("insert-stand", "INSERT INTO tellerstand (opname_id, teller_id, stand) VALUES($1, $2, $3);");
-
-		// m_connection.prepare("update-stand", "UPDATE tellerstand SET stand = $1 WHERE opname_Id = $2 AND teller_id = $3;");
-
-		// m_connection.prepare("del-opname", "DELETE FROM opname WHERE id=$1");
-
-		// m_connection.prepare("get-tellers-all",
-		// 	"SELECT id, naam, naam_kort, schaal FROM teller ORDER BY id");
 	}
 
 	// CRUD routines
@@ -174,80 +377,15 @@ class my_rest_controller : public zh::rest_controller
 		if (not result)
 			throw std::runtime_error("Invalid username/password");
 
-		boost::uuids::uuid tag;
-		tag = boost::uuids::random_generator()();
-
-		std::string token = boost::lexical_cast<std::string>(tag);
+		std::string token = get_random_hash();
 		unsigned long userid = r.front()[1].as<unsigned long>();
 
-		tx.prepared("create-session")(userid)(name)(token).exec();
+		tx.prepared("create-session")(userid)(name)(kPDB_REDO_API_Realm)(token).exec();
 
 		tx.commit();
 
 		return token;
 	}
-
-	// void put_opname(string opnameId, Opname opname)
-	// {
-	// 	pqxx::transaction tx(m_connection);
-
-	// 	for (auto stand: opname.standen)
-	// 		tx.prepared("update-stand")(stand.second)(opnameId)(stol(stand.first)).exec();
-
-	// 	tx.commit();
-	// }
-
-	// Opname get_opname(string id)
-	// {
-	// 	pqxx::transaction tx(m_connection);
-	// 	auto rows = tx.prepared("get-opname")(id).exec();
-
-	// 	if (rows.empty())
-	// 		throw runtime_error("opname niet gevonden");
-
-	// 	Opname result{ rows.front()[0].as<string>(), rows.front()[1].as<string>() };
-
-	// 	for (auto row: rows)
-	// 		result.standen[row[2].as<string>()] = row[3].as<float>();
-		
-	// 	return result;
-	// }
-
-	// Opname get_last_opname()
-	// {
-	// 	pqxx::transaction tx(m_connection);
-	// 	auto rows = tx.prepared("get-last-opname").exec();
-
-	// 	if (rows.empty())
-	// 		throw runtime_error("opname niet gevonden");
-
-	// 	Opname result{ rows.front()[0].as<string>(), rows.front()[1].as<string>() };
-
-	// 	for (auto row: rows)
-	// 		result.standen[row[2].as<string>()] = row[3].as<float>();
-		
-	// 	return result;
-	// }
-
-	// vector<Opname> get_all_opnames()
-	// {
-	// 	vector<Opname> result;
-
-	// 	pqxx::transaction tx(m_connection);
-
-	// 	auto rows = tx.prepared("get-opname-all").exec();
-	// 	for (auto row: rows)
-	// 	{
-	// 		auto id = row[0].as<string>();
-
-	// 		if (result.empty() or result.back().id != id)
-	// 			result.push_back({id, row[1].as<string>()});
-
-	// 		result.back().standen[row[2].as<string>()] = row[3].as<float>();
-	// 	}
-
-	// 	return result;
-	// }
 
 	std::vector<Session> get_all_sessions()
 	{
@@ -281,38 +419,216 @@ class my_rest_controller : public zh::rest_controller
 		return { { s.str(), user } };
 	}
 
-	// void delete_opname(string id)
-	// {
-	// 	pqxx::transaction tx(m_connection);
-	// 	tx.prepared("del-opname")(id).exec();
-	// 	tx.commit();
-	// }
+  private:
+	pqxx::connection& m_connection;
+};
 
-	// vector<Teller> get_tellers()
-	// {
-	// 	vector<Teller> result;
+// --------------------------------------------------------------------
 
-	// 	pqxx::transaction tx(m_connection);
+struct auth_info
+{
+	auth_info(const std::string& realm)
+		: m_realm(realm)
+	{
+		m_nonce = get_random_hash();
+		m_created = pt::second_clock::local_time();
+	}
 
-	// 	auto rows = tx.prepared("get-tellers-all").exec();
-	// 	for (auto row: rows)
-	// 	{
-	// 		auto c1 = row.column_number("id");
-	// 		auto c2 = row.column_number("naam");
-	// 		auto c3 = row.column_number("naam_kort");
-	// 		auto c4 = row.column_number("schaal");
+	std::string get_challenge() const
+	{
+		return R"(Basic-PDB_REDO realm=")" + m_realm + R"(", nonce=")" + m_nonce + '"';
+	}
 
-	// 		result.push_back({row[c1].as<string>(), row[c2].as<string>(), row[c3].as<string>(), row[c4].as<int>()});
-	// 	}
+	// bool stale() const;
 
-	// 	return result;
-	// }
+	std::string m_nonce, m_realm;
+	// std::set<uint32_t> m_replay_check;
+	pt::ptime m_created;
+};
 
-	// // GrafiekData get_grafiek(const string& type, aggregatie_type aggregatie);
-	// GrafiekData get_grafiek(grafiek_type type, aggregatie_type aggregatie);
+// bool auth_info::stale() const
+// {
+// 	pt::time_duration age = pt::second_clock::local_time() - m_created;
+// 	return age.total_seconds() > 1800;
+// }
+
+// bool auth_info::validate(method_type method, const std::string& uri, const std::string& ha1, std::map<std::string, std::string>& info)
+// {
+// 	bool valid = false;
+
+// 	uint32_t nc = strtol(info["nc"].c_str(), nullptr, 16);
+// 	if (not m_replay_check.count(nc))
+// 	{
+// 		std::string ha2 = md5(to_string(method) + std::string{':'} + info["uri"]).finalise();
+
+// 		std::string response = md5(
+// 								   ha1 + ':' +
+// 								   info["nonce"] + ':' +
+// 								   info["nc"] + ':' +
+// 								   info["cnonce"] + ':' +
+// 								   info["qop"] + ':' +
+// 								   ha2)
+// 								   .finalise();
+
+// 		valid = info["response"] == response;
+
+// 		// keep a list of seen nc-values in m_replay_check
+// 		m_replay_check.insert(nc);
+// 	}
+// 	return valid;
+// }
+
+class pdb_redo_authenticator : public zh::authentication_validation_base
+{
+  public:
+	pdb_redo_authenticator(pqxx::connection& connection)
+		: m_connection(connection) {}
+
+	/// Validate the authorization, returns the validated user. Throws unauthorized_exception in case of failure
+	virtual std::string validate_authentication(const zh::request& req, const std::string& realm)
+	{
+		auto session = SessionStore::instance().get_by_token(req.get_cookie(kPDB_REDO_Cookie));
+		if (session and session.realm == realm)
+		{
+			return session.user;
+		}
+
+		std::string authorization = req.get_header("Authorization");
+
+		// There are two options for the authorization string for pdb-redo-auth
+		// The API version, using a token and the regular login one using a username/password
+		
+		// PDB-REDO-login Credential=username/nonce/date, Password=base64encodedpassword
+		// PDB-REDO-api Credential=token-id/nonce/date/apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
+
+		enum ValidationType { Login, Api } type;
+
+		if (ba::starts_with(authorization, "PDB-REDO-login "))
+		{
+			type = Login;
+			authorization.erase(0, 15);
+		}
+		else if (ba::starts_with(authorization, "PDB-REDO-api "))
+		{
+			type = Api;
+			authorization.erase(0, 13);
+		}
+		else
+			throw zh::unauthorized_exception(false, realm);
+
+		std::string name, nonce, date, signature;
+		std::vector<std::string> signedHeaders;
+
+		// Ahhh... std::regex does not support (?| | )
+		// std::regex re(R"rx((\w+)=(?|"([^"]*)"|'([^']*)'|(\w+))(?:,\s*)?)rx");
+		std::regex re(R"rx(Credential=("[^"]*"|'[^']*'|[^,]+),\s*(?:SignedHeaders=("[^"]*"|'[^']*'|[^,]+),\s*Signature=("[^"]*"|'[^']*'|[^,]+)|Password=(\S+))\s*)rx", std::regex::icase);
+
+		std::smatch m;
+		if (not std::regex_search(authorization, m, re))
+			throw zh::unauthorized_exception(false, realm);
+
+		std::unique_lock<std::mutex> lock(m_mutex);
+
+		pqxx::transaction tx(m_connection);
+
+		std::vector<std::string> credentials;
+		std::string credential = m[1].str();
+		ba::split(credentials, credential, ba::is_any_of("/"));
+
+		if (type == Login)
+		{
+			if (credentials.size() != 3 or not m[4].matched)
+				throw zh::unauthorized_exception(false, realm);
+			name = credentials[0];
+			nonce = credentials[1];
+			date = credentials[2];
+
+			std::string password = zh::decode_base64(m[4].str());
+
+			auto r = tx.prepared("get-password")(name).exec();
+
+			if (r.empty() or r.size() != 1)
+				throw std::runtime_error("Invalid username/password");
+			
+			std::string pw = r.front()[0].as<std::string>();
+
+			bool valid = false;
+
+			if (pw[0] == '!')
+			{
+				const size_t kBufferSize = kSaltLength + kKeyLength / 8;
+
+				byte b[kBufferSize] = {};
+				CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
+
+				CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
+				CryptoPP::SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
+
+				pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
+					b, kSaltLength, kIterations);
+				
+				CryptoPP::SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
+
+				valid = recoveredkey == test;
+			}
+			else
+			{
+				CryptoPP::Weak::MD5 md5;
+
+				CryptoPP::SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
+				CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
+
+				md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
+
+				valid = md5.Verify(test);
+			}
+
+			if (not valid)
+				throw zh::unauthorized_exception(false, realm);
+		}
+		else	// Api
+		{
+			if (credentials.size() != 4 or credentials[3] != "apiv2")
+				throw zh::unauthorized_exception(false, realm);
+			name = credentials[0];
+			nonce = credentials[1];
+			date = credentials[2];
+		}
+
+		// // get the secret
+
+		// if (type == )
+
+
+		// bool result = false;
+
+		// if (not result)
+		// 	throw std::runtime_error("Invalid username/password");
+
+		// return info["username"];		
+		// return "maarten";
+
+		return name;
+	}
+
+	/// Add e.g. headers to reply for an unauthorized request
+	virtual void add_headers(zh::reply& rep, const std::string& realm, bool stale)
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+
+		m_auth_info.push_back(auth_info(realm));
+
+		std::string challenge = m_auth_info.back().get_challenge();
+		if (stale)
+			challenge += ", stale=\"true\"";
+
+		rep.set_header("WWW-Authenticate", challenge);
+	}
 
   private:
-	pqxx::connection m_connection;
+	std::mutex m_mutex;
+	pqxx::connection& m_connection;
+	std::deque<auth_info> m_auth_info;
 };
 
 // --------------------------------------------------------------------
@@ -325,65 +641,88 @@ class my_server : public zh::rsrc_based_webapp
 {
   public:
 
-	static const std::string kRealm;
-
-	my_server(const std::string& dbConnectString, const std::string& admin, const std::string& pw)
+	my_server(const std::string& dbConnectString, const std::string& admin)
 #if DEBUG
-		: zh::file_based_webapp((fs::current_path() / "docroot").string()),
+		: zh::file_based_webapp((fs::current_path() / "docroot").string())
 #else
-		:
+		: zh::rsrc_based_webapp()
 #endif
+		, m_connection(dbConnectString)
 		// : zh::webapp((fs::current_path() / "docroot").string())
-		m_rest_controller(new my_rest_controller(dbConnectString))
+		, m_rest_controller(new my_rest_controller(m_connection))
 	{
+		SessionStore::init(m_connection);
+
 		register_tag_processor<zh::tag_processor_v2>("http://www.hekkelman.com/libzeep/m2");
 
 		add_controller(m_rest_controller);
 
-		set_authenticator(new zh::simple_digest_authentication_validation(kRealm, { { admin, pw }}));
+		// get administrators
+		ba::split(m_admins, admin, ba::is_any_of(",; "));
+
+		set_authenticator(new pdb_redo_authenticator(m_connection));
 	
 		mount("", &my_server::welcome);
-		mount("session", &my_server::welcome);
+		mount("login", &my_server::login);
+		mount("logout", &my_server::logout);
+		mount("admin", kPDB_REDO_Session_Realm, &my_server::admin);
 
-		mount("admin", kRealm, &my_server::admin);
-		// mount("opnames", &my_server::opname);
-		// mount("invoer", &my_server::invoer);
-		// mount("grafiek", &my_server::grafiek);
 		mount("css", &my_server::handle_file);
 		mount("scripts", &my_server::handle_file);
 		mount("fonts", &my_server::handle_file);
 		mount("images", &my_server::handle_file);
+
+		m_connection.prepare("get-password", "SELECT password, id FROM auth_user WHERE name = $1");
+
+		m_connection.prepare("get-session-all",
+			R"(SELECT a.id AS id,
+				trim(both '"' from to_json(a.created)::text) AS created,
+				a.name AS session_name,
+				b.name AS user_name,
+				a.token AS token
+			   FROM session a, auth_user b
+			   WHERE a.user_id = b.id
+			   ORDER BY a.created ASC)");
+
+	}
+
+	~my_server()
+	{
+		SessionStore::instance().stop();
 	}
 
 	void welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void admin(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+	void login(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+	void logout(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+
+	void create_unauth_reply(const zh::request& req, bool stale, const std::string& realm, zh::reply& rep);
 
   private:
+	pqxx::connection m_connection;
 	my_rest_controller*	m_rest_controller;
-	std::string m_admin, m_pw;
+	std::set<std::string> m_admins;
 };
-
-const std::string my_server::kRealm("PDB-REDO Session Management");
 
 void my_server::welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 {
 	zh::scope sub(scope);
 
-	// auto v = m_rest_controller->get_all_opnames();
-	// json opnames;
-	// zeep::to_element(opnames, v);
-	// sub.put("opnames", opnames);
+	auto session = SessionStore::instance().get_by_token(request.get_cookie(kPDB_REDO_Cookie));
 
-	// auto u = m_rest_controller->get_tellers();
-	// json tellers;
-	// zeep::to_element(tellers, u);
-	// sub.put("tellers", tellers);
+	if (session)
+	{
+		sub.put("username", session.user);
+	}
 
 	create_reply_from_template("index.html", sub, reply);
 }
 
 void my_server::admin(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 {
+	if (m_admins.count(request.username) == 0)
+		throw std::runtime_error("Insufficient priviliges to access admin page");
+
 	zh::scope sub(scope);
 
 	auto v = m_rest_controller->get_all_sessions();
@@ -394,54 +733,96 @@ void my_server::admin(const zh::request& request, const zh::scope& scope, zh::re
 	create_reply_from_template("admin.html", sub, reply);
 }
 
-// void my_server::invoer(const zh::request& request, const zh::scope& scope, zh::reply& reply)
-// {
-// 	zh::scope sub(scope);
+void my_server::login(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+{
+	std::string username = request.get_parameter("username");
+	std::string password = request.get_parameter("password");
 
-// 	sub.put("page", "invoer");
+	pqxx::transaction tx(m_connection);
 
-// 	Opname o;
+	auto r = tx.prepared("get-password")(username).exec();
 
-// 	string id = request.get_parameter("id", "");
-// 	if (id.empty())
-// 	{
-// 		o = m_rest_controller->get_last_opname();
-// 		o.id.clear();
-// 		o.datum.clear();
-// 	}
-// 	else
-// 		o = m_rest_controller->get_opname(id);
+	if (r.empty() or r.size() != 1)
+		throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
+			
+	std::string pw = r.front()[0].as<std::string>();
 
-// 	json opname;
-// 	zeep::to_element(opname, o);
-// 	sub.put("opname", opname);
+	tx.commit();
 
-// 	auto u = m_rest_controller->get_tellers();
-// 	json tellers;
-// 	zeep::to_element(tellers, u);
-// 	sub.put("tellers", tellers);
+	bool valid = false;
 
-// 	create_reply_from_template("invoer.html", sub, reply);
-// }
+	if (pw[0] == '!')
+	{
+		const size_t kBufferSize = kSaltLength + kKeyLength / 8;
 
-// void my_server::grafiek(const zh::request& request, const zh::scope& scope, zh::reply& reply)
-// {
-// 	zh::scope sub(scope);
+		byte b[kBufferSize] = {};
+		CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
 
-// 	sub.put("page", "grafiek");
+		CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
+		CryptoPP::SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
 
-// 	auto v = m_rest_controller->get_all_opnames();
-// 	json opnames;
-// 	zeep::to_element(opnames, v);
-// 	sub.put("opnames", opnames);
+		pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
+			b, kSaltLength, kIterations);
+		
+		CryptoPP::SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
 
-// 	auto u = m_rest_controller->get_tellers();
-// 	json tellers;
-// 	zeep::to_element(tellers, u);
-// 	sub.put("tellers", tellers);
+		valid = recoveredkey == test;
+	}
+	else
+	{
+		CryptoPP::Weak::MD5 md5;
 
-// 	create_reply_from_template("grafiek.html", sub, reply);
-// }
+		CryptoPP::SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
+		CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
+
+		md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
+
+		valid = md5.Verify(test);
+	}
+
+	if (not valid)
+		throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
+
+	// so the user was authenticated. Acknowledge and set cookie
+	auto session = SessionStore::instance().create("__pdb-redo_session__", username, kPDB_REDO_Session_Realm);
+
+	auto uri = request.get_parameter("uri");
+
+	if (uri.empty())
+		reply = zh::reply::stock_reply(zh::ok);
+	else
+		reply = zh::reply::redirect(uri);
+	
+	reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "=" + session.token);// + "; Secure");
+}
+
+// --------------------------------------------------------------------
+
+void my_server::logout(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+{
+	auto session = SessionStore::instance().get_by_token(request.get_cookie(kPDB_REDO_Cookie));
+
+	if (session)
+		SessionStore::instance().delete_by_id(session.id);
+
+	reply = zh::reply::redirect("/");
+	reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "; Expires=Thu, 01 Jan 1970 00:00:01 GMT;");
+}
+
+// --------------------------------------------------------------------
+
+void my_server::create_unauth_reply(const zh::request& req, bool stale, const std::string& realm, zh::reply& reply)
+{
+	zh::scope scope;
+
+	scope.put("uri", req.uri);
+
+	create_reply_from_template("login.html", scope, reply);
+
+	reply.set_status(zh::unauthorized);
+}
+
+// --------------------------------------------------------------------
 
 int main(int argc, const char* argv[])
 {
@@ -467,8 +848,7 @@ int main(int argc, const char* argv[])
 		("db-dbname",		po::value<std::string>(),	"Database name")
 		("db-user",			po::value<std::string>(),	"Database user name")
 		("db-password",		po::value<std::string>(),	"Database password")
-		("admin-user",		po::value<std::string>(),	"Administrator user name")
-		("admin-password",	po::value<std::string>(),	"Administrator password");
+		("admin",			po::value<std::string>(),	"Administrators, list of usernames separated by comma");
 
 	po::options_description hidden("hidden options");
 	hidden.add_options()
@@ -546,12 +926,11 @@ Command should be either:
 			vConn.push_back(opt.substr(3) + "=" + vm[opt].as<std::string>());
 		}
 
-		std::string admin = vm["admin-user"].as<std::string>();
-		std::string password = vm["admin-password"].as<std::string>();
+		std::string admin = vm["admin"].as<std::string>();
 
-		zh::daemon server([cs = ba::join(vConn, " "), admin, password]()
+		zh::daemon server([cs = ba::join(vConn, " "), admin]()
 		{
-			return new my_server(cs, admin, password);
+			return new my_server(cs, admin);
 		}, APP_NAME );
 
 		std::string user = "www-data";
