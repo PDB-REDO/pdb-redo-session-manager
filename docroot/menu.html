@@ -32,10 +32,14 @@
 				<ul class="navbar-nav mr-auto">
 	
 					<li class="nav-item" z2:classappend="${page == 'session' ? 'active' : ''}">
-						<a class="nav-link" href="/session">Sessions</a>
+						<a class="nav-link" z2:href="@{/session}">Sessions</a>
 					</li>
 					<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}">
-						<a class="nav-link" href="/admin">Admin</a>
+						<a class="nav-link" z2:href="@{/admin}">Admin</a>
+					</li>
+
+					<li z2:if="${username}" class="nav-item">
+						<a class="nav-link" z2:href="@{/logout}">Logout</a>
 					</li>
 	
 				</ul>

@@ -65,33 +65,7 @@ const username = /*[[${username}]]*/ null;
 				<button type="submit" form="delete-token-form" class="btn btn-primary mt-3">Delete</button>
 			</form>
 		</div>
-
-		<!-- <div z2:switch="${opname.id.empty}">
-			<span z2:case="${true}">Nieuwe invoer</span>
-			<span z2:case="${false}" z2:text="${#dates.format(opname.datum, '%d %B %Y, %H:%M')}"></span>
-		</div> -->
-
-		<!-- <form id="opname-form" action="/ajax/opname" method="post">
-			<input type="hidden" name="id" z2:value="${opname.id}"/>
-	
-			<div z2:each="teller: ${tellers}" class="form-group row">
-				<label class="col-sm-6 col-form-label col-form-label-sm"
-						z2:for="|id-${teller.id}|" z2:text="${teller.naam}"></label>
-				<div class="col-sm-6">
-					<input class="form-control form-control-sm" maxlength="254"
-							z2:attr="id=|id-${teller.id}|,data-id=${teller.id}"
-							z2:name="${teller.id}" type="number" z2:step="${teller.schaal == 3 ? 0.001 : 1}"
-							z2:value="${opname.standen[teller.id] ?: ''}"
-							required="true" />
-				</div>
-			</div>
-	
-			<button type="submit" form="opname-form" class="btn btn-primary">Bewaar</button>
-		</form> -->
 	</div>
-
-	
-	<div z2:replace="~{login::#login-dialog}"/>
 
 </body>
 

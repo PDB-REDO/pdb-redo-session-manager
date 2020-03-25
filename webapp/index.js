@@ -8,9 +8,7 @@ import { showLoginDialog } from './login';
 import './pdb-redo-bootstrap.scss';
 
 window.addEventListener("load", () => {
-	// $("#loginDialogID").modal();
-	
 	if (typeof username === 'undefined' || username == null)
-		showLoginDialog()
+		showLoginDialog();
 });
 

@@ -664,6 +664,7 @@ class my_server : public zh::rsrc_based_webapp
 	
 		mount("", &my_server::welcome);
 		mount("login", &my_server::login);
+		mount("login-dialog", &my_server::loginDialog);
 		mount("logout", &my_server::logout);
 		mount("admin", kPDB_REDO_Session_Realm, &my_server::admin);
 
@@ -694,6 +695,7 @@ class my_server : public zh::rsrc_based_webapp
 	void welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void admin(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void login(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+	void loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void logout(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 
 	void create_unauth_reply(const zh::request& req, bool stale, const std::string& realm, zh::reply& rep);
@@ -737,6 +739,8 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 {
 	std::string username = request.get_parameter("username");
 	std::string password = request.get_parameter("password");
+
+	password = zh::decode_base64(password);
 
 	pqxx::transaction tx(m_connection);
 
@@ -794,6 +798,11 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 		reply = zh::reply::redirect(uri);
 	
 	reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "=" + session.token);// + "; Secure");
+}
+
+void my_server::loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+{
+	create_reply_from_template("login::#login-dialog", scope, reply);
 }
 
 // --------------------------------------------------------------------
