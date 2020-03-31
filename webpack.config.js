@@ -12,6 +12,7 @@ module.exports = (env) => {
 			polyfill: '@babel/polyfill',
 			index: SCRIPTS + "index.js",
 			login: SCRIPTS + "login.js",
+			request: SCRIPTS + "request.js",
 			"test-api": SCRIPTS + "test-api.js"
 		},
 

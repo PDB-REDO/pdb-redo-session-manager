@@ -30,6 +30,7 @@
 #include <zeep/http/daemon.hpp>
 #include <zeep/serialize.hpp>
 #include <zeep/http/base64.hpp>
+#include <zeep/unicode_support.hpp>
 
 #include <pqxx/pqxx>
 
@@ -66,9 +67,13 @@ using json = el::element;
 const std::string
 	kPDB_REDO_Session_Realm("PDB-REDO Session Management"),
 	kPDB_REDO_API_Realm("PDB-REDO API"),
+	kPDB_REDO_API_Cookie("PDB-REDO-Signature"),
 	kPDB_REDO_Cookie("PDB-REDO_Session");
 
-const int kIterations = 10000, kSaltLength = 16, kKeyLength = 256;
+const int
+	kIterations = 10000,
+	kSaltLength = 16,
+	kKeyLength = 256;
 
 fs::path gExePath;
 
@@ -87,7 +92,7 @@ std::string get_random_hash()
 
 struct Session
 {
-	std::string id;
+	unsigned long id = 0;
 	std::string name;
 	std::string user;
 	std::string realm;
@@ -95,9 +100,22 @@ struct Session
 	boost::posix_time::ptime created;
 	boost::posix_time::ptime expires;
 
-	operator bool() const	{ return not id.empty(); }
+	Session& operator=(const pqxx::tuple& t)
+	{
+		id			= t.at("id").as<unsigned long>();
+		name		= t.at("name").as<std::string>();
+		user		= t.at("user").as<std::string>();
+		realm		= t.at("realm").as<std::string>();
+		token		= t.at("token").as<std::string>();
+		created		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("created").as<std::string>());
+		expires		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("expires").as<std::string>());
 
-	bool expired() const	{ return expires > pt::second_clock::local_time(); }
+		return *this;
+	}
+
+	operator bool() const	{ return id != 0; }
+
+	bool expired() const	{ return pt::second_clock::universal_time() > expires; }
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -108,6 +126,55 @@ struct Session
 		   & zeep::make_nvp("realm", realm)
 		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("created", created)
+		   & zeep::make_nvp("expires", expires);
+	}
+};
+
+struct SessionForApi
+{
+	unsigned long id = 0;
+	std::string name;
+	std::string token;
+	boost::posix_time::ptime expires;
+
+	SessionForApi(const pqxx::tuple& t)
+		: id(t.at("id").as<unsigned long>())
+		, name(t.at("name").as<std::string>())
+		, token(t.at("token").as<std::string>())
+		, expires(zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("expires").as<std::string>()))
+	{
+	}
+
+	SessionForApi& operator=(const Session& session)
+	{
+		id = session.id;
+		name = session.name;
+		token = session.token;
+		expires = session.expires;
+		
+		return *this;
+	}
+
+	SessionForApi& operator=(const pqxx::tuple& t)
+	{
+		id			= t.at("id").as<unsigned long>();
+		name		= t.at("name").as<std::string>();
+		token		= t.at("token").as<std::string>();
+		expires		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("expires").as<std::string>());
+
+		return *this;
+	}
+
+	operator bool() const	{ return id != 0; }
+
+	bool expired() const	{ return pt::second_clock::universal_time() > expires; }
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("name", name)
+		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("expires", expires);
 	}
 };
@@ -136,9 +203,9 @@ class SessionStore
 
 	Session create(const std::string& name, const std::string& user, const std::string& realm);
 
-	Session get_by_id(const std::string& id);
+	Session get_by_id(unsigned long id);
 	Session get_by_token(const std::string& token);
-	void delete_by_id(const std::string& id);
+	void delete_by_id(unsigned long id);
 
   private:
 
@@ -169,27 +236,44 @@ SessionStore::SessionStore(pqxx::connection& connection)
 	m_connection.prepare("create-session",
 		R"(INSERT INTO session (user_id, name, realm, token)
 		   VALUES ($1, $2, $3, $4)
+		   RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
+			   trim(both '"' from to_json(expires)::text) AS expires)");
+
+	m_connection.prepare("create-admin-session",
+		R"(INSERT INTO session (user_id, name, realm, token, expires)
+		   VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + interval '15 minute')
 		   RETURNING id, trim(both '"' from to_json(created)::text) AS created)");
-	
+
 	m_connection.prepare("get-session-by-id",
-		R"(SELECT a.name, b.name, a.realm, a.token,
-				trim(both '"' from to_json(a.created)::text) AS created,
-				trim(both '"' from to_json(a.expires)::text) AS expires
-		   FROM session LEFT JOIN auth_user b ON a.user_id = b.id
-		   WHERE id = $1)");
+		R"(SELECT a.id,
+				  a.name AS name,
+				  b.name AS user,
+				  a.realm,
+				  a.token,
+				  trim(both '"' from to_json(a.created)::text) AS created,
+				  trim(both '"' from to_json(a.expires)::text) AS expires
+		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
+		   WHERE a.id = $1)");
 
 	m_connection.prepare("get-session-by-token",
-		R"(SELECT a.name, b.name, a.realm, a.id,
-				trim(both '"' from to_json(a.created)::text) AS created,
-				trim(both '"' from to_json(a.expires)::text) AS expires
+		R"(SELECT a.id,
+				  a.name AS name,
+				  b.name AS user,
+				  a.realm,
+				  a.token,
+				  trim(both '"' from to_json(a.created)::text) AS created,
+				  trim(both '"' from to_json(a.expires)::text) AS expires
 		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
-		   WHERE token = $1)");
+		   WHERE a.token = $1)");
 
 	m_connection.prepare("get-user-id",
 		R"(SELECT id FROM auth_user WHERE name = $1)");
 
 	m_connection.prepare("delete-by-id",
 		R"(DELETE FROM session WHERE id = $1)");
+
+	m_connection.prepare("delete-expired",
+		R"(DELETE FROM session WHERE CURRENT_TIMESTAMP > expires)");
 }
 
 SessionStore::~SessionStore()
@@ -210,12 +294,22 @@ void SessionStore::run_clean_thread()
 		std::unique_lock<std::mutex> lock(m_cv_m);
 		if (m_cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout)
 		{
-			// flush old sessions
-			std::cerr << "timeout!" << std::endl;
+
+			try
+			{
+				pqxx::transaction tx(m_connection);
+				auto r = tx.prepared("delete-expired").exec();
+				tx.commit();
+				
+				// flush old sessions
+				std::cerr << "flushed sessions" << std::endl;
+			}
+			catch (const std::exception& ex)
+			{
+				std::cerr << ex.what() << std::endl;
+			}
 		}
 	}
-
-	std::cerr << "stop!" << std::endl;
 }
 
 Session SessionStore::create(const std::string& name, const std::string& user, const std::string& realm)
@@ -229,7 +323,11 @@ Session SessionStore::create(const std::string& name, const std::string& user, c
 	std::string token = get_random_hash();
 	unsigned long userid = r.front()[0].as<unsigned long>();
 
-	r = tx.prepared("create-session")(userid)(name)(realm)(token).exec();
+	auto stmt = realm == kPDB_REDO_Session_Realm ?
+		tx.prepared("create-admin-session") :
+		tx.prepared("create-session");
+
+	r = stmt(userid)(name)(realm)(token).exec();
 
 	if (r.empty() or r.size() != 1)
 		throw std::runtime_error("Error creating session");
@@ -241,7 +339,7 @@ Session SessionStore::create(const std::string& name, const std::string& user, c
 	
 	return
 	{
-		std::to_string(tokenid),
+		tokenid,
 		name,
 		user,
 		realm,
@@ -250,35 +348,18 @@ Session SessionStore::create(const std::string& name, const std::string& user, c
 	};
 }
 
-Session SessionStore::get_by_id(const std::string& id)
+Session SessionStore::get_by_id(unsigned long id)
 {
 	pqxx::transaction tx(m_connection);
-	auto r = tx.prepared("get-session-by-id")(std::stoul(id)).exec();
+	auto r = tx.prepared("get-session-by-id")(id).exec();
 
-	if (r.empty() or r.size() != 1)
-		throw std::runtime_error("Invalid session id");
-
-	const auto& rv = r.front();
-
-	auto name = rv[0].as<std::string>();
-	auto user = rv[1].as<std::string>();
-	auto realm = rv[2].as<std::string>();
-	auto token = rv[3].as<std::string>();
-	auto created = rv[4].as<std::string>();
-	auto expires = rv[5].as<std::string>();
+	Session result = {};
+	if (r.size() == 1)
+		result = r.front();
 
 	tx.commit();
 	
-	return
-	{
-		id,
-		name,
-		user,
-		realm,
-		token,
-		zeep::value_serializer<boost::posix_time::ptime>::from_string(created),
-		zeep::value_serializer<boost::posix_time::ptime>::from_string(expires)
-	};
+	return result;
 }
 
 Session SessionStore::get_by_token(const std::string& token)
@@ -286,33 +367,16 @@ Session SessionStore::get_by_token(const std::string& token)
 	pqxx::transaction tx(m_connection);
 	auto r = tx.prepared("get-session-by-token")(token).exec();
 
-	if (r.empty() or r.size() != 1)
-		return {};
-
-	const auto& rv = r.front();
-
-	auto name = rv[0].as<std::string>();
-	auto user = rv[1].as<std::string>();
-	auto realm = rv[2].as<std::string>();
-	auto id = rv[3].as<std::string>();
-	auto created = rv[4].as<std::string>();
-	auto expires = rv[5].as<std::string>();
+	Session result = {};
+	if (r.size() == 1)
+		result = r.front();
 
 	tx.commit();
 	
-	return
-	{
-		id,
-		name,
-		user,
-		realm,
-		token,
-		zeep::value_serializer<boost::posix_time::ptime>::from_string(created),
-		zeep::value_serializer<boost::posix_time::ptime>::from_string(expires)
-	};
+	return result;
 }
 
-void SessionStore::delete_by_id(const std::string& id)
+void SessionStore::delete_by_id(unsigned long id)
 {
 	pqxx::transaction tx(m_connection);
 	auto r = tx.prepared("delete-by-id")(id).exec();
@@ -321,6 +385,85 @@ void SessionStore::delete_by_id(const std::string& id)
 
 // --------------------------------------------------------------------
 
+class pdb_redo_api_authenticator : public zh::authentication_validation_base
+{
+  public:
+	pdb_redo_api_authenticator(pqxx::connection& connection)
+		: m_connection(connection) {}
+
+	/// Validate the authorization, Throws unauthorized_exception in case of failure
+	virtual std::string validate_authentication(const zh::request& req, const std::string& realm)
+	{
+		std::string authorization = req.get_header("Authorization");
+
+		// PDB-REDO-api Credential=token-id/date/pdb-redo-apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
+
+		if (not ba::starts_with(authorization, "PDB-REDO-api "))
+			throw zh::unauthorized_exception(false, realm);
+
+		std::string name, nonce, date, signature;
+		std::vector<std::string> signedHeaders;
+
+		std::regex re(R"rx(Credential=("[^"]*"|'[^']*'|[^,]+),\s*SignedHeaders=("[^"]*"|'[^']*'|[^,]+),\s*Signature=("[^"]*"|'[^']*'|[^,]+)\s*)rx", std::regex::icase);
+
+		std::smatch m;
+		if (not std::regex_search(authorization, m, re))
+			throw zh::unauthorized_exception(false, realm);
+
+		std::unique_lock<std::mutex> lock(m_mutex);
+
+		pqxx::transaction tx(m_connection);
+
+		std::vector<std::string> credentials;
+		std::string credential = m[1].str();
+		ba::split(credentials, credential, ba::is_any_of("/"));
+
+		if (credentials.size() != 4 or credentials[3] != "apiv2")
+			throw zh::unauthorized_exception(false, realm);
+		name = credentials[0];
+		nonce = credentials[1];
+		date = credentials[2];
+
+		// // get the secret
+
+		// if (type == )
+
+
+		// bool result = false;
+
+		// if (not result)
+		// 	throw std::runtime_error("Invalid username/password");
+
+		// return info["username"];		
+		// return "maarten";
+
+		return name;
+	}
+
+	/// Add e.g. headers to reply for an unauthorized request
+	virtual void add_headers(zh::reply& rep, const std::string& realm, bool stale)
+	{
+		// std::unique_lock<std::mutex> lock(m_mutex);
+
+		// m_auth_info.push_back(auth_info(realm));
+
+		// std::string challenge = m_auth_info.back().get_challenge();
+		// if (stale)
+		// 	challenge += ", stale=\"true\"";
+
+		// rep.set_header("WWW-Authenticate", challenge);
+	}
+
+  private:
+	std::mutex m_mutex;
+	pqxx::connection& m_connection;
+	// std::deque<auth_info> m_auth_info;
+};
+
+
+// --------------------------------------------------------------------
+
+
 class my_rest_controller : public zh::rest_controller
 {
   public:
@@ -328,12 +471,136 @@ class my_rest_controller : public zh::rest_controller
 		: zh::rest_controller("ajax")
 		, m_connection(connection)
 	{
-		map_get_request("session/{user}", &my_rest_controller::get_all_sessions_for_user, "user");
+		// map_get_request("session/{user}", &my_rest_controller::get_all_sessions_for_user, "user");
 		map_post_request("session", &my_rest_controller::post_session, "user", "password", "name");
+
+		map_delete_request("session/{id}", kPDB_REDO_API_Realm, &my_rest_controller::delete_session, "id");
+	}
+
+	virtual bool validate_request(zh::request& req, zh::reply& rep, const std::string& realm)
+	{
+		if (realm != kPDB_REDO_API_Realm)
+			return false;
+
+		bool result = true;
+
+		try
+		{
+			std::string authorization = req.get_header("Authorization");
+			// PDB-REDO-api Credential=token-id/date/pdb-redo-apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
+
+			if (not ba::starts_with(authorization, "PDB-REDO-api "))
+				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+
+			std::vector<std::string> signedHeaders;
+
+			std::regex re(R"rx(Credential=("[^"]*"|'[^']*'|[^,]+),\s*SignedHeaders=("[^"]*"|'[^']*'|[^,]+),\s*Signature=("[^"]*"|'[^']*'|[^,]+)\s*)rx", std::regex::icase);
+
+			std::smatch m;
+			if (not std::regex_search(authorization, m, re))
+				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+
+			std::vector<std::string> credentials;
+			std::string credential = m[1].str();
+			ba::split(credentials, credential, ba::is_any_of("/"));
+
+			if (credentials.size() != 3 or credentials[2] != "pdb-redo-api")
+				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+
+			auto signature = zh::decode_base64(m[3].str());
+
+			// Validate the signature
+
+			// canonical request
+
+			std::vector<std::tuple<std::string,std::string>> params;
+			for (auto& p: req.get_parameters())
+				params.push_back(std::make_tuple(p.first, p.second));
+			std::sort(params.begin(), params.end());
+			std::ostringstream ps;
+			auto n = params.size();
+			for (auto& [name, value]: params)
+			{
+				ps << zeep::encode_url(name);
+				if (not value.empty())
+					ps << '=' << zeep::encode_url(value);
+				if (n-- > 1)
+					ps << '&';
+			}
+
+			using CryptoPP::SHA256;
+			using CryptoPP::SecByteBlock;
+			using CryptoPP::HMAC;
+			using CryptoPP::StringSource;
+			using CryptoPP::StringSink;
+			using CryptoPP::Base64Encoder;
+			using CryptoPP::HashFilter;
+
+			SHA256 sha256;
+
+			SecByteBlock b(SHA256::DIGESTSIZE);
+			sha256.Update(reinterpret_cast<const byte*>(req.payload.c_str()), req.payload.length());
+			sha256.Final(b);
+			auto contentHash = zh::encode_base64(std::string((char*)b.data(), b.m_size));
+
+			std::ostringstream ss;
+			ss << to_string(req.method) << std::endl
+			   << req.get_pathname() << std::endl
+			   << ps.str() << std::endl
+			   << req.get_header("host") << std::endl
+			   << contentHash;
+
+			auto canonicalRequest = ss.str();
+
+			sha256 = {};
+			sha256.Update(reinterpret_cast<const byte*>(canonicalRequest.c_str()), canonicalRequest.length());
+			sha256.Final(b);
+
+			auto canonicalRequestHash = zh::encode_base64(std::string((char*)b.data(), b.m_size));
+
+			// string to sign
+			auto timestamp = req.get_header("X-PDB_REDO-Date");
+
+			std::ostringstream ss2;
+			ss2 << "PDB-REDO-api" << std::endl
+			   << timestamp << std::endl
+			   << credential << std::endl
+			   << canonicalRequestHash;
+			auto stringToSign = ss2.str();
+
+			auto tokenid = credentials[0];
+			auto date = credentials[1];
+
+			auto secret = SessionStore::instance().get_by_id(std::stoul(tokenid)).token;
+			auto keyString = "PDB-REDO" + secret;
+
+	        std::string key;
+			HMAC<SHA256> hmac(reinterpret_cast<const byte*>(keyString.c_str()), keyString.length());
+			StringSource(date, true, new HashFilter(hmac, new StringSink(key)));
+
+			std::string mac;
+			HMAC<SHA256> hmac2(reinterpret_cast<const byte*>(key.c_str()), key.length());
+			StringSource(stringToSign, true, new HashFilter(hmac2, new StringSink(mac)));
+
+			result = mac == signature;
+		}
+		catch(const std::exception& e)
+		{
+			using namespace std::literals;
+
+			rep.set_content(el::element({
+				{ "error", "Unauthorized access, unimplemented validate_request, "s + e.what() }
+			}));
+			rep.set_status(zh::unauthorized);
+
+			result = false;
+		}
+
+		return result;
 	}
 
 	// CRUD routines
-	std::string post_session(std::string user, std::string password, std::string name)
+	SessionForApi post_session(std::string user, std::string password, std::string name)
 	{
 		pqxx::transaction tx(m_connection);
 		auto r = tx.prepared("get-password")(user).exec();
@@ -345,6 +612,13 @@ class my_rest_controller : public zh::rest_controller
 
 		bool result = false;
 
+		using CryptoPP::SHA256;
+		using CryptoPP::SecByteBlock;
+		using CryptoPP::HMAC;
+		using CryptoPP::SHA1;
+		using CryptoPP::AES;
+
+
 		if (pw[0] == '!')
 		{
 			const size_t kBufferSize = kSaltLength + kKeyLength / 8;
@@ -352,13 +626,13 @@ class my_rest_controller : public zh::rest_controller
 			byte b[kBufferSize] = {};
 			CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
 
-			CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
-			CryptoPP::SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
+			CryptoPP::PKCS5_PBKDF2_HMAC<SHA1> pbkdf;
+			SecByteBlock recoveredkey(AES::DEFAULT_KEYLENGTH);
 
 			pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
 				b, kSaltLength, kIterations);
 			
-			CryptoPP::SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
+			SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
 
 			result = recoveredkey == test;
 		}
@@ -366,7 +640,7 @@ class my_rest_controller : public zh::rest_controller
 		{
 			CryptoPP::Weak::MD5 md5;
 
-			CryptoPP::SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
+			SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
 			CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
 
 			md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
@@ -380,11 +654,18 @@ class my_rest_controller : public zh::rest_controller
 		std::string token = get_random_hash();
 		unsigned long userid = r.front()[1].as<unsigned long>();
 
-		tx.prepared("create-session")(userid)(name)(kPDB_REDO_API_Realm)(token).exec();
+		auto t = tx.prepared("create-session")(userid)(name)(kPDB_REDO_API_Realm)(token).exec();
 
 		tx.commit();
 
-		return token;
+		return t.front();
+	}
+
+	std::string delete_session(unsigned long id)
+	{
+		SessionStore::instance().delete_by_id(id);
+
+		return "ok";
 	}
 
 	std::vector<Session> get_all_sessions()
@@ -397,27 +678,23 @@ class my_rest_controller : public zh::rest_controller
 		for (auto row: rows)
 		{
 			Session session;
-			session.id = row[0].as<std::string>();
-			session.created = zeep::value_serializer<boost::posix_time::ptime>::from_string(row[1].as<std::string>());
-			session.name = row[2].as<std::string>();
-			session.user = row[3].as<std::string>();
-			session.token = row[4].as<std::string>();
+			session = row;
 			result.push_back(std::move(session));
 		}
 
 		return result;
 	}
 
-	std::vector<Session> get_all_sessions_for_user(std::string user)
-	{
-		boost::uuids::uuid tag;
-		tag = boost::uuids::random_generator()();
+	// std::vector<Session> get_all_sessions_for_user(std::string user)
+	// {
+	// 	boost::uuids::uuid tag;
+	// 	tag = boost::uuids::random_generator()();
 
-		std::ostringstream s;
-		s << tag;
+	// 	std::ostringstream s;
+	// 	s << tag;
 
-		return { { s.str(), user } };
-	}
+	// 	return { { s.str(), user } };
+	// }
 
   private:
 	pqxx::connection& m_connection;
@@ -488,7 +765,7 @@ class pdb_redo_authenticator : public zh::authentication_validation_base
 	virtual std::string validate_authentication(const zh::request& req, const std::string& realm)
 	{
 		auto session = SessionStore::instance().get_by_token(req.get_cookie(kPDB_REDO_Cookie));
-		if (session and session.realm == realm)
+		if (session and session.realm == realm and not session.expired())
 		{
 			return session.user;
 		}
@@ -554,6 +831,8 @@ class pdb_redo_authenticator : public zh::authentication_validation_base
 
 			bool valid = false;
 
+			using CryptoPP::SecByteBlock;
+
 			if (pw[0] == '!')
 			{
 				const size_t kBufferSize = kSaltLength + kKeyLength / 8;
@@ -562,12 +841,12 @@ class pdb_redo_authenticator : public zh::authentication_validation_base
 				CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
 
 				CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
-				CryptoPP::SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
+				SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
 
 				pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
 					b, kSaltLength, kIterations);
 				
-				CryptoPP::SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
+				SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
 
 				valid = recoveredkey == test;
 			}
@@ -575,7 +854,7 @@ class pdb_redo_authenticator : public zh::authentication_validation_base
 			{
 				CryptoPP::Weak::MD5 md5;
 
-				CryptoPP::SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
+				SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
 				CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
 
 				md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
@@ -678,9 +957,11 @@ class my_server : public zh::rsrc_based_webapp
 		m_connection.prepare("get-session-all",
 			R"(SELECT a.id AS id,
 				trim(both '"' from to_json(a.created)::text) AS created,
-				a.name AS session_name,
-				b.name AS user_name,
-				a.token AS token
+				trim(both '"' from to_json(a.expires)::text) AS expires,
+				a.name AS name,
+				b.name AS user,
+				a.token AS token,
+				a.realm as realm
 			   FROM session a, auth_user b
 			   WHERE a.user_id = b.id
 			   ORDER BY a.created ASC)");
@@ -755,6 +1036,8 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 
 	bool valid = false;
 
+	using CryptoPP::SecByteBlock;
+
 	if (pw[0] == '!')
 	{
 		const size_t kBufferSize = kSaltLength + kKeyLength / 8;
@@ -763,12 +1046,12 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 		CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
 
 		CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
-		CryptoPP::SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
+		SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
 
 		pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
 			b, kSaltLength, kIterations);
 		
-		CryptoPP::SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
+		SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
 
 		valid = recoveredkey == test;
 	}
@@ -776,7 +1059,7 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 	{
 		CryptoPP::Weak::MD5 md5;
 
-		CryptoPP::SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
+		SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
 		CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
 
 		md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
@@ -788,7 +1071,7 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 		throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
 
 	// so the user was authenticated. Acknowledge and set cookie
-	auto session = SessionStore::instance().create("__pdb-redo_session__", username, kPDB_REDO_Session_Realm);
+	auto session = SessionStore::instance().create("", username, kPDB_REDO_Session_Realm);
 
 	auto uri = request.get_parameter("uri");
 

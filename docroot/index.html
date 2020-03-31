@@ -52,12 +52,40 @@
 			<form id="delete-token-form" action="/ajax/session" method="post">
 				<div class="input-group input-group-sm mb-3">
 					<div class="input-group-prepend">
+						<span class="input-group-text">name</span>
+					</div>
+
+					<input class="form-control form-control-sm" maxlength="254" id="token-name" name="token-name" type="text"
+						readonly="readonly" />
+				</div>
+
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">id</span>
+					</div>
+
+					<input class="form-control form-control-sm" maxlength="254" id="token-id" name="token-id" type="number"
+						readonly="readonly" />
+				</div>
+
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
 						<span class="input-group-text">token</span>
 					</div>
 
-					<input class="form-control form-control-sm" maxlength="254" id="token" name="token" type="text"
-						required="true" />
+					<input class="form-control form-control-sm" maxlength="254" id="token-secret" name="token-secret" type="text"
+						readonly="readonly" />
 				</div>
+
+				<div class="input-group input-group-sm mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">expires</span>
+					</div>
+
+					<input class="form-control form-control-sm" maxlength="254" id="token-expires" name="token-expires" type="datetime"
+						readonly="readonly" />
+				</div>
+
 				<button type="submit" form="delete-token-form" class="btn btn-primary mt-3">Delete</button>
 			</form>
 		</div>
