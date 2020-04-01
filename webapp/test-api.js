@@ -5,6 +5,7 @@ class ApiTester {
 	constructor() {
 		document.forms["token-form"].addEventListener("submit", (evt) => this.createToken(evt));
 		document.forms["delete-token-form"].addEventListener("submit", (evt) => this.deleteToken(evt));
+		document.getElementById("fetch-runs-btn").addEventListener('click', (evt) => this.fetchRuns(evt));
 
 		this.token = null;
 	}
@@ -39,11 +40,14 @@ class ApiTester {
 	deleteToken(evt) {
 		evt.preventDefault();
 
-		const payload = "This is an non-empty body";
+		if (typeof this.token === 'undefined')
+		{
+			alert("Please create a token first");
+			return;
+		}
 
-		const req = new PDBRedoApiRequest(`/ajax/session/${this.token.id}?name=maarten&toestand=gek%20als%20een%20deur`, {
+		const req = new PDBRedoApiRequest(`/ajax/session/${this.token.id}`, {
 			method: "DELETE",
-			body: payload,
 			token: {
 				id: this.token.id,
 				secret: this.token.token
@@ -68,6 +72,51 @@ class ApiTester {
 			console.log(err);
 			alert("Failed to get token " + err);
 		});
+	}
+
+	fetchRuns(e) {
+		if (e) e.preventDefault();
+
+		if (typeof this.token === 'undefined')
+		{
+			alert("Please create a token first");
+			return;
+		}
+
+		const req = new PDBRedoApiRequest(`/ajax/session/${this.token.id}/run`, {
+			token: {
+				id: this.token.id,
+				secret: this.token.token
+			}
+		});
+
+		fetch(req)
+		.then(response => response.json())
+		.then(data => {
+			if (typeof data === 'object' && data.error)
+				throw data.error;
+			
+			const tbody = document.querySelector("#run-table tbody");
+			[...tbody.querySelectorAll("tr")].forEach(tr => tbody.removeChild(tr));
+
+			let i = 0;
+			for (let run of data) {
+				const row = document.createElement("tr");
+				const td1 = document.createElement("td");
+				td1.textContent = `${++i}`;
+				row.appendChild(td1);
+				const td2 = document.createElement("td");
+				td2.textContent = run.name;
+				row.appendChild(td2);
+				tbody.appendChild(row);
+			}
+
+		}).catch(err => {
+			console.log(err);
+			alert("Failed to list runs: " + err);
+		});
+		
+
 	}
 
 }

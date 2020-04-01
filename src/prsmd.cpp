@@ -22,15 +22,15 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/random/random_device.hpp>
 
-#include <zeep/http/webapp.hpp>
-#include <zeep/http/md5.hpp>
+#include <zeep/md5.hpp>
+#include <zeep/base64.hpp>
+#include <zeep/serialize.hpp>
+#include <zeep/unicode_support.hpp>
 
 #include <zeep/el/parser.hpp>
-#include <zeep/rest/controller.hpp>
+#include <zeep/http/webapp.hpp>
 #include <zeep/http/daemon.hpp>
-#include <zeep/serialize.hpp>
-#include <zeep/http/base64.hpp>
-#include <zeep/unicode_support.hpp>
+#include <zeep/rest/controller.hpp>
 
 #include <pqxx/pqxx>
 
@@ -85,7 +85,7 @@ std::string get_random_hash()
 
 	uint32_t data[4] = { rng(), rng(), rng(), rng() };
 
-	return zh::md5(data, sizeof(data)).finalise();
+	return zeep::md5(data, sizeof(data)).finalise();
 }
 
 // --------------------------------------------------------------------
@@ -176,6 +176,19 @@ struct SessionForApi
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("expires", expires);
+	}
+};
+
+// --------------------------------------------------------------------
+
+struct Run
+{
+	std::string name;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("name", name);
 	}
 };
 
@@ -294,15 +307,11 @@ void SessionStore::run_clean_thread()
 		std::unique_lock<std::mutex> lock(m_cv_m);
 		if (m_cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout)
 		{
-
 			try
 			{
 				pqxx::transaction tx(m_connection);
 				auto r = tx.prepared("delete-expired").exec();
 				tx.commit();
-				
-				// flush old sessions
-				std::cerr << "flushed sessions" << std::endl;
 			}
 			catch (const std::exception& ex)
 			{
@@ -467,14 +476,17 @@ class pdb_redo_api_authenticator : public zh::authentication_validation_base
 class my_rest_controller : public zh::rest_controller
 {
   public:
-	my_rest_controller(pqxx::connection& connection)
+	my_rest_controller(pqxx::connection& connection, const std::string& pdbRedoDir)
 		: zh::rest_controller("ajax")
 		, m_connection(connection)
+		, m_pdb_redo_dir(pdbRedoDir)
 	{
 		// map_get_request("session/{user}", &my_rest_controller::get_all_sessions_for_user, "user");
 		map_post_request("session", &my_rest_controller::post_session, "user", "password", "name");
 
 		map_delete_request("session/{id}", kPDB_REDO_API_Realm, &my_rest_controller::delete_session, "id");
+
+		map_get_request("session/{id}/run", kPDB_REDO_API_Realm, &my_rest_controller::get_all_runs, "id");
 	}
 
 	virtual bool validate_request(zh::request& req, zh::reply& rep, const std::string& realm)
@@ -507,7 +519,7 @@ class my_rest_controller : public zh::rest_controller
 			if (credentials.size() != 3 or credentials[2] != "pdb-redo-api")
 				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
 
-			auto signature = zh::decode_base64(m[3].str());
+			auto signature = zeep::decode_base64(m[3].str());
 
 			// Validate the signature
 
@@ -541,7 +553,7 @@ class my_rest_controller : public zh::rest_controller
 			SecByteBlock b(SHA256::DIGESTSIZE);
 			sha256.Update(reinterpret_cast<const byte*>(req.payload.c_str()), req.payload.length());
 			sha256.Final(b);
-			auto contentHash = zh::encode_base64(std::string((char*)b.data(), b.m_size));
+			auto contentHash = zeep::encode_base64(std::string((char*)b.data(), b.m_size));
 
 			std::ostringstream ss;
 			ss << to_string(req.method) << std::endl
@@ -556,7 +568,7 @@ class my_rest_controller : public zh::rest_controller
 			sha256.Update(reinterpret_cast<const byte*>(canonicalRequest.c_str()), canonicalRequest.length());
 			sha256.Final(b);
 
-			auto canonicalRequestHash = zh::encode_base64(std::string((char*)b.data(), b.m_size));
+			auto canonicalRequestHash = zeep::encode_base64(std::string((char*)b.data(), b.m_size));
 
 			// string to sign
 			auto timestamp = req.get_header("X-PDB_REDO-Date");
@@ -582,14 +594,15 @@ class my_rest_controller : public zh::rest_controller
 			HMAC<SHA256> hmac2(reinterpret_cast<const byte*>(key.c_str()), key.length());
 			StringSource(stringToSign, true, new HashFilter(hmac2, new StringSink(mac)));
 
-			result = mac == signature;
+			if (mac != signature)
+				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
 		}
 		catch(const std::exception& e)
 		{
 			using namespace std::literals;
 
 			rep.set_content(el::element({
-				{ "error", "Unauthorized access, unimplemented validate_request, "s + e.what() }
+				{ "error", e.what() }
 			}));
 			rep.set_status(zh::unauthorized);
 
@@ -685,6 +698,27 @@ class my_rest_controller : public zh::rest_controller
 		return result;
 	}
 
+	std::vector<Run> get_all_runs(unsigned long id)
+	{
+		auto session = SessionStore::instance().get_by_id(id);
+
+		auto userDir = m_pdb_redo_dir / "runs" / session.user;
+
+		std::vector<Run> result;
+
+		if (fs::exists(userDir))
+		{
+			for (fs::directory_iterator run(userDir); run != fs::directory_iterator(); ++run)
+			{
+				if (not run->is_directory())
+					continue;
+				result.push_back({ run->path().filename().string() });
+			}
+		}
+
+		return result;
+	}
+
 	// std::vector<Session> get_all_sessions_for_user(std::string user)
 	// {
 	// 	boost::uuids::uuid tag;
@@ -698,6 +732,7 @@ class my_rest_controller : public zh::rest_controller
 
   private:
 	pqxx::connection& m_connection;
+	fs::path m_pdb_redo_dir;
 };
 
 // --------------------------------------------------------------------
@@ -820,7 +855,7 @@ class pdb_redo_authenticator : public zh::authentication_validation_base
 			nonce = credentials[1];
 			date = credentials[2];
 
-			std::string password = zh::decode_base64(m[4].str());
+			std::string password = zeep::decode_base64(m[4].str());
 
 			auto r = tx.prepared("get-password")(name).exec();
 
@@ -920,7 +955,7 @@ class my_server : public zh::rsrc_based_webapp
 {
   public:
 
-	my_server(const std::string& dbConnectString, const std::string& admin)
+	my_server(const std::string& dbConnectString, const std::string& admin, const std::string& pdbRedoDir)
 #if DEBUG
 		: zh::file_based_webapp((fs::current_path() / "docroot").string())
 #else
@@ -928,7 +963,8 @@ class my_server : public zh::rsrc_based_webapp
 #endif
 		, m_connection(dbConnectString)
 		// : zh::webapp((fs::current_path() / "docroot").string())
-		, m_rest_controller(new my_rest_controller(m_connection))
+		, m_rest_controller(new my_rest_controller(m_connection, pdbRedoDir))
+		, m_pdb_redo_dir(pdbRedoDir)
 	{
 		SessionStore::init(m_connection);
 
@@ -985,6 +1021,7 @@ class my_server : public zh::rsrc_based_webapp
 	pqxx::connection m_connection;
 	my_rest_controller*	m_rest_controller;
 	std::set<std::string> m_admins;
+	std::string m_pdb_redo_dir;
 };
 
 void my_server::welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply)
@@ -1020,8 +1057,6 @@ void my_server::login(const zh::request& request, const zh::scope& scope, zh::re
 {
 	std::string username = request.get_parameter("username");
 	std::string password = request.get_parameter("password");
-
-	password = zh::decode_base64(password);
 
 	pqxx::transaction tx(m_connection);
 
@@ -1132,6 +1167,7 @@ int main(int argc, const char* argv[])
 	po::options_description config(APP_NAME R"( config file options)");
 	
 	config.add_options()
+		("pdb-redo-dir",	po::value<std::string>(),	"Directory containing PDB-REDO server data")
 		("address",			po::value<std::string>(),	"External address, default is 0.0.0.0")
 		("port",			po::value<uint16_t>(),		"Port to listen to, default is 10339")
 		("user,u",			po::value<std::string>(),	"User to run the daemon")
@@ -1196,6 +1232,12 @@ Command should be either:
 		exit(vm.count("help") ? 0 : 1);
 	}
 	
+	if (vm.count("pdb-redo-dir") == 0)
+	{
+		std::cerr << "Missing pdb-redo-dir option" << std::endl;
+		exit(1);
+	}
+
 	try
 	{
 		char exePath[PATH_MAX + 1];
@@ -1219,10 +1261,11 @@ Command should be either:
 		}
 
 		std::string admin = vm["admin"].as<std::string>();
+		std::string pdbRedoDir = vm["pdb-redo-dir"].as<std::string>();
 
-		zh::daemon server([cs = ba::join(vConn, " "), admin]()
+		zh::daemon server([cs = ba::join(vConn, " "), admin, pdbRedoDir]()
 		{
-			return new my_server(cs, admin);
+			return new my_server(cs, admin, pdbRedoDir);
 		}, APP_NAME );
 
 		std::string user = "www-data";

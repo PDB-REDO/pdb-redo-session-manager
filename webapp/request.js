@@ -73,8 +73,6 @@ export class PDBRedoApiRequest extends Request {
 		headers.append('X-PDB_REDO-Date', timestamp);
 		init.headers = headers;
 
-		console.log(init);
-
 		super(input, init);
 	}
 }

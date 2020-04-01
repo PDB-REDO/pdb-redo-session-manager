@@ -30,7 +30,6 @@ class LoginDialog {
 		this.dialog = dlg;
 
 		this.form = document.forms["local-login-form"];
-		this.form.addEventListener('submit', (e) => this.submit(e));
 		this.error = document.getElementById("failedToLoginMsg");
 
 		this.show();
@@ -39,50 +38,6 @@ class LoginDialog {
 	show() {
 		$(this.error).hide();
 		$(this.dialog).modal();
-	}
-
-	submit(evt) {
-		if (evt != null) {
-			evt.preventDefault();
-		}
-
-		this.form.password.value = btoa(this.form.password.value);
-		this.form.submit();
-
-
-		// const req = new Request(this.form.action);
-		// const data = new FormData(this.form);
-		// data.set("password", btoa(data.get("password")));
-
-		// const today = new Date();
-		// let dd = today.getDate();
-		// if (dd < 10)
-		// 	dd = `0${dd}`;
-		// let mm = today.getMonth();
-		// if (mm < 10)
-		// 	mm = `0${mm}`;
-		// const date = `${today.getFullYear()}${mm}${dd}`;
-
-		// const username = document.getElementById("username").value;
-		// const password = btoa(document.getElementById("password").value);
-
-		// req.headers.append("Authorization", `PDB-REDO-login Credential=${username}/${nonce}/${date},Password=${password}`);
-
-		// fetch(req).then(value => {
-		// 	if (value.ok)
-		// 		return value.json();
-		// 	throw "failed";
-		// }).then(value => {
-		// 	if (value.ok) {
-		// 		$(this.dialog).modal('hide');
-		// 		if (this.callback != null)
-		// 			this.callback();
-		// 	}
-		// 	else
-		// 		throw "failed";
-		// }).catch(err => {
-		// 	$(this.error).show();
-		// });
 	}
 
 	cancel() {
