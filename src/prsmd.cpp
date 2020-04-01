@@ -1055,67 +1055,82 @@ void my_server::admin(const zh::request& request, const zh::scope& scope, zh::re
 
 void my_server::login(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 {
-	std::string username = request.get_parameter("username");
-	std::string password = request.get_parameter("password");
+	try
+	{
+		std::string username = request.get_parameter("username");
+		std::string password = request.get_parameter("password");
 
-	pqxx::transaction tx(m_connection);
+		pqxx::transaction tx(m_connection);
 
-	auto r = tx.prepared("get-password")(username).exec();
+		auto r = tx.prepared("get-password")(username).exec();
 
-	if (r.empty() or r.size() != 1)
-		throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
+		if (r.empty() or r.size() != 1)
+			throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
+				
+		std::string pw = r.front()[0].as<std::string>();
+
+		tx.commit();
+
+		bool valid = false;
+
+		using CryptoPP::SecByteBlock;
+
+		if (pw[0] == '!')
+		{
+			const size_t kBufferSize = kSaltLength + kKeyLength / 8;
+
+			byte b[kBufferSize] = {};
+			CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
+
+			CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
+			SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
+
+			pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
+				b, kSaltLength, kIterations);
 			
-	std::string pw = r.front()[0].as<std::string>();
+			SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
 
-	tx.commit();
+			valid = recoveredkey == test;
+		}
+		else
+		{
+			CryptoPP::Weak::MD5 md5;
 
-	bool valid = false;
+			SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
+			CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
 
-	using CryptoPP::SecByteBlock;
+			md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
 
-	if (pw[0] == '!')
-	{
-		const size_t kBufferSize = kSaltLength + kKeyLength / 8;
+			valid = md5.Verify(test);
+		}
 
-		byte b[kBufferSize] = {};
-		CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
+		if (not valid)
+			throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
 
-		CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
-		SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
+		// so the user was authenticated. Acknowledge and set cookie
+		auto session = SessionStore::instance().create("", username, kPDB_REDO_Session_Realm);
 
-		pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
-			b, kSaltLength, kIterations);
-		
-		SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
+		auto uri = request.get_parameter("uri");
+		if (uri.empty() or ba::ends_with(uri, "login"))
+			uri = "/";
 
-		valid = recoveredkey == test;
-	}
-	else
-	{
-		CryptoPP::Weak::MD5 md5;
-
-		SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
-		CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
-
-		md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
-
-		valid = md5.Verify(test);
-	}
-
-	if (not valid)
-		throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
-
-	// so the user was authenticated. Acknowledge and set cookie
-	auto session = SessionStore::instance().create("", username, kPDB_REDO_Session_Realm);
-
-	auto uri = request.get_parameter("uri");
-
-	if (uri.empty())
-		reply = zh::reply::stock_reply(zh::ok);
-	else
 		reply = zh::reply::redirect(uri);
-	
-	reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "=" + session.token);// + "; Secure");
+		
+		reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "=" + session.token);// + "; Secure");
+	}
+	catch (const zh::unauthorized_exception& ex)
+	{
+		zh::scope scope;
+
+		scope.put("uri", request.get_parameter("uri"));
+		scope.put("param", el::element{
+			{ "error", true }
+		});
+
+		create_reply_from_template("login.html", scope, reply);
+
+		reply.set_status(zh::unauthorized);
+	}
 }
 
 void my_server::loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply)
