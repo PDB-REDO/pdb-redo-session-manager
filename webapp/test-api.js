@@ -46,7 +46,7 @@ class ApiTester {
 			return;
 		}
 
-		const req = new PDBRedoApiRequest(`/ajax/session/${this.token.id}`, {
+		const req = new PDBRedoApiRequest(`/api/session/${this.token.id}`, {
 			method: "DELETE",
 			token: {
 				id: this.token.id,
@@ -83,7 +83,7 @@ class ApiTester {
 			return;
 		}
 
-		const req = new PDBRedoApiRequest(`/ajax/session/${this.token.id}/run`, {
+		const req = new PDBRedoApiRequest(`/api/session/${this.token.id}/run`, {
 			token: {
 				id: this.token.id,
 				secret: this.token.token
