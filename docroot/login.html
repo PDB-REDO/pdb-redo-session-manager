@@ -33,7 +33,7 @@ const nonce = /*[[${nonce}]]*/ null, username = /*[[${username}]]*/ null;
 				<div class="modal-body">
 
 					<form id="local-login-form" z2:action="@{/login}" method="post" class="form-group">
-						<input type="hidden" name="uri" z2:value="${uri}"/>
+						<input type="hidden" name="uri" z2:value="${uri ?: '/'}"/>
 
 						<div z2:if="${param.error}" class="alert alert-warning" role="alert">
 							Invalid username and password.

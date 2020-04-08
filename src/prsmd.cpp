@@ -22,8 +22,7 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/random/random_device.hpp>
 
-#include <zeep/md5.hpp>
-#include <zeep/base64.hpp>
+#include <zeep/crypto.hpp>
 #include <zeep/serialize.hpp>
 #include <zeep/unicode_support.hpp>
 
@@ -79,23 +78,11 @@ fs::path gExePath;
 
 // --------------------------------------------------------------------
 
-std::string get_random_hash()
-{
-	boost::random::random_device rng;
-
-	uint32_t data[4] = { rng(), rng(), rng(), rng() };
-
-	return zeep::md5(data, sizeof(data)).finalise();
-}
-
-// --------------------------------------------------------------------
-
 struct Session
 {
 	unsigned long id = 0;
 	std::string name;
 	std::string user;
-	std::string realm;
 	std::string token;
 	boost::posix_time::ptime created;
 	boost::posix_time::ptime expires;
@@ -105,7 +92,6 @@ struct Session
 		id			= t.at("id").as<unsigned long>();
 		name		= t.at("name").as<std::string>();
 		user		= t.at("user").as<std::string>();
-		realm		= t.at("realm").as<std::string>();
 		token		= t.at("token").as<std::string>();
 		created		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("created").as<std::string>());
 		expires		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("expires").as<std::string>());
@@ -123,7 +109,6 @@ struct Session
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("realm", realm)
 		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("created", created)
 		   & zeep::make_nvp("expires", expires);
@@ -214,7 +199,7 @@ class SessionStore
 		sInstance = nullptr;
 	}
 
-	Session create(const std::string& name, const std::string& user, const std::string& realm);
+	Session create(const std::string& name, const std::string& user);
 
 	Session get_by_id(unsigned long id);
 	Session get_by_token(const std::string& token);
@@ -249,21 +234,20 @@ SessionStore::SessionStore(pqxx::connection& connection)
 	, m_clean(std::bind(&SessionStore::run_clean_thread, this))
 {
 	m_connection.prepare("create-session",
-		R"(INSERT INTO session (user_id, name, realm, token)
-		   VALUES ($1, $2, $3, $4)
+		R"(INSERT INTO session (user_id, name, token)
+		   VALUES ($1, $2, $3)
 		   RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
 			   trim(both '"' from to_json(expires)::text) AS expires)");
 
 	m_connection.prepare("create-admin-session",
-		R"(INSERT INTO session (user_id, name, realm, token, expires)
-		   VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + interval '15 minute')
+		R"(INSERT INTO session (user_id, name, token, expires)
+		   VALUES ($1, $2, $3, CURRENT_TIMESTAMP + interval '15 minute')
 		   RETURNING id, trim(both '"' from to_json(created)::text) AS created)");
 
 	m_connection.prepare("get-session-by-id",
 		R"(SELECT a.id,
 				  a.name AS name,
 				  b.name AS user,
-				  a.realm,
 				  a.token,
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
@@ -274,7 +258,6 @@ SessionStore::SessionStore(pqxx::connection& connection)
 		R"(SELECT a.id,
 				  a.name AS name,
 				  b.name AS user,
-				  a.realm,
 				  a.token,
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
@@ -323,7 +306,7 @@ void SessionStore::run_clean_thread()
 	}
 }
 
-Session SessionStore::create(const std::string& name, const std::string& user, const std::string& realm)
+Session SessionStore::create(const std::string& name, const std::string& user)
 {
 	pqxx::transaction tx(m_connection);
 	auto r = tx.prepared("get-user-id")(user).exec();
@@ -331,14 +314,10 @@ Session SessionStore::create(const std::string& name, const std::string& user, c
 	if (r.empty() or r.size() != 1)
 		throw std::runtime_error("Invalid username/password");
 
-	std::string token = get_random_hash();
+	std::string token = zeep::encode_base64(zeep::random_hash());
 	unsigned long userid = r.front()[0].as<unsigned long>();
 
-	auto stmt = realm == kPDB_REDO_Session_Realm ?
-		tx.prepared("create-admin-session") :
-		tx.prepared("create-session");
-
-	r = stmt(userid)(name)(realm)(token).exec();
+	r = tx.prepared("create-session")(userid)(name)(token).exec();
 
 	if (r.empty() or r.size() != 1)
 		throw std::runtime_error("Error creating session");
@@ -353,7 +332,6 @@ Session SessionStore::create(const std::string& name, const std::string& user, c
 		tokenid,
 		name,
 		user,
-		realm,
 		token,
 		zeep::value_serializer<boost::posix_time::ptime>::from_string(created)
 	};
@@ -447,7 +425,7 @@ class session_rest_controller : public zh::rest_controller
 			// PDB-REDO-api Credential=token-id/date/pdb-redo-apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
 
 			if (not ba::starts_with(authorization, "PDB-REDO-api "))
-				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+				throw zh::unauthorized_exception(kPDB_REDO_API_Realm);
 
 			std::vector<std::string> signedHeaders;
 
@@ -455,14 +433,14 @@ class session_rest_controller : public zh::rest_controller
 
 			std::smatch m;
 			if (not std::regex_search(authorization, m, re))
-				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+				throw zh::unauthorized_exception(kPDB_REDO_API_Realm);
 
 			std::vector<std::string> credentials;
 			std::string credential = m[1].str();
 			ba::split(credentials, credential, ba::is_any_of("/"));
 
 			if (credentials.size() != 3 or credentials[2] != "pdb-redo-api")
-				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+				throw zh::unauthorized_exception(kPDB_REDO_API_Realm);
 
 			auto signature = zeep::decode_base64(m[3].str());
 
@@ -540,7 +518,7 @@ class session_rest_controller : public zh::rest_controller
 			StringSource(stringToSign, true, new HashFilter(hmac2, new StringSink(mac)));
 
 			if (mac != signature)
-				throw zh::unauthorized_exception(false, kPDB_REDO_API_Realm);
+				throw zh::unauthorized_exception(kPDB_REDO_API_Realm);
 		}
 		catch(const std::exception& e)
 		{
@@ -608,7 +586,7 @@ class session_rest_controller : public zh::rest_controller
 		if (not result)
 			throw std::runtime_error("Invalid username/password");
 
-		std::string token = get_random_hash();
+		std::string token = zeep::encode_base64(zeep::random_hash());
 		unsigned long userid = r.front()[1].as<unsigned long>();
 
 		auto t = tx.prepared("create-session")(userid)(name)(kPDB_REDO_API_Realm)(token).exec();
@@ -624,23 +602,6 @@ class session_rest_controller : public zh::rest_controller
 
 		return "ok";
 	}
-
-	// std::vector<Session> get_all_sessions()
-	// {
-	// 	std::vector<Session> result;
-
-	// 	pqxx::transaction tx(m_connection);
-
-	// 	auto rows = tx.prepared("get-session-all").exec();
-	// 	for (auto row: rows)
-	// 	{
-	// 		Session session;
-	// 		session = row;
-	// 		result.push_back(std::move(session));
-	// 	}
-
-	// 	return result;
-	// }
 
 	std::vector<Run> get_all_runs(unsigned long id)
 	{
@@ -681,100 +642,33 @@ class session_rest_controller : public zh::rest_controller
 
 // --------------------------------------------------------------------
 
-struct auth_info
-{
-	auth_info(const std::string& realm)
-		: m_realm(realm)
-	{
-		m_nonce = get_random_hash();
-		m_created = pt::second_clock::local_time();
-	}
 
-	std::string get_challenge() const
-	{
-		return R"(Basic-PDB_REDO realm=")" + m_realm + R"(", nonce=")" + m_nonce + '"';
-	}
-
-	// bool stale() const;
-
-	std::string m_nonce, m_realm;
-	// std::set<uint32_t> m_replay_check;
-	pt::ptime m_created;
-};
-
-class pdb_redo_authenticator : public zh::authentication_validation_base
+class pdb_redo_authenticator : public zh::jws_authentication_validation_base
 {
   public:
-	pdb_redo_authenticator(pqxx::connection& connection)
-		: m_connection(connection) {}
-
-	/// Validate the authorization, returns the validated user. Throws unauthorized_exception in case of failure
-	virtual std::string validate_authentication(const zh::request& req, const std::string& realm)
+	pdb_redo_authenticator(pqxx::connection& connection, const std::string& secret, const std::string& admins)
+		: jws_authentication_validation_base(kPDB_REDO_Session_Realm, secret)
+		, m_connection(connection)
 	{
-		auto session = SessionStore::instance().get_by_token(req.get_cookie(kPDB_REDO_Cookie));
-		if (session and session.realm == realm and not session.expired())
+		ba::split(m_admins, admins, ba::is_any_of(",; "));
+	}
+
+	virtual el::element validate_username_password(const std::string& username, const std::string& password)
+	{
+		el::element credentials;
+
+		for (;;)
 		{
-			return session.user;
-		}
+			pqxx::transaction tx(m_connection);
 
-		std::string authorization = req.get_header("Authorization");
-
-		// There are two options for the authorization string for pdb-redo-auth
-		// The API version, using a token and the regular login one using a username/password
-		
-		// PDB-REDO-login Credential=username/nonce/date, Password=base64encodedpassword
-		// PDB-REDO-api Credential=token-id/nonce/date/apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
-
-		enum ValidationType { Login, Api } type;
-
-		if (ba::starts_with(authorization, "PDB-REDO-login "))
-		{
-			type = Login;
-			authorization.erase(0, 15);
-		}
-		else if (ba::starts_with(authorization, "PDB-REDO-api "))
-		{
-			type = Api;
-			authorization.erase(0, 13);
-		}
-		else
-			throw zh::unauthorized_exception(false, realm);
-
-		std::string name, nonce, date, signature;
-		std::vector<std::string> signedHeaders;
-
-		// Ahhh... std::regex does not support (?| | )
-		// std::regex re(R"rx((\w+)=(?|"([^"]*)"|'([^']*)'|(\w+))(?:,\s*)?)rx");
-		std::regex re(R"rx(Credential=("[^"]*"|'[^']*'|[^,]+),\s*(?:SignedHeaders=("[^"]*"|'[^']*'|[^,]+),\s*Signature=("[^"]*"|'[^']*'|[^,]+)|Password=(\S+))\s*)rx", std::regex::icase);
-
-		std::smatch m;
-		if (not std::regex_search(authorization, m, re))
-			throw zh::unauthorized_exception(false, realm);
-
-		std::unique_lock<std::mutex> lock(m_mutex);
-
-		pqxx::transaction tx(m_connection);
-
-		std::vector<std::string> credentials;
-		std::string credential = m[1].str();
-		ba::split(credentials, credential, ba::is_any_of("/"));
-
-		if (type == Login)
-		{
-			if (credentials.size() != 3 or not m[4].matched)
-				throw zh::unauthorized_exception(false, realm);
-			name = credentials[0];
-			nonce = credentials[1];
-			date = credentials[2];
-
-			std::string password = zeep::decode_base64(m[4].str());
-
-			auto r = tx.prepared("get-password")(name).exec();
+			auto r = tx.prepared("get-password")(username).exec();
 
 			if (r.empty() or r.size() != 1)
-				throw std::runtime_error("Invalid username/password");
-			
+				break;
+					
 			std::string pw = r.front()[0].as<std::string>();
+
+			tx.commit();
 
 			bool valid = false;
 
@@ -784,77 +678,29 @@ class pdb_redo_authenticator : public zh::authentication_validation_base
 			{
 				const size_t kBufferSize = kSaltLength + kKeyLength / 8;
 
-				byte b[kBufferSize] = {};
-				CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
+				std::string b = zeep::decode_base64(pw.substr(1));
+				std::string test = zeep::pbkdf2_hmac_sha1(b.substr(0, kSaltLength), password, kIterations, kKeyLength / 8);
 
-				CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
-				SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
-
-				pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
-					b, kSaltLength, kIterations);
-				
-				SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
-
-				valid = recoveredkey == test;
+				if (b.substr(kSaltLength) != test)
+					break;
 			}
 			else
 			{
-				CryptoPP::Weak::MD5 md5;
-
-				SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
-				CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
-
-				md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
-
-				valid = md5.Verify(test);
+				if  (zeep::encode_base64(zeep::md5(password)) != pw)
+					break;
 			}
 
-			if (not valid)
-				throw zh::unauthorized_exception(false, realm);
-		}
-		else	// Api
-		{
-			if (credentials.size() != 4 or credentials[3] != "apiv2")
-				throw zh::unauthorized_exception(false, realm);
-			name = credentials[0];
-			nonce = credentials[1];
-			date = credentials[2];
+			credentials["username"] = username;
+			credentials["admin"] = m_admins.count(username);
+			break;
 		}
 
-		// // get the secret
-
-		// if (type == )
-
-
-		// bool result = false;
-
-		// if (not result)
-		// 	throw std::runtime_error("Invalid username/password");
-
-		// return info["username"];		
-		// return "maarten";
-
-		return name;
-	}
-
-	/// Add e.g. headers to reply for an unauthorized request
-	virtual void add_headers(zh::reply& rep, const std::string& realm, bool stale)
-	{
-		std::unique_lock<std::mutex> lock(m_mutex);
-
-		m_auth_info.push_back(auth_info(realm));
-
-		std::string challenge = m_auth_info.back().get_challenge();
-		if (stale)
-			challenge += ", stale=\"true\"";
-
-		rep.set_header("WWW-Authenticate", challenge);
+		return credentials;
 	}
 
   private:
-	std::mutex m_mutex;
 	pqxx::connection& m_connection;
-	std::deque<auth_info> m_auth_info;
+	std::set<std::string> m_admins;
 };
 
 // --------------------------------------------------------------------
@@ -869,7 +715,7 @@ class session_server : public session_server_base
 {
   public:
 
-	session_server(const std::string& dbConnectString, const std::string& admin, const std::string& pdbRedoDir)
+	session_server(const std::string& dbConnectString, const std::string& admin, const std::string& pdbRedoDir, const std::string& secret)
 		: session_server_base((fs::current_path() / "docroot").string())
 		, m_connection(dbConnectString)
 		, m_pdb_redo_dir(pdbRedoDir)
@@ -883,12 +729,12 @@ class session_server : public session_server_base
 		// get administrators
 		ba::split(m_admins, admin, ba::is_any_of(",; "));
 
-		set_authenticator(new pdb_redo_authenticator(m_connection));
+		set_authenticator(new pdb_redo_authenticator(m_connection, secret, admin), true);
 	
 		mount("", &session_server::welcome);
-		mount("login", &session_server::login);
+		// mount("login", &session_server::login);
 		mount("login-dialog", &session_server::loginDialog);
-		mount("logout", &session_server::logout);
+		// mount("logout", &session_server::logout);
 		mount("admin", kPDB_REDO_Session_Realm, &session_server::admin);
 
 		mount("css", &session_server::handle_file);
@@ -919,11 +765,7 @@ class session_server : public session_server_base
 
 	void welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void admin(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-	void login(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-	void logout(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-
-	void create_unauth_reply(const zh::request& req, bool stale, const std::string& realm, zh::reply& rep);
 
   private:
 	pqxx::connection m_connection;
@@ -935,12 +777,9 @@ void session_server::welcome(const zh::request& request, const zh::scope& scope,
 {
 	zh::scope sub(scope);
 
-	auto session = SessionStore::instance().get_by_token(request.get_cookie(kPDB_REDO_Cookie));
-
-	if (session)
-	{
-		sub.put("username", session.user);
-	}
+	auto credentials = scope.lookup("credentials");
+	if (credentials)
+		sub.put("username", credentials["username"]);
 
 	create_reply_from_template("index.html", sub, reply);
 }
@@ -960,115 +799,9 @@ void session_server::admin(const zh::request& request, const zh::scope& scope, z
 	create_reply_from_template("admin.html", sub, reply);
 }
 
-void session_server::login(const zh::request& request, const zh::scope& scope, zh::reply& reply)
-{
-	try
-	{
-		std::string username = request.get_parameter("username");
-		std::string password = request.get_parameter("password");
-
-		pqxx::transaction tx(m_connection);
-
-		auto r = tx.prepared("get-password")(username).exec();
-
-		if (r.empty() or r.size() != 1)
-			throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
-				
-		std::string pw = r.front()[0].as<std::string>();
-
-		tx.commit();
-
-		bool valid = false;
-
-		using CryptoPP::SecByteBlock;
-
-		if (pw[0] == '!')
-		{
-			const size_t kBufferSize = kSaltLength + kKeyLength / 8;
-
-			byte b[kBufferSize] = {};
-			CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
-
-			CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> pbkdf;
-			SecByteBlock recoveredkey(CryptoPP::AES::DEFAULT_KEYLENGTH);
-
-			pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
-				b, kSaltLength, kIterations);
-			
-			SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
-
-			valid = recoveredkey == test;
-		}
-		else
-		{
-			CryptoPP::Weak::MD5 md5;
-
-			SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
-			CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
-
-			md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
-
-			valid = md5.Verify(test);
-		}
-
-		if (not valid)
-			throw zh::unauthorized_exception(false, kPDB_REDO_Session_Realm);
-
-		// so the user was authenticated. Acknowledge and set cookie
-		auto session = SessionStore::instance().create("", username, kPDB_REDO_Session_Realm);
-
-		auto uri = request.get_parameter("uri");
-		if (uri.empty() or ba::ends_with(uri, "login"))
-			uri = "/";
-
-		reply = zh::reply::redirect(uri);
-		
-		reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "=" + session.token);// + "; Secure");
-	}
-	catch (const zh::unauthorized_exception& ex)
-	{
-		zh::scope scope;
-
-		scope.put("uri", request.get_parameter("uri"));
-		scope.put("param", el::element{
-			{ "error", true }
-		});
-
-		create_reply_from_template("login.html", scope, reply);
-
-		reply.set_status(zh::unauthorized);
-	}
-}
-
 void session_server::loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 {
 	create_reply_from_template("login::#login-dialog", scope, reply);
-}
-
-// --------------------------------------------------------------------
-
-void session_server::logout(const zh::request& request, const zh::scope& scope, zh::reply& reply)
-{
-	auto session = SessionStore::instance().get_by_token(request.get_cookie(kPDB_REDO_Cookie));
-
-	if (session)
-		SessionStore::instance().delete_by_id(session.id);
-
-	reply = zh::reply::redirect("/");
-	reply.set_header("Set-Cookie", kPDB_REDO_Cookie + "; Expires=Thu, 01 Jan 1970 00:00:01 GMT;");
-}
-
-// --------------------------------------------------------------------
-
-void session_server::create_unauth_reply(const zh::request& req, bool stale, const std::string& realm, zh::reply& reply)
-{
-	zh::scope scope;
-
-	scope.put("uri", req.uri);
-
-	create_reply_from_template("login.html", scope, reply);
-
-	reply.set_status(zh::unauthorized);
 }
 
 // --------------------------------------------------------------------
@@ -1098,7 +831,8 @@ int main(int argc, const char* argv[])
 		("db-dbname",		po::value<std::string>(),	"Database name")
 		("db-user",			po::value<std::string>(),	"Database user name")
 		("db-password",		po::value<std::string>(),	"Database password")
-		("admin",			po::value<std::string>(),	"Administrators, list of usernames separated by comma");
+		("admin",			po::value<std::string>(),	"Administrators, list of usernames separated by comma")
+		("secret",			po::value<std::string>(),	"Secret value, used in signing access tokens");
 
 	po::options_description hidden("hidden options");
 	hidden.add_options()
@@ -1185,9 +919,18 @@ Command should be either:
 		std::string admin = vm["admin"].as<std::string>();
 		std::string pdbRedoDir = vm["pdb-redo-dir"].as<std::string>();
 
-		zh::daemon server([cs = ba::join(vConn, " "), admin, pdbRedoDir]()
+		std::string secret;
+		if (vm.count("secret"))
+			secret = vm["secret"].as<std::string>();
+		else
 		{
-			return new session_server(cs, admin, pdbRedoDir);
+			secret = zeep::encode_base64(zeep::random_hash());
+			std::cerr << "starting with created secret " << secret << std::endl;
+		}
+
+		zh::daemon server([cs = ba::join(vConn, " "), secret, admin, pdbRedoDir]()
+		{
+			return new session_server(cs, admin, pdbRedoDir, secret);
 		}, APP_NAME );
 
 		std::string user = "www-data";

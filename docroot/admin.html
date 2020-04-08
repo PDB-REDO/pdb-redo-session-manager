@@ -22,7 +22,6 @@
 			<thead>
 				<tr>
 					<th scope="col">#</th>
-					<th scope="col">Realm</th>
 					<th scope="col">User</th>
 					<th scope="col">Session Name</th>
 					<th scope="col">Session ID</th>
@@ -34,7 +33,6 @@
 			<tbody>
 				<tr z2:each="session, i: ${sessions}">
 					<th scope="row" z2:text="${i.count}"></th>
-					<td z2:text="${session.realm}"></td>
 					<td z2:text="${session.user}"></td>
 					<td z2:text="${session.name}"></td>
 					<td z2:text="${session.id}"></td>
