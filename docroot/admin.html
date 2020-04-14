@@ -9,9 +9,16 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
 
 	<title>PDB-REDO Session Manager - Admin console</title>
+
+	<script src="scripts/admin.js"></script>
 </head>
 
 <body>
+
+<script z2:inline="javascript">
+	const _csrf = /*[[${csrfToken}]]*/ null;
+</script>
+
 	<nav z2:replace="~{menu :: navbar('admin')}" />
 
 	<div class="container-fluid">
@@ -28,6 +35,7 @@
 					<th scope="col">Token</th>
 					<th scope="col">Created</th>
 					<th scope="col">Expires</th>
+					<th scope="col">Action</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -39,6 +47,7 @@
 					<td z2:text="${session.token}"></td>
 					<td z2:text="${#dates.format(session.created, '%d %B %Y, %H:%M')}"></td>
 					<td z2:text="${#dates.format(session.expires, '%d %B %Y, %H:%M')}"></td>
+					<td><a class="action" href="javascript:void(0);" z2:attr="data-sessionid=${session.id}"><i class="fa fa-trash"></i></a></td>
 				</tr>
 			</tbody>
 		</table>

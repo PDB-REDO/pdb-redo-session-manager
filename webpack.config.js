@@ -10,6 +10,7 @@ module.exports = (env) => {
 	const webpackConf = {
 		entry: {
 			polyfill: '@babel/polyfill',
+			admin: SCRIPTS + "admin.js",
 			index: SCRIPTS + "index.js",
 			login: SCRIPTS + "login.js",
 			request: SCRIPTS + "request.js",

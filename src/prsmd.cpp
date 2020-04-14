@@ -589,7 +589,7 @@ class session_rest_controller : public zh::rest_controller
 		std::string token = zeep::encode_base64(zeep::random_hash());
 		unsigned long userid = r.front()[1].as<unsigned long>();
 
-		auto t = tx.prepared("create-session")(userid)(name)(kPDB_REDO_API_Realm)(token).exec();
+		auto t = tx.prepared("create-session")(userid)(name)(token).exec();
 
 		tx.commit();
 
@@ -732,15 +732,12 @@ class session_server : public session_server_base
 		set_authenticator(new pdb_redo_authenticator(m_connection, secret, admin), true);
 	
 		mount("", &session_server::welcome);
-		// mount("login", &session_server::login);
 		mount("login-dialog", &session_server::loginDialog);
-		// mount("logout", &session_server::logout);
 		mount("admin", kPDB_REDO_Session_Realm, &session_server::admin);
 
-		mount("css", &session_server::handle_file);
-		mount("scripts", &session_server::handle_file);
-		mount("fonts", &session_server::handle_file);
-		mount("images", &session_server::handle_file);
+		mount("{css,scripts,fonts,images}/", &session_server::handle_file);
+
+		mount("admin/deleteSession", kPDB_REDO_Session_Realm, zh::method_type::DELETE, &session_server::handle_delete_session);
 
 		m_connection.prepare("get-password", "SELECT password, id FROM auth_user WHERE name = $1");
 
@@ -750,8 +747,7 @@ class session_server : public session_server_base
 				trim(both '"' from to_json(a.expires)::text) AS expires,
 				a.name AS name,
 				b.name AS user,
-				a.token AS token,
-				a.realm as realm
+				a.token AS token
 			   FROM session a, auth_user b
 			   WHERE a.user_id = b.id
 			   ORDER BY a.created ASC)");
@@ -766,6 +762,8 @@ class session_server : public session_server_base
 	void welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void admin(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 	void loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+
+	void handle_delete_session(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 
   private:
 	pqxx::connection m_connection;
@@ -802,6 +800,18 @@ void session_server::admin(const zh::request& request, const zh::scope& scope, z
 void session_server::loginDialog(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 {
 	create_reply_from_template("login::#login-dialog", scope, reply);
+}
+
+void session_server::handle_delete_session(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+{
+	if (m_admins.count(request.username) == 0)
+		throw std::runtime_error("Insufficient priviliges to access admin page");
+
+	unsigned long sessionID = std::stoul(request.get_parameter("sessionid", "0"));
+	if (sessionID != 0)
+		SessionStore::instance().delete_by_id(sessionID);
+
+	reply = zh::reply::stock_reply(zh::ok);
 }
 
 // --------------------------------------------------------------------

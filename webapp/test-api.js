@@ -16,21 +16,25 @@ class ApiTester {
 		const form = document.forms["token-form"];
 		const data = new FormData(form);
 
+		let statusOK;
 		fetch(form.action, {
 			method: "POST",
 			body: data
 		}).then(response => {
-			if (response.ok)
-				return response.json();
-			throw response;
+			statusOK = response.ok;
+			return response.json();
 		}).then(token => {
-			this.token = token;
-			const tokenForm = document.forms["delete-token-form"];
-			tokenForm["token-id"].value = token.id;
-			tokenForm["token-name"].value = token.name;
-			tokenForm["token-secret"].value = token.token;
-			tokenForm["token-expires"].value = new Date(token.expires);
-
+			if (statusOK) {
+				this.token = token;
+				const tokenForm = document.forms["delete-token-form"];
+				tokenForm["token-id"].value = token.id;
+				tokenForm["token-name"].value = token.name;
+				tokenForm["token-secret"].value = token.token;
+				tokenForm["token-expires"].value = new Date(token.expires);
+			}
+			else {
+				throw token.error;
+			}
 		}).catch(err => {
 			console.log(err);
 			alert("Failed to get token " + err);
@@ -54,8 +58,12 @@ class ApiTester {
 			}
 		});
 
+		let statusOK;
 		fetch(req).then(response => {
-			if (response.ok)
+			statusOK = response.ok;
+			return response.json();
+		}).then(data => {
+			if (statusOK)
 			{
 				const tokenForm = document.forms["delete-token-form"];
 				tokenForm["token-id"].value = "";
@@ -64,10 +72,7 @@ class ApiTester {
 				tokenForm["token-expires"].value = null;				
 			}
 			else
-				return response.json();
-		}).then(err => {
-			if (typeof err === 'object' && err.error)
-				throw err.error;
+				throw data.error;
 		}).catch(err => {
 			console.log(err);
 			alert("Failed to get token " + err);
@@ -90,33 +95,35 @@ class ApiTester {
 			}
 		});
 
+		let statusOK;
 		fetch(req)
-		.then(response => response.json())
-		.then(data => {
-			if (typeof data === 'object' && data.error)
-				throw data.error;
-			
-			const tbody = document.querySelector("#run-table tbody");
-			[...tbody.querySelectorAll("tr")].forEach(tr => tbody.removeChild(tr));
+			.then(response => {
+				statusOK = response.ok;
+				return response.json()
+			})
+			.then(data => {
+				if (! statusOK)
+					throw data.error;
+				
+				const tbody = document.querySelector("#run-table tbody");
+				[...tbody.querySelectorAll("tr")].forEach(tr => tbody.removeChild(tr));
 
-			let i = 0;
-			for (let run of data) {
-				const row = document.createElement("tr");
-				const td1 = document.createElement("td");
-				td1.textContent = `${++i}`;
-				row.appendChild(td1);
-				const td2 = document.createElement("td");
-				td2.textContent = run.name;
-				row.appendChild(td2);
-				tbody.appendChild(row);
-			}
+				let i = 0;
+				for (let run of data) {
+					const row = document.createElement("tr");
+					const td1 = document.createElement("td");
+					td1.textContent = `${++i}`;
+					row.appendChild(td1);
+					const td2 = document.createElement("td");
+					td2.textContent = run.name;
+					row.appendChild(td2);
+					tbody.appendChild(row);
+				}
 
-		}).catch(err => {
-			console.log(err);
-			alert("Failed to list runs: " + err);
-		});
-		
-
+			}).catch(err => {
+				console.log(err);
+				alert("Failed to list runs: " + err);
+			});
 	}
 
 }
