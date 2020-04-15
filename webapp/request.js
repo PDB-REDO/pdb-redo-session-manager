@@ -70,7 +70,7 @@ export class PDBRedoApiRequest extends Request {
 		const headers = new Headers(init.headers);
 		headers.append('Authorization', 
 			`PDB-REDO-api Credential=${credential},SignedHeaders=host;x-pdb-redo-content-sha256,Signature=${signature.toString(Base64)}`);
-		headers.append('X-PDB_REDO-Date', timestamp);
+		headers.append('X-PDB-REDO-Date', timestamp);
 		init.headers = headers;
 
 		super(input, init);

@@ -494,7 +494,7 @@ class session_rest_controller : public zh::rest_controller
 			auto canonicalRequestHash = zeep::encode_base64(std::string((char*)b.data(), b.m_size));
 
 			// string to sign
-			auto timestamp = req.get_header("X-PDB_REDO-Date");
+			auto timestamp = req.get_header("X-PDB-REDO-Date");
 
 			std::ostringstream ss2;
 			ss2 << "PDB-REDO-api" << std::endl
@@ -596,11 +596,9 @@ class session_rest_controller : public zh::rest_controller
 		return t.front();
 	}
 
-	std::string delete_session(unsigned long id)
+	void delete_session(unsigned long id)
 	{
 		SessionStore::instance().delete_by_id(id);
-
-		return "ok";
 	}
 
 	std::vector<Run> get_all_runs(unsigned long id)

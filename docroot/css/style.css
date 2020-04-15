@@ -30,3 +30,11 @@ ul.error-info {
 	margin: 0;
 	list-style: none;
 }
+
+a.action {
+	color: #888;
+}
+
+a.action:hover {
+	color: #555;
+}
