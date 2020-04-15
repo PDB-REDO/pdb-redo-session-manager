@@ -33,21 +33,6 @@
 
 #include <pqxx/pqxx>
 
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include <cryptopp/cryptlib.h>
-#include <cryptopp/osrng.h>
-#include <cryptopp/sha.h>
-#include <cryptopp/aes.h>
-#include <cryptopp/hex.h>
-#include <cryptopp/integer.h>
-#include <cryptopp/pwdbased.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/base64.h>
-#include <cryptopp/gcm.h>
-#include <cryptopp/files.h>
-#include <cryptopp/filters.h>
-#include <cryptopp/md5.h>
-
 #include "mrsrc.h"
 
 namespace zh = zeep::http;
@@ -463,20 +448,7 @@ class session_rest_controller : public zh::rest_controller
 					ps << '&';
 			}
 
-			using CryptoPP::SHA256;
-			using CryptoPP::SecByteBlock;
-			using CryptoPP::HMAC;
-			using CryptoPP::StringSource;
-			using CryptoPP::StringSink;
-			using CryptoPP::Base64Encoder;
-			using CryptoPP::HashFilter;
-
-			SHA256 sha256;
-
-			SecByteBlock b(SHA256::DIGESTSIZE);
-			sha256.Update(reinterpret_cast<const byte*>(req.payload.c_str()), req.payload.length());
-			sha256.Final(b);
-			auto contentHash = zeep::encode_base64(std::string((char*)b.data(), b.m_size));
+			auto contentHash = zeep::encode_base64(zeep::sha256(req.payload));
 
 			std::ostringstream ss;
 			ss << to_string(req.method) << std::endl
@@ -486,12 +458,7 @@ class session_rest_controller : public zh::rest_controller
 			   << contentHash;
 
 			auto canonicalRequest = ss.str();
-
-			sha256 = {};
-			sha256.Update(reinterpret_cast<const byte*>(canonicalRequest.c_str()), canonicalRequest.length());
-			sha256.Final(b);
-
-			auto canonicalRequestHash = zeep::encode_base64(std::string((char*)b.data(), b.m_size));
+			auto canonicalRequestHash = zeep::encode_base64(zeep::sha256(canonicalRequest));
 
 			// string to sign
 			auto timestamp = req.get_header("X-PDB-REDO-Date");
@@ -509,15 +476,8 @@ class session_rest_controller : public zh::rest_controller
 			auto secret = SessionStore::instance().get_by_id(std::stoul(tokenid)).token;
 			auto keyString = "PDB-REDO" + secret;
 
-	        std::string key;
-			HMAC<SHA256> hmac(reinterpret_cast<const byte*>(keyString.c_str()), keyString.length());
-			StringSource(date, true, new HashFilter(hmac, new StringSink(key)));
-
-			std::string mac;
-			HMAC<SHA256> hmac2(reinterpret_cast<const byte*>(key.c_str()), key.length());
-			StringSource(stringToSign, true, new HashFilter(hmac2, new StringSink(mac)));
-
-			if (mac != signature)
+			auto key = zeep::hmac_sha256(date, keyString);
+			if (zeep::hmac_sha256(stringToSign, key) != signature)
 				throw zh::unauthorized_exception(kPDB_REDO_API_Realm);
 		}
 		catch(const std::exception& e)
@@ -548,40 +508,16 @@ class session_rest_controller : public zh::rest_controller
 
 		bool result = false;
 
-		using CryptoPP::SHA256;
-		using CryptoPP::SecByteBlock;
-		using CryptoPP::HMAC;
-		using CryptoPP::SHA1;
-		using CryptoPP::AES;
-
 		if (pw[0] == '!')
 		{
-			const size_t kBufferSize = kSaltLength + kKeyLength / 8;
+			auto pb = zeep::decode_base64(pw.substr(1));
+			auto salt = pb.substr(0, kSaltLength);
 
-			byte b[kBufferSize] = {};
-			CryptoPP::StringSource(pw.substr(1), true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(b, sizeof(b))));
-
-			CryptoPP::PKCS5_PBKDF2_HMAC<SHA1> pbkdf;
-			SecByteBlock recoveredkey(AES::DEFAULT_KEYLENGTH);
-
-			pbkdf.DeriveKey(recoveredkey, recoveredkey.size(), 0x00, (byte*)password.c_str(), password.length(),
-				b, kSaltLength, kIterations);
-			
-			SecByteBlock test(b + kSaltLength, CryptoPP::AES::DEFAULT_KEYLENGTH);
-
-			result = recoveredkey == test;
+			auto test = zeep::pbkdf2_hmac_sha1(salt, password.c_str(), kIterations, kKeyLength / 8);
+			result = test == pb.substr(kSaltLength);
 		}
 		else
-		{
-			CryptoPP::Weak::MD5 md5;
-
-			SecByteBlock test(CryptoPP::Weak::MD5::BLOCKSIZE);
-			CryptoPP::StringSource(pw, true, new CryptoPP::Base64Decoder(new CryptoPP::ArraySink(test, test.size())));
-
-			md5.Update(reinterpret_cast<const byte*>(password.c_str()), password.length());
-
-			result = md5.Verify(test);
-		}
+			result = zeep::md5(password) == zeep::decode_base64(pw);
 
 		if (not result)
 			throw std::runtime_error("Invalid username/password");
@@ -668,25 +604,16 @@ class pdb_redo_authenticator : public zh::jws_authentication_validation_base
 
 			tx.commit();
 
-			bool valid = false;
-
-			using CryptoPP::SecByteBlock;
-
 			if (pw[0] == '!')
 			{
-				const size_t kBufferSize = kSaltLength + kKeyLength / 8;
-
 				std::string b = zeep::decode_base64(pw.substr(1));
 				std::string test = zeep::pbkdf2_hmac_sha1(b.substr(0, kSaltLength), password, kIterations, kKeyLength / 8);
 
 				if (b.substr(kSaltLength) != test)
 					break;
 			}
-			else
-			{
-				if  (zeep::encode_base64(zeep::md5(password)) != pw)
-					break;
-			}
+			else if (zeep::encode_base64(zeep::md5(password)) != pw)
+				break;
 
 			credentials["username"] = username;
 			credentials["admin"] = m_admins.count(username);

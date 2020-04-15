@@ -6,7 +6,6 @@ use warnings;
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
 use PDBRedo::Api();
-use Data::Dumper;
 
 # ---------------------------------------------------------------------
 
