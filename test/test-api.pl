@@ -10,7 +10,7 @@ use PDBRedo::Api();
 # ---------------------------------------------------------------------
 
 my %token = (
-	id => 15, secret => 'CQYTJ5fv1ZyPQGE2h/ph7A=='
+	id => 23, secret => 'DB_MOiltiSA-P5j-d41IKg'
 );
 
 my $ua = PDBRedo::Api->new(
@@ -23,7 +23,22 @@ my $ua = PDBRedo::Api->new(
 
 $ua->env_proxy;
 
-my $response = $ua->get("http://localhost:10339/api/session/${token{id}}/run");
+my $response = $ua->post("http://localhost:10339/api/session/${token{id}}/run",
+	Content_Type => 'form-data',
+	Content => [
+		'pdb-file' => [ '/tmp/1cbs/1cbs.cif.gz' ],
+		'mtz-file' => [ '/tmp/1cbs/1cbs_map.mtz' ]
+	]);
+
+
+if ($response->is_success) {
+	print $response->decoded_content;
+}
+else {
+	die $response->status_line;
+}
+
+$response = $ua->get("http://localhost:10339/api/session/${token{id}}/run");
 
 if ($response->is_success) {
 	print $response->decoded_content;

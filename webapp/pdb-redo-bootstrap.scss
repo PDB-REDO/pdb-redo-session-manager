@@ -40,35 +40,17 @@ $nav-link-padding-y: $spacer / 2;
 	  }
 	}
 }
-  
-// 		@include hover-focus() {
-// 		  color: $navbar-dark-hover-color;
-// 		}
-  
-// 		&.disabled {
-// 		  color: $navbar-dark-disabled-color;
-// 		}
-// 	  }
-  
-// 	  .show > .nav-link,
-// 	  .active > .nav-link,
-// 	  .nav-link.show,
-// 	  .nav-link.active {
-// 		color: $navbar-dark-active-color;
-// 	  }
-// 	}
-
 
 // for the pdb-redo header
 
 header {
-    height: 6em;
+    min-height: 6em;
     padding-bottom: 1em;
 }
 
 .h-left {
     float: left;
-    height: 6em;
+    min-height: 6em;
     width: 10em;
 }
 
@@ -78,7 +60,7 @@ header {
 }
 
 .h-left img {
-    height: calc(6em + 30px);
+	min-height: calc(6em + 30px);
 	margin: -15px 0;
 	width: auto;
 }
@@ -88,7 +70,7 @@ header div.first, header div.second {
     /*font-size: small;*/
     /*margin-left: 6em;*/
     padding: 1em !important;
-    height: 3em;
+	min-height: 3em;
 }
 
 header a {
@@ -137,7 +119,7 @@ header div.second div.clear {
 @media all and (max-width: 1024px) {
 
     header {
-        height: 4em;
+        min-height: 4em;
     }
 
     .h-left {
@@ -150,7 +132,7 @@ header div.second div.clear {
     }
 
     header img {
-        height: calc(4em + 30px);
+       min-height: calc(4em + 30px);
     }
 
     header div.first, header div.second {

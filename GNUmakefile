@@ -79,7 +79,10 @@ $(OBJDIR):
 
 APPLICATION = prsmd
 
-OBJECTS = $(APPLICATION:%=$(OBJDIR)/%.o) $(APPLICATION:%=$(OBJDIR)/%_rsrc.o) 
+OBJECTS = \
+	$(APPLICATION:%=$(OBJDIR)/%.o) \
+	$(APPLICATION:%=$(OBJDIR)/%_rsrc.o) \
+	$(OBJDIR)/run-service.o
 	
 -include $(OBJECTS:%.o=%.d)
 

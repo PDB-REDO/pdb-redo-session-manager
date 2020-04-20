@@ -46,7 +46,9 @@ sub sign_request
 	my $tokenSecret = $ua->{token_secret};
 	
 	my $contentDigest = pad(sha256_base64($request->content));
-	
+
+	print STDERR $contentDigest, "\n";
+
 	my $uri = URI->new($request->uri);
 	my $path = $uri->path;
 	my $host = $uri->host;
@@ -64,6 +66,7 @@ sub sign_request
 	my $credential = "${tokenID}/${date}/pdb-redo-api";
 	my $stringToSign = join("\n", "PDB-REDO-api", $timestamp, $credential, $canonicalRequestHash);
 	my $key = hmac_sha256($date, "PDB-REDO${tokenSecret}");
+
 	my $signature = pad(hmac_sha256_base64($stringToSign, $key));
 	
 	$request->header('X-PDB-REDO-Date', $timestamp);

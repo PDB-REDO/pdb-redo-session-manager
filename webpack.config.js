@@ -66,7 +66,8 @@ module.exports = (env) => {
 			new CleanWebpackPlugin(),
 			new webpack.ProvidePlugin({
 				$: 'jquery',
-				jQuery: 'jquery'
+				jQuery: 'jquery',
+				Popper: ['popper.js', 'default']
 			})
 		]
 	};

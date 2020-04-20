@@ -107,6 +107,14 @@ struct CreateSessionResult
 	std::string token;
 	boost::posix_time::ptime expires;
 
+	CreateSessionResult(const Session& session)
+		: id(session.id)
+		, name(session.name)
+		, token(session.token)
+		, expires(session.expires)
+	{
+	}
+
 	CreateSessionResult(const pqxx::tuple& t)
 		: id(t.at("id").as<unsigned long>())
 		, name(t.at("name").as<std::string>())
@@ -299,7 +307,7 @@ Session SessionStore::create(const std::string& name, const std::string& user)
 	if (r.empty() or r.size() != 1)
 		throw std::runtime_error("Invalid username/password");
 
-	std::string token = zeep::encode_base64(zeep::random_hash());
+	std::string token = zeep::encode_base64url(zeep::random_hash());
 	unsigned long userid = r.front()[0].as<unsigned long>();
 
 	r = tx.prepared("create-session")(userid)(name)(token).exec();
@@ -387,6 +395,9 @@ class session_rest_controller : public zh::rest_controller
 		// create a new session, user should provide username, password and session name
 		map_post_request("session", &session_rest_controller::post_session, "user", "password", "name");
 
+		// get session info
+		map_get_request("session/{id}", kPDB_REDO_API_Realm, &session_rest_controller::get_session, "id");
+
 		// delete a session
 		map_delete_request("session/{id}", kPDB_REDO_API_Realm, &session_rest_controller::delete_session, "id");
 
@@ -395,6 +406,10 @@ class session_rest_controller : public zh::rest_controller
 
 		// // return info for a run
 		// map_get_request("session/{id}/run/{run}", kPDB_REDO_API_Realm, &session_rest_controller::get_run, "id", "run");
+
+		// Submit a run (job)
+		map_post_request("session/{id}/run", kPDB_REDO_API_Realm, &session_rest_controller::create_job, "id",
+			"mtz-file", "pdb-file", "restraints-file", "sequence-file");
 	}
 
 	virtual bool validate_request(zh::request& req, zh::reply& rep, const std::string& realm)
@@ -522,7 +537,7 @@ class session_rest_controller : public zh::rest_controller
 		if (not result)
 			throw std::runtime_error("Invalid username/password");
 
-		std::string token = zeep::encode_base64(zeep::random_hash());
+		std::string token = zeep::encode_base64url(zeep::random_hash());
 		unsigned long userid = r.front()[1].as<unsigned long>();
 
 		auto t = tx.prepared("create-session")(userid)(name)(token).exec();
@@ -530,6 +545,11 @@ class session_rest_controller : public zh::rest_controller
 		tx.commit();
 
 		return t.front();
+	}
+
+	CreateSessionResult get_session(unsigned long id)
+	{
+		return SessionStore::instance().get_by_id(id);
 	}
 
 	void delete_session(unsigned long id)
@@ -568,6 +588,12 @@ class session_rest_controller : public zh::rest_controller
 
 	// 	return { { s.str(), user } };
 	// }
+
+	std::string create_job(unsigned long sessionID, const std::string& diffractionData, const std::string& coordinates,
+		const std::string& restraints, const std::string& sequence)
+	{
+		return "hello, world!";
+	}
 
   private:
 	pqxx::connection& m_connection;
