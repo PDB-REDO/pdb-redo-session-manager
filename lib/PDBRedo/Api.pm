@@ -47,8 +47,6 @@ sub sign_request
 	
 	my $contentDigest = pad(sha256_base64($request->content));
 
-	print STDERR $contentDigest, "\n";
-
 	my $uri = URI->new($request->uri);
 	my $path = $uri->path;
 	my $host = $uri->host;

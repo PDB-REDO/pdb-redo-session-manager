@@ -33,6 +33,8 @@
 
 #include <pqxx/pqxx>
 
+#include "user-service.hpp"
+#include "run-service.hpp"
 #include "mrsrc.h"
 
 namespace zh = zeep::http;
@@ -159,19 +161,6 @@ struct CreateSessionResult
 
 // --------------------------------------------------------------------
 
-struct Run
-{
-	std::string name;
-
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
-	{
-		ar & zeep::make_nvp("name", name);
-	}
-};
-
-// --------------------------------------------------------------------
-
 class SessionStore
 {
   public:
@@ -257,9 +246,6 @@ SessionStore::SessionStore(pqxx::connection& connection)
 		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
 		   WHERE a.token = $1)");
 
-	m_connection.prepare("get-user-id",
-		R"(SELECT id FROM auth_user WHERE name = $1)");
-
 	m_connection.prepare("delete-by-id",
 		R"(DELETE FROM session WHERE id = $1)");
 
@@ -301,16 +287,13 @@ void SessionStore::run_clean_thread()
 
 Session SessionStore::create(const std::string& name, const std::string& user)
 {
-	pqxx::transaction tx(m_connection);
-	auto r = tx.prepared("get-user-id")(user).exec();
+	User u = UserService::instance().get_user(user);
 
-	if (r.empty() or r.size() != 1)
-		throw std::runtime_error("Invalid username/password");
+	pqxx::transaction tx(m_connection);
 
 	std::string token = zeep::encode_base64url(zeep::random_hash());
-	unsigned long userid = r.front()[0].as<unsigned long>();
 
-	r = tx.prepared("create-session")(userid)(name)(token).exec();
+	auto r = tx.prepared("create-session")(u.id)(name)(token).exec();
 
 	if (r.empty() or r.size() != 1)
 		throw std::runtime_error("Error creating session");
@@ -561,21 +544,7 @@ class session_rest_controller : public zh::rest_controller
 	{
 		auto session = SessionStore::instance().get_by_id(id);
 
-		auto userDir = m_pdb_redo_dir / "runs" / session.user;
-
-		std::vector<Run> result;
-
-		if (fs::exists(userDir))
-		{
-			for (fs::directory_iterator run(userDir); run != fs::directory_iterator(); ++run)
-			{
-				if (not run->is_directory())
-					continue;
-				result.push_back({ run->path().filename().string() });
-			}
-		}
-
-		return result;
+		return RunService::instance().get_runs_for_user(session.user);
 	}
 
 	// std::vector<Session> get_all_sessions_for_user(std::string user)
@@ -589,10 +558,12 @@ class session_rest_controller : public zh::rest_controller
 	// 	return { { s.str(), user } };
 	// }
 
-	std::string create_job(unsigned long sessionID, const std::string& diffractionData, const std::string& coordinates,
-		const std::string& restraints, const std::string& sequence)
+	Run create_job(unsigned long sessionID, const zh::file_param& diffractionData, const zh::file_param& coordinates,
+		const zh::file_param& restraints, const zh::file_param& sequence)
 	{
-		return "hello, world!";
+		auto session = SessionStore::instance().get_by_id(sessionID);
+
+		return RunService::instance().submit(session.user, coordinates, diffractionData, restraints, sequence, {});
 	}
 
   private:
@@ -671,6 +642,7 @@ class session_server : public session_server_base
 		, m_connection(dbConnectString)
 		, m_pdb_redo_dir(pdbRedoDir)
 	{
+		UserService::init(m_connection);
 		SessionStore::init(m_connection);
 
 		register_tag_processor<zh::tag_processor_v2>("http://www.hekkelman.com/libzeep/m2");
@@ -784,6 +756,7 @@ int main(int argc, const char* argv[])
 	
 	config.add_options()
 		("pdb-redo-dir",	po::value<std::string>(),	"Directory containing PDB-REDO server data")
+		("runs-dir",		po::value<std::string>(),	"Directory containing PDB-REDO server run directories")
 		("address",			po::value<std::string>(),	"External address, default is 0.0.0.0")
 		("port",			po::value<uint16_t>(),		"Port to listen to, default is 10339")
 		("user,u",			po::value<std::string>(),	"User to run the daemon")
@@ -879,7 +852,12 @@ Command should be either:
 
 		std::string admin = vm["admin"].as<std::string>();
 		std::string pdbRedoDir = vm["pdb-redo-dir"].as<std::string>();
+		std::string runsDir = pdbRedoDir + "/runs";
+		if (vm.count("runs-dir"))
+			runsDir = vm["runs-dir"].as<std::string>();
 
+		RunService::init(runsDir);
+		
 		std::string secret;
 		if (vm.count("secret"))
 			secret = vm["secret"].as<std::string>();

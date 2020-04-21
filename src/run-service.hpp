@@ -7,8 +7,10 @@
 
 #include <string>
 #include <memory>
+#include <filesystem>
 
 #include <zeep/el/element.hpp>
+#include <zeep/http/request.hpp>
 
 enum class RunStatus
 {
@@ -23,9 +25,6 @@ enum class RunStatus
     DELETING
 };
 
-std::string to_string(RunStatus status);
-RunStatus from_string(const std::string& status);
-
 // --------------------------------------------------------------------
 
 struct Run
@@ -33,6 +32,8 @@ struct Run
 	uint32_t id;
 	std::string user;
 	RunStatus status;
+
+	static Run create(const std::filesystem::path& dir, const std::string& username);
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -53,13 +54,15 @@ class RunService
 	RunService(const RunService&) = delete;
 	RunService& operator=(const RunService&) = delete;
 
-	Run submit(const std::string& user, const std::string& pdb, const std::string& mtz,
-		const std::string& restraints, const std::string& sequence, const zeep::el::element& params);
+	Run submit(const std::string& user, const zeep::http::file_param& pdb, const zeep::http::file_param& mtz,
+		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::el::element& params);
+
+	std::vector<Run> get_runs_for_user(const std::string& username);
 
   private:
 
 	RunService(const std::string& runsDir);
 
 	static std::unique_ptr<RunService> sInstance;
-	std::string m_runsdir;
+	std::filesystem::path m_runsdir;
 };

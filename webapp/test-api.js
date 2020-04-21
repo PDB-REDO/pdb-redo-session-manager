@@ -1,5 +1,6 @@
 import { PDBRedoApiRequest } from './request' ;
 import 'bootstrap';
+import bsCustomFileInput from 'bs-custom-file-input';
 
 class ApiTester {
 	constructor() {
@@ -193,14 +194,13 @@ class ApiTester {
 				const tbody = document.querySelector("#run-table tbody");
 				[...tbody.querySelectorAll("tr")].forEach(tr => tbody.removeChild(tr));
 
-				let i = 0;
 				for (let run of data) {
 					const row = document.createElement("tr");
 					const td1 = document.createElement("td");
-					td1.textContent = `${++i}`;
+					td1.textContent = run.id;
 					row.appendChild(td1);
 					const td2 = document.createElement("td");
-					td2.textContent = run.name;
+					td2.textContent = run.status;
 					row.appendChild(td2);
 					tbody.appendChild(row);
 				}
@@ -210,12 +210,11 @@ class ApiTester {
 				alert("Failed to list runs: " + err);
 			});
 	}
-
-
-
 }
 
 window.addEventListener('load', () => {
+	bsCustomFileInput.init();
+
 	new ApiTester();
 
 	$(function () {

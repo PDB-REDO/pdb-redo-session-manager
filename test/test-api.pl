@@ -32,17 +32,17 @@ my $response = $ua->post("http://localhost:10339/api/session/${token{id}}/run",
 
 
 if ($response->is_success) {
-	print $response->decoded_content;
+	print $response->decoded_content, "\n";
 }
 else {
 	die $response->status_line;
 }
 
-$response = $ua->get("http://localhost:10339/api/session/${token{id}}/run");
+# $response = $ua->get("http://localhost:10339/api/session/${token{id}}/run");
 
-if ($response->is_success) {
-	print $response->decoded_content;
-}
-else {
-	die $response->status_line;
-}
+# if ($response->is_success) {
+# 	print $response->decoded_content;
+# }
+# else {
+# 	die $response->status_line;
+# }
