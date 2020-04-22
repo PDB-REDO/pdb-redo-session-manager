@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+use JSON;
+
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
 use PDBRedo::Api();
@@ -23,26 +25,40 @@ my $ua = PDBRedo::Api->new(
 
 $ua->env_proxy;
 
+my %params = ('paired' => 0);
+
 my $response = $ua->post("http://localhost:10339/api/session/${token{id}}/run",
 	Content_Type => 'form-data',
 	Content => [
-		'pdb-file' => [ '/tmp/1cbs/1cbs.cif.gz' ],
-		'mtz-file' => [ '/tmp/1cbs/1cbs_map.mtz' ]
+		'pdb-file'		=> [ '/tmp/1cbs/1cbs.cif.gz' ],
+		'mtz-file'		=> [ '/tmp/1cbs/1cbs_map.mtz' ],
+		'parameters'	=> encode_json(\%params)
 	]);
 
+die "Could not submit job: " . $response->status_line unless $response->is_success;
 
-if ($response->is_success) {
-	print $response->decoded_content, "\n";
+my $r = decode_json($response->decoded_content);
+my $runID = $r->{id};
+my $status = $r->{status};
+
+printf "Job with id %d has now status '%s'\n", $runID, $status;
+
+while (1)
+{
+	sleep(5);
+
+	$response = $ua->get("http://localhost:10339/api/session/${token{id}}/run/${runID}");
+	die "Failed to get run status: " . $response->status_line unless $response->is_success;
+
+	$r = decode_json($response->decoded_content);
+
+	printf "Job with id %d has now status '%s'\n", $runID, $r->{status};
+
+	last if $r->{status} eq 'stopped' or $r->{status} eq 'ended';
 }
-else {
-	die $response->status_line;
-}
 
-# $response = $ua->get("http://localhost:10339/api/session/${token{id}}/run");
+$response = $ua->get("http://localhost:10339/api/session/${token{id}}/run/${runID}/output/process.log");
 
-# if ($response->is_success) {
-# 	print $response->decoded_content;
-# }
-# else {
-# 	die $response->status_line;
-# }
+die "Could not retrieve the process log" unless $response->is_success;
+
+print $response->decoded_content, "\n";

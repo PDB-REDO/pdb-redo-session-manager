@@ -58,6 +58,9 @@ class RunService
 		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::el::element& params);
 
 	std::vector<Run> get_runs_for_user(const std::string& username);
+	Run get_run(const std::string& username, unsigned long runID);
+
+	std::filesystem::path get_result_file(const std::string& username, unsigned long runID, const std::string& file);
 
   private:
 

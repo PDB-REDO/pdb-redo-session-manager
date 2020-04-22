@@ -6,6 +6,10 @@
 #include <stdexcept>
 #include <cassert>
 #include <regex>
+#include <fstream>
+
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "run-service.hpp"
 #include "user-service.hpp"
@@ -114,6 +118,8 @@ RunService& RunService::instance()
 Run RunService::submit(const std::string& user, const zh::file_param& pdb, const zh::file_param& mtz,
 	const zh::file_param& restraints, const zh::file_param& sequence, const zeep::el::element& params)
 {
+	using namespace std::literals;
+
 	// create user directory first, if needed
 	auto userDir = m_runsdir / user;
 	if (not fs::exists(userDir))
@@ -133,16 +139,54 @@ Run RunService::submit(const std::string& user, const zh::file_param& pdb, const
 	
 	fs::create_directory(runDir);
 	fs::create_directory(runDir / "output");
-	fs::create_directory(runDir / "input");
 
-	// for (auto&& [type, file]: { { "PDB", pdb }, { "MTZ", mtz }, { "CIF", restraints }, { "SEQ", sequence }})
-	// {
-	// 	fs::create_directory(runDir / "input" / type);
+	std::pair<const char*, const zh::file_param&> files[] = {
+		{ "PDB", pdb }, { "MTZ", mtz }, { "CIF", restraints }, { "SEQ", sequence }
+	};
 
+	std::ofstream info(runDir / "info.txt");
 
-	// }
+	using namespace boost::posix_time;
+	ptime now = second_clock::local_time();
 
+	info << to_iso_extended_string(now);
 
+	for (auto&& [type, file]: files)
+	{
+		if (not file)
+			continue;
+
+		auto dir = runDir / "input" / type;
+		fs::create_directories(dir);
+
+		auto filename = file.filename;
+		if (filename.empty())
+			filename = "input."s + type;
+
+		std::ofstream os(dir / filename, std::ios::binary);
+
+		os.write(file.data, file.length);
+
+		info << ':' << type << '=' << filename;
+	}
+
+	// write parameters;
+
+	if (not params.is_null())
+	{
+		// backward compatible
+		info << ":PAIRED=" << (params["paired"] ? 1 : 0);
+
+		std::ofstream paramsFile(runDir / "params.json");
+		paramsFile << params;
+	}
+
+	info << std::endl;
+
+	// create a flag to start processing
+	std::ofstream start(runDir / "startingProcess.txt");
+	
+	run.status = RunStatus::STARTING;
 
 	return run;
 }
@@ -182,3 +226,39 @@ std::vector<Run> RunService::get_runs_for_user(const std::string& username)
 
 	return result;
 }
+
+Run RunService::get_run(const std::string& username, unsigned long runID)
+{
+	Run result;
+
+	auto dir = m_runsdir / username;
+
+	if (fs::exists(dir))
+	{
+		std::ostringstream s;
+		s << std::setw(10) << std::setfill('0') << runID;
+
+		result = Run::create(dir / s.str(), username);
+	}
+
+	return result;
+}
+
+fs::path RunService::get_result_file(const std::string& username, unsigned long runID, const std::string& file)
+{
+	auto dir = m_runsdir / username;
+
+	if (not fs::exists(dir))
+		throw std::runtime_error("Run does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << runID;
+
+	fs::path result = dir / s.str() / "output" / file;
+
+	if (not fs::exists(result))
+		throw std::runtime_error("Result file does not exist");
+
+	return result;
+}
+

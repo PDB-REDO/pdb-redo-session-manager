@@ -387,12 +387,15 @@ class session_rest_controller : public zh::rest_controller
 		// return a list of runs
 		map_get_request("session/{id}/run", kPDB_REDO_API_Realm, &session_rest_controller::get_all_runs, "id");
 
-		// // return info for a run
-		// map_get_request("session/{id}/run/{run}", kPDB_REDO_API_Realm, &session_rest_controller::get_run, "id", "run");
-
 		// Submit a run (job)
 		map_post_request("session/{id}/run", kPDB_REDO_API_Realm, &session_rest_controller::create_job, "id",
-			"mtz-file", "pdb-file", "restraints-file", "sequence-file");
+			"mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters");
+
+		// return info for a run
+		map_get_request("session/{id}/run/{run}", kPDB_REDO_API_Realm, &session_rest_controller::get_run, "id", "run");
+
+		// get a result file
+		map_get_request("session/{id}/run/{run}/output/{file}", kPDB_REDO_API_Realm, &session_rest_controller::get_result_file, "id", "run", "file");
 	}
 
 	virtual bool validate_request(zh::request& req, zh::reply& rep, const std::string& realm)
@@ -559,11 +562,25 @@ class session_rest_controller : public zh::rest_controller
 	// }
 
 	Run create_job(unsigned long sessionID, const zh::file_param& diffractionData, const zh::file_param& coordinates,
-		const zh::file_param& restraints, const zh::file_param& sequence)
+		const zh::file_param& restraints, const zh::file_param& sequence, const el::element& params)
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
-		return RunService::instance().submit(session.user, coordinates, diffractionData, restraints, sequence, {});
+		return RunService::instance().submit(session.user, coordinates, diffractionData, restraints, sequence, params);
+	}
+
+	Run get_run(unsigned long sessionID, unsigned long runID)
+	{
+		auto session = SessionStore::instance().get_by_id(sessionID);
+
+		return RunService::instance().get_run(session.user, runID);
+	}
+
+	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string& file)
+	{
+		auto session = SessionStore::instance().get_by_id(sessionID);
+
+		return RunService::instance().get_result_file(session.user, runID, file);
 	}
 
   private:
