@@ -49,7 +49,7 @@ ZEEP_LIBS			:= $(ZEEP_LIBS:%=zeep-%)
 BOOST_INC_DIR       = $(BOOST:%=%/include)
 BOOST_LIB_DIR       = $(BOOST:%=%/lib)
 
-BOOST_LIBS          = system thread regex random program_options date_time locale
+BOOST_LIBS          = iostreams system thread regex random program_options date_time locale
 BOOST_LIBS          := $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 
 LIBS                := $(ZEEP_LIBS) $(BOOST_LIBS) stdc++ stdc++fs m pthread $(LIBS)

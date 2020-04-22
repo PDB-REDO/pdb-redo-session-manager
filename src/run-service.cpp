@@ -10,12 +10,19 @@
 
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/copy.hpp>
+
+#include <zeep/streambuf.hpp>
 
 #include "run-service.hpp"
 #include "user-service.hpp"
 
 namespace fs = std::filesystem;
 namespace zh = zeep::http;
+namespace io = boost::iostreams;
 
 // --------------------------------------------------------------------
 
@@ -156,18 +163,33 @@ Run RunService::submit(const std::string& user, const zh::file_param& pdb, const
 		if (not file)
 			continue;
 
+		zeep::char_streambuf sb(file.data, file.length);
+		std::istream infile(&sb);
+
+		io::filtering_stream<io::input> in;
+		fs::path input = file.filename.empty() ? "input."s + type : file.filename;
+
+		if (input.extension() == ".bz2")
+		{
+			in.push(io::bzip2_decompressor());
+			input = input.stem();
+		}
+		else if (input.extension() == ".gz")
+		{
+			in.push(io::gzip_decompressor());
+			input = input.stem();
+		}
+
+		in.push(infile);
+
 		auto dir = runDir / "input" / type;
 		fs::create_directories(dir);
 
-		auto filename = file.filename;
-		if (filename.empty())
-			filename = "input."s + type;
+		std::ofstream out(dir / input, std::ios::binary);
 
-		std::ofstream os(dir / filename, std::ios::binary);
+		io::copy(in, out);
 
-		os.write(file.data, file.length);
-
-		info << ':' << type << '=' << filename;
+		info << ':' << type << '=' << input;
 	}
 
 	// write parameters;
