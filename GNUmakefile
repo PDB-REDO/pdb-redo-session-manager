@@ -52,7 +52,7 @@ BOOST_LIB_DIR       = $(BOOST:%=%/lib)
 BOOST_LIBS          = iostreams system thread regex random program_options date_time locale
 BOOST_LIBS          := $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 
-LIBS                := $(ZEEP_LIBS) $(BOOST_LIBS) stdc++ stdc++fs m pthread $(LIBS)
+LIBS                := $(ZEEP_LIBS) $(BOOST_LIBS) stdc++ stdc++fs m pthread $(LIBS) z bz2
 LDFLAGS             += $(ZEEP_LIB_DIR:%=-L%) $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 ifeq "$(DEBUG)" "1"

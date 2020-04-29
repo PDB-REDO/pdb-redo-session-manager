@@ -88,17 +88,17 @@ class ApiTester {
 
 		const form = document.forms["fetch-token-form"];
 		const tokenID = form["token-id"].value;
-		
-		const req = new PDBRedoApiRequest(`/api/session/${tokenID}`, {
+
+		let statusOK;
+
+		PDBRedoApiRequest.create(`/api/session/${tokenID}`, {
 			method: "GET",
 			token: {
 				id: tokenID,
 				secret: form["token-secret"].value
 			}
-		});
-
-		let statusOK;
-		fetch(req).then(response => {
+		}).then(req => fetch(req))
+		  .then(response => {
 			statusOK = response.ok;
 			return response.json();
 		}).then(token => {
@@ -124,28 +124,17 @@ class ApiTester {
 
 		const fd = new FormData(form);
 
-		
+		let statusOK;
 
-
-		const rq2 = new Request(`/api/session/${tokenID}/run`, {
-			method: "POST",
-			body: fd
-		});
-
-
-
-		
-		const req = new PDBRedoApiRequest(`/api/session/${tokenID}/run`, {
+		PDBRedoApiRequest.create(`/api/session/${tokenID}/run`, {
 			method: "POST",
 			token: {
 				id: tokenID,
 				secret: form["token-secret"].value
 			},
 			body: fd
-		});
-
-		let statusOK;
-		fetch(req).then(response => {
+		}).then(req => fetch(req))
+		  .then(response => {
 			statusOK = response.ok;
 			return response.json();
 		}).then(token => {
@@ -155,11 +144,13 @@ class ApiTester {
 				tokenForm["token-name"].value = token.name;
 				tokenForm["token-expires"].value = token.expires;
 			}
+			else if (token.error !== undefined)
+				throw token.error;
 			else
-				throw data.error;
+				throw 'unknown error';
 		}).catch(err => {
 			console.log(err);
-			alert("Failed to get token " + err);
+			alert(`Failed to get token: ${err}`);
 		});		
 
 	}

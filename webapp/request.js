@@ -2,13 +2,17 @@ import sha256 from "crypto-js/sha256";
 import hmacSHA256 from "crypto-js/hmac-sha256";
 import Base64 from "crypto-js/enc-base64";
 
+const CryptoJS = require('crypto-js');
+
 export class PDBRedoApiRequest extends Request {
-	constructor(input, init) {
+	constructor(input, init, bodyhash) {
 
 		// decode the input url, parse out the pathname, params, etc
 		var url = document.createElement('a');
 		url.href = input;
-		
+
+		const headers = new Headers(init.headers);
+
 		const query = url.search;
 
 		// sort the params
@@ -31,20 +35,27 @@ export class PDBRedoApiRequest extends Request {
 		if (typeof(init.method) != 'string')
 			init.method = 'GET';
 
-		let contentHash;
+		let contentHash = bodyhash;
 
-		switch (typeof(init.body))
-		{
-			case 'undefined':
-				contentHash = sha256('');
-				break;
-
-			case 'string':
-				contentHash = sha256(init.body);
-				break;
-			
-			default:
-				throw "PDBRedoApiRequest only accepts a string body";
+		if (contentHash === undefined) {
+			switch (typeof(init.body))
+			{
+				case 'undefined':
+					contentHash = sha256('');
+					break;
+	
+				case 'string':
+						contentHash = sha256(init.body);
+					break;
+				
+				// FormData?
+				case 'object':
+					if (init.body instanceof FormData)
+						throw "Use PDBRedoApiRequest.create() to create a request with a FormData body";
+	
+				default:
+					throw "PDBRedoApiRequest only accepts a string body";
+			}
 		}
 
 		const canonicalRequest = [init.method, url.pathname, params, url.host, contentHash.toString(Base64)].join("\n");
@@ -67,7 +78,6 @@ export class PDBRedoApiRequest extends Request {
 		const key = hmacSHA256(date, `PDB-REDO${token.secret}`);
 		const signature = hmacSHA256(stringToSign, key);
 
-		const headers = new Headers(init.headers);
 		headers.append('Authorization', 
 			`PDB-REDO-api Credential=${credential},SignedHeaders=host;x-pdb-redo-content-sha256,Signature=${signature.toString(Base64)}`);
 		headers.append('X-PDB-REDO-Date', timestamp);
@@ -75,4 +85,69 @@ export class PDBRedoApiRequest extends Request {
 
 		super(input, init);
 	}
+
+	static create(input, init) {
+
+		if (init.body instanceof FormData) {
+			return Promise.all([...init.body]
+					.map(e => e[1])
+					.filter(v => v instanceof File)
+					.map(f => f.arrayBuffer()))
+				.then(files => {
+					const sep = `${sha256(Math.random() + '-' + Math.random()).toString(Base64)}`;
+
+					const h = CryptoJS.algo.SHA256.create();
+					const fields = [];
+				
+					let fi = 0;
+					for (let p of init.body) {
+						let [name, value] = p;
+				
+						if (value instanceof File) {
+							const buffer = files[fi++];
+
+							const f1 = `--${sep}\r\nContent-Disposition: form-data; name="${name}"; filename="${value.name}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
+							const f2 = "\r\n";
+
+							fields.push(f1);
+							fields.push(buffer);
+							fields.push(f2);
+
+							const wa = CryptoJS.lib.WordArray.create(buffer);
+
+							h.update(f1);
+							h.update(wa);
+							h.update(f2);
+						}
+						else {
+							const f = `--${sep}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`;
+							fields.push(f);
+							h.update(f);
+						}
+					}
+				
+					const tail = `--${sep}--\r\n`; 
+					fields.push(tail);
+					h.update(tail);
+				
+					const hs = h.finalize().toString(Base64);
+					const blob = new Blob(fields);
+				
+					init.body = blob;
+
+					if (init.headers === undefined)
+						init.headers = new Headers();
+
+					init.headers.set('Content-Type', `multipart/form-data; boundary=${sep}`);
+
+					return new PDBRedoApiRequest(input, init, hs);
+				});
+		}
+		else {
+			return new Promise((resolve) => {
+				resolve(new PDBRedoApiRequest(input, init));
+			});
+		}
+	}
+
 }
