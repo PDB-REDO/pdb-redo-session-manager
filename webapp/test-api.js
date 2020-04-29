@@ -6,10 +6,9 @@ class ApiTester {
 	constructor() {
 		document.forms["token-form"].addEventListener("submit", (evt) => this.createToken(evt));
 		document.forms["delete-token-form"].addEventListener("submit", (evt) => this.deleteToken(evt));
-		document.getElementById("fetch-runs-btn").addEventListener('click', (evt) => this.fetchRuns(evt));
-
 		document.forms["fetch-token-form"].addEventListener('submit', (evt) => this.fetchToken(evt));
 		document.forms["submit-job-form"].addEventListener('submit', (evt) => this.submitJob(evt));
+		document.forms["fetch-runs-form"].addEventListener('submit', (evt) => this.fetchRuns(evt));
 
 		this.token = null;
 	}
@@ -137,38 +136,33 @@ class ApiTester {
 		  .then(response => {
 			statusOK = response.ok;
 			return response.json();
-		}).then(token => {
+		}).then(job => {
 			if (statusOK)
 			{
-				const tokenForm = document.forms["fetch-token-result"];
-				tokenForm["token-name"].value = token.name;
-				tokenForm["token-expires"].value = token.expires;
+				const submitResultForm = document.forms["submit-job-result"];
+				submitResultForm["job-id"].value = job.id;
+				submitResultForm["job-status"].value = job.status;
 			}
-			else if (token.error !== undefined)
-				throw token.error;
+			else if (job.error !== undefined)
+				throw job.error;
 			else
 				throw 'unknown error';
 		}).catch(err => {
 			console.log(err);
 			alert(`Failed to get token: ${err}`);
 		});		
-
 	}
 
-
 	fetchRuns(e) {
-		if (e) e.preventDefault();
+		e.preventDefault();
 
-		if (typeof this.token === 'undefined')
-		{
-			alert("Please create a token first");
-			return;
-		}
+		const form = document.forms["fetch-runs-form"];
+		const tokenID = form["token-id"].value;
 
-		const req = new PDBRedoApiRequest(`/api/session/${this.token.id}/run`, {
+		const req = new PDBRedoApiRequest(`/api/session/${tokenID}/run`, {
 			token: {
-				id: this.token.id,
-				secret: this.token.token
+				id: tokenID,
+				secret: form["token-secret"].value
 			}
 		});
 

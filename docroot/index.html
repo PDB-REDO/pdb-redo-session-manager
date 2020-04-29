@@ -239,20 +239,20 @@
 				<form id="submit-job-result">
 					<div class="input-group input-group-sm mb-3">
 						<div class="input-group-prepend">
-							<span class="input-group-text">name</span>
+							<span class="input-group-text">job id</span>
 						</div>
 
-						<input class="form-control form-control-sm" maxlength="254" id="token-name" name="token-name"
+						<input class="form-control form-control-sm" maxlength="254" id="job-id" name="job-id"
 							type="text" readonly="readonly" />
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
 						<div class="input-group-prepend">
-							<span class="input-group-text">expires</span>
+							<span class="input-group-text">job status</span>
 						</div>
 
-						<input class="form-control form-control-sm" maxlength="254" id="token-expires"
-							name="token-expires" type="datetime" readonly="readonly" />
+						<input class="form-control form-control-sm" maxlength="254" id="job-status"
+							name="job-status" type="text" readonly="readonly" />
 					</div>
 				</form>
 			</div>
@@ -270,7 +270,24 @@
 
 				<h6>Using token</h6>
 
-				<button type="button" id="fetch-runs-btn" class="btn btn-primary mt-3 mb-3">Fetch Runs</button>
+				<form id="fetch-runs-form" action="#" enctype="multipart/form-data" class="mb-5">
+					<div class="input-group input-group-sm mb-3">
+						<div class="input-group-prepend">
+							<span class="input-group-text">Token id</span>
+						</div>
+						<input class="form-control form-control-sm" maxlength="6" name="token-id" type="text" pattern="[0-9]+" />
+					</div>
+
+					<div class="input-group input-group-sm mb-3">
+						<div class="input-group-prepend">
+							<span class="input-group-text">Token secret</span>
+						</div>
+
+						<input class="form-control form-control-sm" maxlength="254" name="token-secret" type="text" />
+					</div>
+
+					<button type="submit" form="fetch-runs-form" class="btn btn-primary mt-3">Submit</button>
+				</form>
 
 				<table id="run-table" class="table table-striped table-sm">
 					<thead>
