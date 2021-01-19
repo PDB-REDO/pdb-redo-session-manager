@@ -47,26 +47,26 @@ The `id` should be stored along with the secret `token`.
 
 Once you have a session ID and secret, you can access the following services:
 
-		// get session info
-		GET "https://services.pdb-redo.eu/api/session/{id}"
+	// get session info
+	GET "https://services.pdb-redo.eu/api/session/{id}"
 
-		// delete a session
-		DELETE "https://services.pdb-redo.eu/api/session/{id}"
+	// delete a session
+	DELETE "https://services.pdb-redo.eu/api/session/{id}"
 
-		// return a list of runs
-		GET "https://services.pdb-redo.eu/api/session/{id}/run"
+	// return a list of runs
+	GET "https://services.pdb-redo.eu/api/session/{id}/run"
 
-		// Submit a run (job)
-		POST "session/{id}/run"
-			<- { "mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters" }
+	// Submit a run (job)
+	POST "session/{id}/run"
+		<- { "mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters" }
 
-		// return info for a run
-		GET "https://services.pdb-redo.eu/api/session/{id}/run/{run}"
+	// return info for a run
+	GET "https://services.pdb-redo.eu/api/session/{id}/run/{run}"
 
-		// get a result file
-		GET "https://services.pdb-redo.eu/api/session/{id}/run/{run}/output/{file}"
+	// get a result file
+	GET "https://services.pdb-redo.eu/api/session/{id}/run/{run}/output/{file}"
 
-Each request should be signed using the token. The actual implementation will be described later, for now look at the `test-api.js` or `lib/API.pm` files.
+Each request should be signed using the token. The actual implementation will be described later, for now look at the `test-api.js` or `lib/API.pm` and `test/test-api.pl` files.
 
 The submit call expects a JSON object containing the named parameters containing the contents of the files. The parameters object is currently very limited: it can contain a single boolean name `paired` to indicate the run should do a paired refinement.
 
