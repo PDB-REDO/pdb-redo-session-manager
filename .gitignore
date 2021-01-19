@@ -1,0 +1,17 @@
+node_modules
+docroot/scripts/
+docroot/fonts/
+autom4te.cache/
+.vscode/
+obj/
+obj.dbg/
+src/prsm-config.hpp*
+src/mrsrc.h
+rsrc/version.txt
+config/m4
+prsmd
+libtool
+version-info-*.txt
+configure
+config.status
+config.log

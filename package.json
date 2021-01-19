@@ -9,30 +9,31 @@
     "build": "webpack --config webpack.config.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.7",
-    "@babel/polyfill": "^7.8.7",
-    "@babel/preset-env": "^7.8.7",
+    "@babel/core": "^7.12.10",
+    "@babel/polyfill": "^7.12.1",
+    "@babel/preset-env": "^7.12.11",
     "@fortawesome/fontawesome": "^1.1.8",
-    "@fortawesome/fontawesome-free": "^5.12.1",
-    "babel-loader": "^8.0.6",
+    "@fortawesome/fontawesome-free": "^5.15.2",
+    "babel-loader": "^8.2.2",
     "clean-webpack-plugin": "^3.0.0",
-    "css-loader": "^3.4.2",
-    "eslint": "^6.8.0",
-    "file-loader": "^5.1.0",
-    "imports-loader": "^0.8.0",
-    "node-sass": "^4.13.1",
-    "sass-loader": "^8.0.2",
-    "style-loader": "^1.1.3",
+    "css-loader": "^5.0.1",
+    "eslint": "^7.18.0",
+    "file-loader": "^6.2.0",
+    "imports-loader": "^1.2.0",
+    "node-sass": "^5.0.0",
+    "sass-loader": "^10.1.1",
+    "style-loader": "^2.0.0",
     "uglify-js-plugin": "^0.0.6",
-    "url-loader": "^3.0.0",
-    "webpack": "^4.42.0",
-    "webpack-cli": "^3.3.11"
+    "url-loader": "^4.1.1",
+    "webpack": "^5.15.0",
+    "webpack-cli": "^4.3.1"
   },
   "dependencies": {
-    "bootstrap": "^4.4.1",
+    "bootstrap": "^4.5.3",
     "bs-custom-file-input": "^1.3.4",
+    "crypto-browserify": "^3.12.0",
     "crypto-js": "^4.0.0",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.1",
     "popper.js": "^1.16.1"
   }
 }
