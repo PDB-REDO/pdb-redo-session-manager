@@ -49,6 +49,7 @@ std::string to_string(RunStatus status)
 		case RunStatus::DELETING:
 			return "deleting";
 	}
+	throw std::runtime_error("Invalid status value");
 }
 
 RunStatus from_string(const std::string& status)
@@ -123,7 +124,7 @@ RunService& RunService::instance()
 }
 
 Run RunService::submit(const std::string& user, const zh::file_param& pdb, const zh::file_param& mtz,
-	const zh::file_param& restraints, const zh::file_param& sequence, const zeep::el::element& params)
+	const zh::file_param& restraints, const zh::file_param& sequence, const zeep::json::element& params)
 {
 	using namespace std::literals;
 

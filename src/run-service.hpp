@@ -9,7 +9,7 @@
 #include <memory>
 #include <filesystem>
 
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 #include <zeep/http/request.hpp>
 
 enum class RunStatus
@@ -55,7 +55,7 @@ class RunService
 	RunService& operator=(const RunService&) = delete;
 
 	Run submit(const std::string& user, const zeep::http::file_param& pdb, const zeep::http::file_param& mtz,
-		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::el::element& params);
+		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::json::element& params);
 
 	std::vector<Run> get_runs_for_user(const std::string& username);
 	Run get_run(const std::string& username, unsigned long runID);
