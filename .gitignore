@@ -17,3 +17,4 @@ config.status
 config.log
 GNUmakefile
 aclocal.m4
+base64-tabel.sh
