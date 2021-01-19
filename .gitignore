@@ -15,3 +15,5 @@ version-info-*.txt
 configure
 config.status
 config.log
+GNUmakefile
+aclocal.m4

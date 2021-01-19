@@ -353,31 +353,65 @@ std::vector<Session> SessionStore::get_all_sessions()
 class session_rest_controller : public zh::rest_controller
 {
   public:
-	session_rest_controller(const std::string& pdbRedoDir)
+	session_rest_controller()
 		: zh::rest_controller("api")
-		, m_pdb_redo_dir(pdbRedoDir)
 	{
 		// create a new session, user should provide username, password and session name
 		map_post_request("session", &session_rest_controller::post_session, "user", "password", "name");
+	}
 
+	// CRUD routines
+	CreateSessionResult post_session(std::string user, std::string password, std::string name)
+	{
+		User u = UserService::instance().get_user(user);
+		std::string pw = u.password;
+
+		prsm_pw_encoder pwenc;
+
+		if (not pwenc.matches(password, u.password))
+			throw std::runtime_error("Invalid username/password");
+
+		std::string token = zeep::encode_base64url(zeep::random_hash());
+		unsigned long userid = u.id;
+
+		pqxx::transaction tx(prsm_db_connection::instance());
+		auto t = tx.exec1(
+			R"(INSERT INTO session (user_id, name, token)
+			   VALUES ()" + std::to_string(userid) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
+			RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
+					  trim(both '"' from to_json(expires)::text) AS expires)");
+
+		tx.commit();
+
+		return t;
+	}
+};
+
+class api_rest_controller : public zh::rest_controller
+{
+  public:
+	api_rest_controller(const std::string& pdbRedoDir)
+		: zh::rest_controller("api")
+		, m_pdb_redo_dir(pdbRedoDir)
+	{
 		// get session info
-		map_get_request("session/{id}", &session_rest_controller::get_session, "id");
+		map_get_request("session/{id}", &api_rest_controller::get_session, "id");
 
 		// delete a session
-		map_delete_request("session/{id}", &session_rest_controller::delete_session, "id");
+		map_delete_request("session/{id}", &api_rest_controller::delete_session, "id");
 
 		// return a list of runs
-		map_get_request("session/{id}/run", &session_rest_controller::get_all_runs, "id");
+		map_get_request("session/{id}/run", &api_rest_controller::get_all_runs, "id");
 
 		// Submit a run (job)
-		map_post_request("session/{id}/run", &session_rest_controller::create_job, "id",
+		map_post_request("session/{id}/run", &api_rest_controller::create_job, "id",
 			"mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters");
 
 		// return info for a run
-		map_get_request("session/{id}/run/{run}", &session_rest_controller::get_run, "id", "run");
+		map_get_request("session/{id}/run/{run}", &api_rest_controller::get_run, "id", "run");
 
 		// get a result file
-		map_get_request("session/{id}/run/{run}/output/{file}", &session_rest_controller::get_result_file, "id", "run", "file");
+		map_get_request("session/{id}/run/{run}/output/{file}", &api_rest_controller::get_result_file, "id", "run", "file");
 	}
 
 	virtual bool handle_request(zh::request& req, zh::reply& rep)
@@ -478,30 +512,6 @@ class session_rest_controller : public zh::rest_controller
 	}
 
 	// CRUD routines
-	CreateSessionResult post_session(std::string user, std::string password, std::string name)
-	{
-		User u = UserService::instance().get_user(user);
-		std::string pw = u.password;
-
-		prsm_pw_encoder pwenc;
-
-		if (not pwenc.matches(password, u.password))
-			throw std::runtime_error("Invalid username/password");
-
-		std::string token = zeep::encode_base64url(zeep::random_hash());
-		unsigned long userid = u.id;
-
-		pqxx::transaction tx(prsm_db_connection::instance());
-		auto t = tx.exec1(
-			R"(INSERT INTO session (user_id, name, token)
-			   VALUES ()" + std::to_string(userid) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
-			RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
-					  trim(both '"' from to_json(expires)::text) AS expires)");
-
-		tx.commit();
-
-		return t;
-	}
 
 	CreateSessionResult get_session(unsigned long id)
 	{
@@ -752,7 +762,8 @@ Command should be either:
 			s->add_controller(new zh::login_controller());
 
 			s->add_controller(new prsm_html_controller(pdbRedoDir));
-			s->add_controller(new session_rest_controller(pdbRedoDir));
+			s->add_controller(new session_rest_controller());
+			s->add_controller(new api_rest_controller(pdbRedoDir));
 
 			return s;
 		}, APP_NAME );
