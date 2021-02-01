@@ -35,10 +35,10 @@ use PDBRedo::Api();
 
 # ---------------------------------------------------------------------
 
-my $PDB_REDO_ADDRESS = 'http://services.pdb-redo.eu/';
+my $PDB_REDO_ADDRESS = 'https://services.pdb-redo.eu/';
 
 my %token = (
-	id => 23, secret => 'DB_MOiltiSA-P5j-d41IKg'
+	id => 33, secret => 'y9TbhVUuM6-JRnfidiF1Bw'
 );
 
 my $ua = PDBRedo::Api->new(
@@ -52,6 +52,10 @@ my $ua = PDBRedo::Api->new(
 $ua->env_proxy;
 
 my %params = ('paired' => 0);
+
+$ua->get("${PDB_REDO_ADDRESS}api/session/${token{id}}/run/23");
+exit;
+
 
 my $response = $ua->post("${PDB_REDO_ADDRESS}api/session/${token{id}}/run",
 	Content_Type => 'form-data',
