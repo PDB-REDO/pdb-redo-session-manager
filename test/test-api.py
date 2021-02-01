@@ -31,62 +31,58 @@ import time
 # Due to a bug? in the server implementation, the :port is required here...
 PDBREDO_URI = 'https://services.pdb-redo.eu:443'
 
-def main():
+# collect arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--token-id', help='The token ID', required=True)
+parser.add_argument('--token-secret', help='The token secret', required=True)
+parser.add_argument('--xyzin', help='The coordinates file', required=True)
+parser.add_argument('--hklin', help='The diffraction data file', required=True)
+parser.add_argument('--paired', help='Do a paired refinement', action='store_true')
 
-    # collect arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--token-id', help='The token ID', required=True)
-    parser.add_argument('--token-secret', help='The token secret', required=True)
-    parser.add_argument('--xyzin', help='The coordinates file', required=True)
-    parser.add_argument('--hklin', help='The diffraction data file', required=True)
-    parser.add_argument('--paired', help='Do a paired refinement', action='store_true')
+args = parser.parse_args()
 
-    args = parser.parse_args()
+# The token id and secret for a session at PDB-REDO    
+token_id = args.token_id
+token_secret = args.token_secret
+auth = PDBRedoAPIAuth(token_id, token_secret)
 
-    # The token id and secret for a session at PDB-REDO    
-    token_id = args.token_id
-    token_secret = args.token_secret
-    auth = PDBRedoAPIAuth(token_id, token_secret)
+# The files to submit
+xyzin = args.xyzin
+hklin = args.hklin
+paired = args.paired
 
-    # The files to submit
-    xyzin = args.xyzin
-    hklin = args.hklin
-    paired = args.paired
+files = {
+    'pdb-file': open(xyzin, 'rb'),
+    'mtz-file': open(hklin, 'rb')
+}
 
-    files = {
-        'pdb-file': open(xyzin, 'rb'),
-        'mtz-file': open(hklin, 'rb')
-    }
+params = {
+    'paired': paired
+}
 
-    params = {
-        'paired': paired
-    }
+r = requests.post(PDBREDO_URI + "/api/session/{token_id}/run".format(token_id = token_id), auth = auth, files = files, data = {'parameters': json.dumps(params)})
+if (not r.ok):
+    raise ValueError('Could not submit job to server: ' + r.text)
 
-    r = requests.post(PDBREDO_URI + "/api/session/{token_id}/run".format(token_id = token_id), auth = auth, files = files, data = {'parameters': json.dumps(params)})
-    if (not r.ok):
-        raise ValueError('Could not submit job to server: ' + r.text)
+run_id = r.json()['id']
+print("Job submitted with id", run_id)
 
-    run_id = r.json()['id']
-    print("Job submitted with id", run_id)
+while(True):
+    r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}".format(token_id = token_id, run_id = run_id), auth = auth)
+    status = r.json()['status']
+    
+    if (status == 'stopped'):
+        raise ValueError('The job somehow failed after submitting')
 
-    while(True):
-        r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}".format(token_id = token_id, run_id = run_id), auth = auth)
-        status = r.json()['status']
-        
-        if (status == 'stopped'):
-            raise ValueError('The job somehow failed after submitting')
+    if (status == 'ended'):
+        break
 
-        if (status == 'ended'):
-            break
+    print("Job status is", status)
+    time.sleep(5)
 
-        print("Job status is", status)
-        time.sleep(5)
+r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output/process.log".format(token_id = token_id, run_id = run_id), auth = auth)
 
-    r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output/process.log".format(token_id = token_id, run_id = run_id), auth = auth)
+if (not r.ok):
+    raise ValueError("Failed to receive the process log")
 
-    if (not r.ok):
-        raise ValueError("Failed to receive the process log")
-
-    print(r.text)
-
-main()
+print(r.text)
