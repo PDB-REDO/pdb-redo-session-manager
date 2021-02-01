@@ -85,6 +85,16 @@ while(True):
     print("Job status is", status)
     time.sleep(5)
 
+
+# Get the list of files produced in the output directory
+r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output".format(token_id = token_id, run_id = run_id), auth = auth)
+
+if (not r.ok):
+    raise ValueError("Failed to receive the output file list")
+
+for file in r.json():
+	print(file)
+
 # Retrieve a single result file. Here you would probably like to retrieve more files
 r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output/process.log".format(token_id = token_id, run_id = run_id), auth = auth)
 
