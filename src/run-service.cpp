@@ -288,6 +288,33 @@ Run RunService::get_run(const std::string& username, unsigned long runID)
 	return result;
 }
 
+std::vector<std::string> RunService::get_result_file_list(const std::string& username, unsigned long runID)
+{
+	auto dir = m_runsdir / username;
+
+	if (not fs::exists(dir))
+		throw std::runtime_error("Run does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << runID;
+
+	fs::path output = dir / s.str() / "output";
+
+	if (not fs::exists(output))
+		throw std::runtime_error("Result directory does not exist");
+
+	std::vector<std::string> result;
+	for (auto f: fs::recursive_directory_iterator(output))
+	{
+		if (not f.is_regular_file())
+			continue;
+		
+		result.push_back(fs::relative(f.path(), output).string());
+	}
+
+	return result;
+}
+
 fs::path RunService::get_result_file(const std::string& username, unsigned long runID, const std::string& file)
 {
 	auto dir = m_runsdir / username;
