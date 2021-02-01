@@ -81,6 +81,7 @@ class RunService
 	std::vector<Run> get_runs_for_user(const std::string& username);
 	Run get_run(const std::string& username, unsigned long runID);
 
+	std::vector<std::string> get_result_file_list(const std::string& username, unsigned long runID);
 	std::filesystem::path get_result_file(const std::string& username, unsigned long runID, const std::string& file);
 
   private:

@@ -431,6 +431,9 @@ class api_rest_controller : public zh::rest_controller
 		// return info for a run
 		map_get_request("session/{id}/run/{run}", &api_rest_controller::get_run, "id", "run");
 
+		// get a list of the files in output
+		map_get_request("session/{id}/run/{run}/output", &api_rest_controller::get_result_file_list, "id", "run");
+
 		// get a result file
 		map_get_request("session/{id}/run/{run}/output/{file}", &api_rest_controller::get_result_file, "id", "run", "file");
 	}
@@ -564,6 +567,13 @@ class api_rest_controller : public zh::rest_controller
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
 		return RunService::instance().get_run(session.user, runID);
+	}
+
+	std::vector<std::string> get_result_file_list(unsigned long sessionID, unsigned long runID)
+	{
+		auto session = SessionStore::instance().get_by_id(sessionID);
+
+		return RunService::instance().get_result_file_list(session.user, runID);
 	}
 
 	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string& file)
