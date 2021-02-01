@@ -35,7 +35,7 @@ use PDBRedo::Api();
 
 # ---------------------------------------------------------------------
 
-my $PDB_REDO_ADDRESS = 'http://service.pdb-redo.eu/';
+my $PDB_REDO_ADDRESS = 'http://services.pdb-redo.eu/';
 
 my %token = (
 	id => 23, secret => 'DB_MOiltiSA-P5j-d41IKg'
