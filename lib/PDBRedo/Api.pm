@@ -74,8 +74,8 @@ sub sign_request
 	my $uri = URI->new($request->uri);
 	my $path = $uri->path;
 	my $host = $uri->host;
-	my $port = $uri->port;
-	$host = "$host:$port" unless $port == 80;
+	# my $port = $uri->port;
+	# $host = "$host:$port" unless $port == 80;
 	my $query = $uri->query;	$query = '' unless $query;
 
 	my $canonicalRequest = join("\n", $request->method, $path, $query, $host, $contentDigest);
