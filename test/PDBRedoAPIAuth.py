@@ -82,7 +82,8 @@ class PDBRedoAPIAuth(AuthBase):
 
         r.headers.update({
             'X-PDB-REDO-Date': timestamp,
-            'Authorization': "PDB-REDO-api Credential={credential},SignedHeaders=host;x-pdb-redo-content,Signature={signature}".format(credential = credential, signature = signature)
+            'Authorization': "PDB-REDO-api Credential={credential},SignedHeaders=host;x-pdb-redo-content,Signature={signature}"
+				.format(credential = credential, signature = signature)
         })
 
         return r

@@ -44,6 +44,8 @@ args = parser.parse_args()
 # The token id and secret for a session at PDB-REDO    
 token_id = args.token_id
 token_secret = args.token_secret
+
+# The authentication object, used by the requests module
 auth = PDBRedoAPIAuth(token_id, token_secret)
 
 # The files to submit
@@ -56,10 +58,12 @@ files = {
     'mtz-file': open(hklin, 'rb')
 }
 
+# Optional parameters, currently there's only one:
 params = {
     'paired': paired
 }
 
+# Create a new job/run
 r = requests.post(PDBREDO_URI + "/api/session/{token_id}/run".format(token_id = token_id), auth = auth, files = files, data = {'parameters': json.dumps(params)})
 if (not r.ok):
     raise ValueError('Could not submit job to server: ' + r.text)
@@ -67,6 +71,7 @@ if (not r.ok):
 run_id = r.json()['id']
 print("Job submitted with id", run_id)
 
+# Loop until job is done
 while(True):
     r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}".format(token_id = token_id, run_id = run_id), auth = auth)
     status = r.json()['status']
@@ -80,6 +85,7 @@ while(True):
     print("Job status is", status)
     time.sleep(5)
 
+# Retrieve a single result file. Here you would probably like to retrieve more files
 r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output/process.log".format(token_id = token_id, run_id = run_id), auth = auth)
 
 if (not r.ok):
