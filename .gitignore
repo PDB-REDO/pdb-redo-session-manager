@@ -8,7 +8,6 @@ obj.dbg/
 src/prsm-config.hpp*
 src/mrsrc.h
 rsrc/version.txt
-config/m4
 prsmd
 libtool
 version-info-*.txt
