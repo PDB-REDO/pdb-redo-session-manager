@@ -649,6 +649,7 @@ int main(int argc, const char* argv[])
 		("help,h",										"Display help message")
 		("verbose,v",									"Verbose output")
 		("no-daemon,F",									"Do not fork into background")
+		("config",		po::value<std::string>(),		"Specify the config file to use")
 		;
 	
 	po::options_description config(APP_NAME R"( config file options)");
@@ -682,9 +683,12 @@ int main(int argc, const char* argv[])
 	po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(), vm);
 
 	fs::path configFile = APP_NAME ".conf";
-#warning("pick up from /etc?")
+
 	if (not fs::exists(configFile) and getenv("HOME") != nullptr)
 		configFile = fs::path(getenv("HOME")) / ".config" / APP_NAME ".conf";
+
+	if (not fs::exists(configFile) and fs::exists("/etc" / configFile))
+		configFile = "/etc" / configFile;
 	
 	if (vm.count("config") != 0)
 	{
