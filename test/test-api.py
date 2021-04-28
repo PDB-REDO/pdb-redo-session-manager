@@ -63,6 +63,41 @@ params = {
     'paired': paired
 }
 
+# Other options you might want to set:
+# 
+# nohyd       : do not add hydrogens (in riding postions) during refinement
+# legacy      : for legacy PDB entries. R-factor is not checked and the number of
+#                 refinement cycles is increased (a lot)
+# notls       : no TLS refinement is performed
+# notlsupdate : use TLS, but do not update the tensors in the final refinement
+# noncs       : no NCS restraints are applied
+# nojelly     : switch off jelly body refinement
+# notwin      : no detwinning is performed
+# newmodel    : always take an updated model from the re-refinement for the rebuilding steps. Only use this option when all else fails
+# tighter     : try tighter restraints than usual 
+# looser      : try looser restraints than usual 
+# noloops     : do not try to complete loops
+# nofixdmc    : do not add missing backbone atoms
+# nopepflip   : no peptide flips are performed
+# noscbuild   : side chains will not be rebuilt
+# nocentrifuge: waters with poor density will not be deleted
+# nosugarbuild: no (re)building of carbohydrates
+# norebuild   : all rebuilding steps are skipped
+# noanomalous : ignore all anomalous data if Fmean or Imean are available
+# fewrefs     : deals with very small data sets by switching off R-free set sanity checks
+# crossval    : performs (very lengthy) k-fold cross validation on the final results
+# intens      : force the use of the intensities from the reflection file
+# noocc       : do not refine occupancies
+# notruncate  : do not use truncate to convert intensities to amplitudes
+# nosigma     : do not use sigF or sigI for scaling etc.
+# nometalrest : do not generate special metal restraints
+# nohomology  : do not use homology-based restraints
+# homology    : force homology-based restraints
+# hbondrest   : use hydrogen bond restraints
+# paired      : force paired refinement
+# isotropic   : force isotropic B-factors
+
+
 # Create a new job/run
 r = requests.post(PDBREDO_URI + "/api/session/{token_id}/run".format(token_id = token_id), auth = auth, files = files, data = {'parameters': json.dumps(params)})
 if (not r.ok):
