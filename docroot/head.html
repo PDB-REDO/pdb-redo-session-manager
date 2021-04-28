@@ -8,12 +8,14 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
 
+	<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; child-src 'none';" />
+
 	<title z2:replace="${title}">PDB-REDO Session Manager</title>
 
 	<script src="scripts/index.js"></script>
 	<script z2:replace="${script}"></script>
 
-	<link rel="stylesheet" type="text/css" href="css/style.css" />
+	<link rel="stylesheet" type="text/css" href="http://localhost:10339/css/style.css" />
 
 	<!-- favicon stuff -->
 	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png"/>
