@@ -37,11 +37,11 @@ export class PDBRedoApiRequest extends Request {
 			switch (typeof(init.body))
 			{
 				case 'undefined':
-					contentHash = sha256('');
+					contentHash = CryptoES.SHA256('');
 					break;
 	
 				case 'string':
-						contentHash = sha256(init.body);
+						contentHash = CryptoES.SHA256(init.body);
 					break;
 				
 				// FormData?
@@ -54,8 +54,8 @@ export class PDBRedoApiRequest extends Request {
 			}
 		}
 
-		const canonicalRequest = [init.method, url.pathname, params, url.host, contentHash.toString(Base64)].join("\n");
-		const canonicalRequestHash = sha256(canonicalRequest);
+		const canonicalRequest = [init.method, url.pathname, params, url.host, contentHash.toString(CryptoES.enc.Base64)].join("\n");
+		const canonicalRequestHash = CryptoES.SHA256(canonicalRequest);
 
 		// create the scope
 		const token = init.token;
@@ -70,12 +70,12 @@ export class PDBRedoApiRequest extends Request {
 		
 		const credential = `${token.id}/${date}/pdb-redo-api`;
 
-		const stringToSign = ["PDB-REDO-api", timestamp, credential, canonicalRequestHash.toString(Base64) ].join("\n");
-		const key = hmacSHA256(date, `PDB-REDO${token.secret}`);
-		const signature = hmacSHA256(stringToSign, key);
+		const stringToSign = ["PDB-REDO-api", timestamp, credential, canonicalRequestHash.toString(CryptoES.enc.Base64) ].join("\n");
+		const key = CryptoES.HmacSHA256(date, `PDB-REDO${token.secret}`);
+		const signature = CryptoES.HmacSHA256(stringToSign, key);
 
 		headers.append('Authorization', 
-			`PDB-REDO-api Credential=${credential},SignedHeaders=host;x-pdb-redo-content-sha256,Signature=${signature.toString(Base64)}`);
+			`PDB-REDO-api Credential=${credential},SignedHeaders=host;x-pdb-redo-content-sha256,Signature=${signature.toString(CryptoES.enc.Base64)}`);
 		headers.append('X-PDB-REDO-Date', timestamp);
 		init.headers = headers;
 
@@ -90,7 +90,7 @@ export class PDBRedoApiRequest extends Request {
 					.filter(v => v instanceof File)
 					.map(f => f.arrayBuffer()))
 				.then(files => {
-					const sep = `${sha256(Math.random() + '-' + Math.random()).toString(Base64)}`;
+					const sep = `${sha256(Math.random() + '-' + Math.random()).toString(CryptoES.enc.Base64)}`;
 
 					const h = CryptoES.algo.SHA256.create();
 					const fields = [];
@@ -126,7 +126,7 @@ export class PDBRedoApiRequest extends Request {
 					fields.push(tail);
 					h.update(tail);
 				
-					const hs = h.finalize().toString(Base64);
+					const hs = h.finalize().toString(CryptoES.enc.Base64);
 					const blob = new Blob(fields);
 				
 					init.body = blob;
