@@ -1,8 +1,4 @@
-import sha256 from "crypto-js/sha256";
-import hmacSHA256 from "crypto-js/hmac-sha256";
-import Base64 from "crypto-js/enc-base64";
-
-const CryptoJS = require('crypto-js');
+import CryptoES from "crypto-es";
 
 export class PDBRedoApiRequest extends Request {
 	constructor(input, init, bodyhash) {
@@ -96,7 +92,7 @@ export class PDBRedoApiRequest extends Request {
 				.then(files => {
 					const sep = `${sha256(Math.random() + '-' + Math.random()).toString(Base64)}`;
 
-					const h = CryptoJS.algo.SHA256.create();
+					const h = CryptoES.algo.SHA256.create();
 					const fields = [];
 				
 					let fi = 0;
@@ -113,7 +109,7 @@ export class PDBRedoApiRequest extends Request {
 							fields.push(buffer);
 							fields.push(f2);
 
-							const wa = CryptoJS.lib.WordArray.create(buffer);
+							const wa = CryptoES.lib.WordArray.create(buffer);
 
 							h.update(f1);
 							h.update(wa);
