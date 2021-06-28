@@ -49,6 +49,7 @@
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/login-controller.hpp>
+#include <zeep/http/uri.hpp>
 
 #include <pqxx/pqxx>
 
@@ -479,18 +480,23 @@ class api_rest_controller : public zh::rest_controller
 			auto n = params.size();
 			for (auto& [name, value]: params)
 			{
-				ps << zeep::encode_url(name);
+				ps << zeep::http::encode_url(name);
 				if (not value.empty())
-					ps << '=' << zeep::encode_url(value);
+					ps << '=' << zeep::http::encode_url(value);
 				if (n-- > 1)
 					ps << '&';
 			}
 
 			auto contentHash = zeep::encode_base64(zeep::sha256(req.get_payload()));
 
+			auto pathPart = req.get_uri();
+			auto pqs = pathPart.find('?');
+			if (pqs != std::string::npos)
+				pathPart.erase(pqs, std::string::npos);
+
 			std::ostringstream ss;
 			ss << req.get_method() << std::endl
-			   << req.get_pathname() << std::endl
+			   << pathPart << std::endl
 			   << ps.str() << std::endl
 			   << req.get_header("host") << std::endl
 			   << contentHash;
@@ -819,7 +825,10 @@ Command should be either:
 
 		if (command == "start")
 		{
-			std::cout << "starting server at http://" << address << ':' << port << '/' << std::endl;
+			if (address.find(':') != std::string::npos)
+				std::cout << "starting server at http://[" << address << "]:" << port << '/' << std::endl;
+			else
+				std::cout << "starting server at http://" << address << ':' << port << '/' << std::endl;
 
 			if (vm.count("no-daemon"))
 				result = server.run_foreground(address, port);

@@ -54,6 +54,7 @@ AX_IOSTREAMS_Z
 AX_IOSTREAMS_BZ2
 
 AX_LIBZEEP
+AX_URIPARSER
 
 AX_PKG_CHECK_MODULES([PQXX], [libpq libpqxx], [], [], [AC_MSG_ERROR([the required package libpqxx-dev is not installed])])
 
