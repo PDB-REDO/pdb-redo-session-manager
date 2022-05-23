@@ -32,7 +32,7 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
+// #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/copy.hpp>
 
@@ -191,12 +191,7 @@ Run RunService::submit(const std::string& user, const zh::file_param& pdb, const
 		io::filtering_stream<io::input> in;
 		fs::path input = file.filename.empty() ? "input."s + type : file.filename;
 
-		if (input.extension() == ".bz2")
-		{
-			in.push(io::bzip2_decompressor());
-			input = input.stem();
-		}
-		else if (input.extension() == ".gz")
+		if (input.extension() == ".gz")
 		{
 			in.push(io::gzip_decompressor());
 			input = input.stem();
