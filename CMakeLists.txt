@@ -68,20 +68,17 @@ if(MSVC)
 	get_WIN32_WINNT(ver)
 	add_definitions(-D_WIN32_WINNT=${ver})
 
-	# On Windows, do not install in the system location
+	# On Windows, do not install in the system location by default
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(STATUS "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
+
+	# On Linux, install in the $HOME/.local folder by default
+elseif(UNIX AND NOT APPLE AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
 endif()
 
-if(UNIX AND NOT APPLE)
-	# On Linux, install in the $HOME/.local folder by default
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
-		set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
-	endif()
-endif()
+message(STATUS "The program will be installed in ${CMAKE_INSTALL_FULL_SBINDIR}")
 
 # Create a revision file, containing the current git version info, if any
 include(VersionString)
@@ -128,7 +125,7 @@ if(NOT MSVC AND Boost_USE_STATIC_LIBS)
 	list(APPEND REQUIRED_LIBRARIES ZLIB::ZLIB)
 endif()
 
-add_executable(pdb-redo-session-manager
+add_executable(prsmd
 	${PROJECT_SOURCE_DIR}/src/run-service.cpp
 	${PROJECT_SOURCE_DIR}/src/run-service.hpp
 	${PROJECT_SOURCE_DIR}/src/user-service.cpp
@@ -159,30 +156,25 @@ add_custom_command(
 
 add_custom_target(webpack DEPENDS ${webpack_output})
 
-add_dependencies(pdb-redo-session-manager webpack)
+add_dependencies(prsmd webpack)
 
 if(USE_RSRC)
-	mrc_target_resources(pdb-redo-session-manager
+	mrc_target_resources(prsmd
 		${PROJECT_SOURCE_DIR}/docroot/
 	)
 endif()
 
-target_include_directories(pdb-redo-session-manager PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(pdb-redo-session-manager zeep::zeep std::filesystem Boost::program_options Boost::iostreams ${PQXX_LIBRARIES} ${PQ_LIBRARIES} ${REQUIRED_LIBRARIES})
+target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
+target_link_libraries(prsmd zeep::zeep std::filesystem Boost::program_options Boost::iostreams ${PQXX_LIBRARIES} ${PQ_LIBRARIES} ${REQUIRED_LIBRARIES})
 
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+install(TARGETS prsmd
+    RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}
 )
-
-if(NOT USE_RSRC)
-	install(FILES ${CMAKE_SOURCE_DIR}/rsrc/rama-data.bin ${CMAKE_SOURCE_DIR}/rsrc/torsion-data.bin
-		DESTINATION ${CIFPP_SHARE_DIR})
-endif()
 
 # # manual
 
-# install(FILES doc/pdb-redo-session-manager.1 DESTINATION ${CMAKE_INSTALL_DATADIR}/man/man1)
+# install(FILES doc/prsmd.1 DESTINATION ${CMAKE_INSTALL_DATADIR}/man/man1)
 
 # manual
 
-# install(FILES doc/pdb-redo-session-manager.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+# install(FILES doc/prsmd.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
