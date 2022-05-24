@@ -56,6 +56,7 @@
 #include "user-service.hpp"
 #include "run-service.hpp"
 #include "prsm-db-connection.hpp"
+#include "revision.hpp"
 
 #include "mrsrc.hpp"
 
@@ -644,7 +645,7 @@ void prsm_html_controller::handle_delete_session(const zh::request& request, con
 
 // --------------------------------------------------------------------
 
-int main(int argc, const char* argv[])
+int a_main(int argc, char* const argv[])
 {
 	using namespace std::literals;
 
@@ -656,6 +657,7 @@ int main(int argc, const char* argv[])
 		("verbose,v",									"Verbose output")
 		("no-daemon,F",									"Do not fork into background")
 		("config",		po::value<std::string>(),		"Specify the config file to use")
+		("version",										"Print version and exit")
 		;
 	
 	po::options_description config(APP_NAME R"( config file options)");
@@ -714,6 +716,14 @@ int main(int argc, const char* argv[])
 	}
 	
 	po::notify(vm);
+
+	// --------------------------------------------------------------------
+
+	if (vm.count("version"))
+	{
+		write_version_string(std::cout, vm.count("verbose"));
+		exit(0);
+	}
 
 	// --------------------------------------------------------------------
 
@@ -852,6 +862,42 @@ Command should be either:
 		std::cerr << "exception:" << std::endl
 			 << ex.what() << std::endl;
 		result = 1;
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+// recursively print exception whats:
+void print_what(const std::exception &e)
+{
+	std::cerr << e.what() << std::endl;
+	try
+	{
+		std::rethrow_if_nested(e);
+	}
+	catch (const std::exception &nested)
+	{
+		std::cerr << " >> ";
+		print_what(nested);
+	}
+}
+
+// --------------------------------------------------------------------
+
+int main(int argc, char *const argv[])
+{
+	int result = 0;
+
+	try
+	{
+		result = a_main(argc, argv);
+	}
+	catch (const std::exception &ex)
+	{
+		print_what(ex);
+		exit(1);
 	}
 
 	return result;
