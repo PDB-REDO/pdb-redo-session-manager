@@ -4,9 +4,10 @@
   "description": "A session manager for PDB-REDO",
   "main": "index.js",
   "author": "Maarten L. Hekkelman",
-  "license": "BSL-1.0",
+  "license": "BSD-2-Clause",
   "scripts": {
-    "build": "webpack --config webpack.config.js"
+    "build": "webpack --config webpack.config.js",
+    "build-production": "webpack --config webpack.config.js --env PRODUCTION"
   },
   "devDependencies": {
     "@babel/core": "^7.12.10",
