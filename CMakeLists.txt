@@ -96,9 +96,11 @@ else()
 	message(WARNING "Not using resources since mrc was not found")
 endif()
 
-if(USE_RSRC STREQUAL "ON")
+if(USE_RSRC)
 	set(USE_RSRC 1)
-	add_compile_definitions(USE_RSRC)
+	add_compile_definitions(USE_RSRC WEBAPP_USES_RESOURCES)
+
+	mrc_write_header(${CMAKE_BINARY_DIR}/mrsrc.hpp)
 endif()
 
 # libraries
@@ -131,12 +133,8 @@ add_executable(pdb-redo-session-manager
 	${PROJECT_SOURCE_DIR}/src/run-service.hpp
 	${PROJECT_SOURCE_DIR}/src/user-service.cpp
 	${PROJECT_SOURCE_DIR}/src/user-service.hpp
-	${PROJECT_SOURCE_DIR}/src/prsm-config.hpp.in~
-	${PROJECT_SOURCE_DIR}/src/mrsrc.h
 	${PROJECT_SOURCE_DIR}/src/prsm-db-connection.hpp
 	${PROJECT_SOURCE_DIR}/src/prsm-db-connection.cpp
-	${PROJECT_SOURCE_DIR}/src/prsm-config.hpp.in
-	${PROJECT_SOURCE_DIR}/src/prsm-config.hpp
 	${PROJECT_SOURCE_DIR}/src/prsmd.cpp)
 
 # yarn rules for javascripts

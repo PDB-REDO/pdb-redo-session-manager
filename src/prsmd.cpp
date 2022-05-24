@@ -57,7 +57,7 @@
 #include "run-service.hpp"
 #include "prsm-db-connection.hpp"
 
-#include "mrsrc.h"
+#include "mrsrc.hpp"
 
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
