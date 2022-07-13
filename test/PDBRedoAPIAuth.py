@@ -36,7 +36,7 @@ class PDBRedoAPIAuth(AuthBase):
 
     def hash_s(self, s):
         if (not isinstance(s, bytes)):
-        	s = bytes(s, 'utf-8')
+            s = bytes(s, 'utf-8')
         m = hashlib.sha256()
         m.update(s)
         h = m.digest()
@@ -63,6 +63,7 @@ class PDBRedoAPIAuth(AuthBase):
         uri = urlparse(r.url)
         path = uri.path
         host = uri.hostname
+
         if (uri.port != 80 and uri.port != 443):
             host = "{host}:{port}".format(host=host, port = uri.port)
         query = uri.query

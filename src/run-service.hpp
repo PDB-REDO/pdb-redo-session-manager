@@ -84,6 +84,11 @@ class RunService
 	std::vector<std::string> get_result_file_list(const std::string& username, unsigned long runID);
 	std::filesystem::path get_result_file(const std::string& username, unsigned long runID, const std::string& file);
 
+	std::tuple<std::istream *, std::string> get_zipped_result_file(const std::string& username, unsigned long runID);
+
+	// add a clean up routine
+	void delete_run(const std::string& username, unsigned long runID);
+
   private:
 
 	RunService(const std::string& runsDir);

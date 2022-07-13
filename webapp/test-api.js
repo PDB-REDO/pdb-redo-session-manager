@@ -180,7 +180,7 @@ class ApiTester {
 	}
 
 	fetchRuns(e) {
-		e.preventDefault();
+		if (e) e.preventDefault();
 
 		const form = document.forms["fetch-runs-form"];
 		const tokenID = form["token-id"].value;
@@ -213,6 +213,22 @@ class ApiTester {
 					const td2 = document.createElement("td");
 					td2.textContent = run.status;
 					row.appendChild(td2);
+
+					// a delete button
+					const btn = document.createElement("button");
+					btn.classList.add("btn");
+					btn.classList.add("btn-sm");
+					btn.classList.add("btn-secondary");
+					btn.textContent = 'delete';
+					btn.addEventListener('click', (e) => {
+						this.deleteRun(tokenID, run.id);
+					});
+
+					const td3 = document.createElement("td");
+					td3.appendChild(btn);
+					row.appendChild(td3);
+					row.setAttribute('data-run-id', run.id);
+
 					tbody.appendChild(row);
 				}
 
@@ -220,6 +236,29 @@ class ApiTester {
 				console.log(err);
 				alert("Failed to list runs: " + err);
 			});
+	}
+
+	deleteRun(tokenID, runID) {
+		const form = document.forms["fetch-runs-form"];
+
+		PDBRedoApiRequest.create(`/api/session/${tokenID}/run/${runID}`, {
+			method: "DELETE",
+			token: {
+				id: tokenID,
+				secret: form["token-secret"].value
+			}
+		}).then(req => fetch(req))
+		  .then(response => {
+			if (response.ok) {
+				this.fetchRuns();
+			}
+			else {
+				throw(`failed to delete run ${runID}`);
+			}
+		}).catch(err => {
+			console.log(err);
+			alert("Failed to get token " + err);
+		});
 	}
 }
 

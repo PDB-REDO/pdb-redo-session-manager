@@ -72,14 +72,6 @@ using json = zeep::json::element;
 
 #define APP_NAME "prsmd"
 
-// const std::string
-// 	kPDB_REDO_Session_Realm("PDB-REDO Session Management"),
-// 	kPDB_REDO_API_Realm("PDB-REDO API"),
-// 	kPDB_REDO_API_Cookie("PDB-REDO-Signature"),
-// 	kPDB_REDO_Cookie("PDB-REDO_Session");
-
-fs::path gExePath;
-
 // --------------------------------------------------------------------
 
 struct Session
@@ -436,8 +428,14 @@ class api_rest_controller : public zh::rest_controller
 		// get a list of the files in output
 		map_get_request("session/{id}/run/{run}/output", &api_rest_controller::get_result_file_list, "id", "run");
 
+		// get all results file zipped into an archive
+		map_get_request("session/{id}/run/{run}/output/zipped", &api_rest_controller::get_zipped_result_file, "id", "run");
+
 		// get a result file
 		map_get_request("session/{id}/run/{run}/output/{file}", &api_rest_controller::get_result_file, "id", "run", "file");
+
+		// delete a run
+		map_delete_request("session/{id}/run/{run}", &api_rest_controller::delete_run, "id", "run");
 	}
 
 	virtual bool handle_request(zh::request& req, zh::reply& rep)
@@ -588,6 +586,26 @@ class api_rest_controller : public zh::rest_controller
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
 		return RunService::instance().get_result_file(session.user, runID, file);
+	}
+
+	zh::reply get_zipped_result_file(unsigned long sessionID, unsigned long runID)
+	{
+		auto session = SessionStore::instance().get_by_id(sessionID);
+
+		const auto &[is, name] = RunService::instance().get_zipped_result_file(session.user, runID);
+
+		zh::reply rep{zh::ok};
+		rep.set_content(is, "application/zip");
+		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+
+		return rep;
+	}
+
+	void delete_run(unsigned long sessionID, unsigned long runID)
+	{
+		auto session = SessionStore::instance().get_by_id(sessionID);
+
+		return RunService::instance().delete_run(session.user, runID);
 	}
 
   private:
@@ -749,17 +767,6 @@ Command should be either:
 
 	try
 	{
-		char exePath[PATH_MAX + 1];
-		int r = readlink("/proc/self/exe", exePath, PATH_MAX);
-		if (r > 0)
-		{
-			exePath[r] = 0;
-			gExePath = fs::weakly_canonical(exePath);
-		}
-		
-		if (not fs::exists(gExePath))
-			gExePath = fs::weakly_canonical(argv[0]);
-
 		std::vector<std::string> vConn;
 		for (std::string opt: { "db-host", "db-port", "db-dbname", "db-user", "db-password" })
 		{
