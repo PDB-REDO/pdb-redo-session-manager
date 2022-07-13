@@ -90,7 +90,7 @@ export class PDBRedoApiRequest extends Request {
 					.filter(v => v instanceof File)
 					.map(f => f.arrayBuffer()))
 				.then(files => {
-					const sep = `${sha256(Math.random() + '-' + Math.random()).toString(CryptoES.enc.Base64)}`;
+					const sep = `${CryptoES.SHA256(Math.random() + '-' + Math.random()).toString(CryptoES.enc.Base64)}`;
 
 					const h = CryptoES.algo.SHA256.create();
 					const fields = [];
