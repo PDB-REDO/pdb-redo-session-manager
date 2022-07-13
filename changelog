@@ -1,0 +1,7 @@
+Version 1.0.1
+- Removed call to non-existing sha256 code
+- Added an API call to delete runs
+- Added an API call to fetch zipped results
+
+Version 1.0.0
+- First release
