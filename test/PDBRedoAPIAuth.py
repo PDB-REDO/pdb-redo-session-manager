@@ -26,6 +26,7 @@ from requests.auth import AuthBase
 import hashlib
 import hmac
 import base64
+import re
 from urllib.parse import urlparse
 from datetime import datetime, timezone
 
@@ -63,9 +64,14 @@ class PDBRedoAPIAuth(AuthBase):
         uri = urlparse(r.url)
         path = uri.path
         host = uri.hostname
+        
+        if (re.match('(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))', host)):
+            host = "[" + host + "]"
 
         if (uri.port != 80 and uri.port != 443):
             host = "{host}:{port}".format(host=host, port = uri.port)
+            
+        print(host)
         query = uri.query
 
         canonicalRequest = "\n".join([r.method, path, query, host, contentDigest])

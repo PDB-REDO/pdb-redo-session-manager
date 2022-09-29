@@ -450,7 +450,7 @@ std::tuple<std::istream *, std::string> RunService::get_zipped_result_file(const
 		if (not f.is_regular_file())
 			continue;
 		
-		zw.add(f.path(), (d / f.path().filename()).string());
+		zw.add(f.path(), (d / fs::relative(f.path(), output)).string());
 	}
 
 	return { zw.finish(), s.str() + ".zip" };
