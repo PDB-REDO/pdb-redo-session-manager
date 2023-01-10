@@ -26,12 +26,8 @@
 
 #include <cassert>
 
-#include <boost/algorithm/string.hpp>
-
 #include "user-service.hpp"
 #include "prsm-db-connection.hpp"
-
-namespace ba = boost::algorithm;
 
 // --------------------------------------------------------------------
 
@@ -51,8 +47,6 @@ User& User::operator=(const pqxx::row& row)
 	email		= row.at("email_address").as<std::string>();
 	institution	= row.at("institution").as<std::string>();
 	password	= row.at("password").as<std::string>();
-	// created		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("created").as<std::string>());
-	// expires		= zeep::value_serializer<boost::posix_time::ptime>::from_string(t.at("expires").as<std::string>());
 
 	return *this;
 }
@@ -94,7 +88,14 @@ std::unique_ptr<UserService> UserService::sInstance;
 
 UserService::UserService(const std::string& admins)
 {
-	ba::split(m_admins, admins, ba::is_any_of(",; "));
+	for (std::string::size_type i = 0, j = admins.find_first_of(",; ");;)
+	{
+		m_admins.push_back(admins.substr(i, j - i));
+		if (j == std::string::npos)
+			break;
+		i = j + 1;
+		j = admins.find_first_of(",; ", i);
+	}
 }
 
 void UserService::init(const std::string& admins)

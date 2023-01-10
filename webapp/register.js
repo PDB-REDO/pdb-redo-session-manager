@@ -54,5 +54,5 @@ export function showLoginDialog() {
 }
 
 window.addEventListener('load', () => {
-	showLoginDialog();
+	// showLoginDialog();
 });

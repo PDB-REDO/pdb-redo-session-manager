@@ -7,3 +7,5 @@ base64-tabel.sh
 **/__pycache__/
 prsmd.conf
 build/
+src/mrsrc.hpp
+src/revision.hpp

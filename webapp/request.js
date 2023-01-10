@@ -41,7 +41,7 @@ export class PDBRedoApiRequest extends Request {
 					break;
 	
 				case 'string':
-						contentHash = CryptoES.SHA256(init.body);
+					contentHash = CryptoES.SHA256(init.body);
 					break;
 				
 				// FormData?
@@ -55,6 +55,7 @@ export class PDBRedoApiRequest extends Request {
 		}
 
 		const canonicalRequest = [init.method, url.pathname, params, url.host, contentHash.toString(CryptoES.enc.Base64)].join("\n");
+		console.log(`canonical request: ${canonicalRequest}`);
 		const canonicalRequestHash = CryptoES.SHA256(canonicalRequest);
 
 		// create the scope

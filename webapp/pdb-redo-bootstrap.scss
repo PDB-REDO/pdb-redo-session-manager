@@ -1,11 +1,21 @@
+@use "sass:math";
+
 // (Required) Import Bootstrap
 @import "bootstrap/scss/_functions";
 @import "bootstrap/scss/_variables";
 @import "bootstrap/scss/_mixins";
 
+.alert {
+	border: 1px solid;
+}
+
+@import "bootstrap/scss/_alert";
+
+
 $font-family-sans-serif: "Verdana", "Arial", "Helvetica", "sans-serif";
 
 $primary: rgb(100, 100, 100);
+$primary-rgb: 100, 100, 100;
 
 $nav-primary: #FF9933;
 $nav-secondary: #ffecbf;
@@ -13,11 +23,10 @@ $nav-link: #3366cc;
 
 $nav-primary-hover: #d8c7a5;
 
-$theme-colors: (
+$pdb-redo-colors: (
+	"primary": $primary,
 	"nav-primary": $nav-primary,
 	"nav-secondary": $nav-secondary,
-
-	"primary": $primary
 );
 
 $navbar-dark-color: $nav-link;
@@ -26,10 +35,19 @@ $navbar-dark-active-color: $nav-link;
 $navbar-dark-disabled-color: rgba($nav-link, .5);
 
 $navbar-padding-y: 0;
-$nav-link-padding-y: $spacer / 2;
+$nav-link-padding-y: math.div($spacer, 2);
 
 // (Required) Import Bootstrap
 @import "bootstrap/scss/bootstrap";
+
+$theme-colors: map-merge($pdb-redo-colors, $theme-colors);
+
+@mixin hover-focus() {
+	&:hover,
+	&:focus {
+		@content;
+	}
+}
 
 .navbar-dark {
 	.navbar-nav {
@@ -37,6 +55,10 @@ $nav-link-padding-y: $spacer / 2;
 		@include hover-focus() {
 			background-color: $nav-primary-hover;
 		}
+	  }
+	  .nav-link.active {
+		background-color: lighten($nav-link, 5%);
+		color: white;
 	  }
 	}
 }
@@ -140,3 +162,4 @@ header div.second div.clear {
         height: 2em;
     }
 }
+

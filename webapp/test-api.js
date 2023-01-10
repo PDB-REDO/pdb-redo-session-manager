@@ -267,7 +267,7 @@ window.addEventListener('load', () => {
 
 	new ApiTester();
 
-	$(function () {
-		$('[data-toggle="tooltip"]').tooltip();
-	});
+	// $(function () {
+	// 	$('[data-toggle="tooltip"]').tooltip();
+	// });
 });

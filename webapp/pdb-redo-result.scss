@@ -1,0 +1,35 @@
+@use "sass:math";
+
+// (Required) Import Bootstrap
+@import "bootstrap/scss/_functions";
+@import "bootstrap/scss/_variables";
+@import "bootstrap/scss/_mixins";
+
+$font-family-sans-serif: "Verdana", "Arial", "Helvetica", "sans-serif";
+
+$primary: rgb(100, 100, 100);
+
+$nav-primary: #FF9933;
+$nav-secondary: #ffecbf;
+$nav-link: #3366cc;
+
+$nav-primary-hover: #d8c7a5;
+
+$theme-colors: (
+	"nav-primary": $nav-primary,
+	"nav-secondary": $nav-secondary,
+
+	"primary": $primary
+);
+
+$navbar-dark-color: $nav-link;
+$navbar-dark-hover-color: $nav-link;
+$navbar-dark-active-color: $nav-link;
+$navbar-dark-disabled-color: rgba($nav-link, .5);
+
+$navbar-padding-y: 0;
+$nav-link-padding-y: math.div($spacer, 2);
+
+// (Required) Import Bootstrap
+@import "bootstrap/scss/bootstrap";
+

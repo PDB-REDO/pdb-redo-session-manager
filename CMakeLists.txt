@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # set the project name
-project(pdb-redo-session-manager VERSION 1.0.1 LANGUAGES CXX)
+project(pdb-redo-session-manager VERSION 1.1.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -67,22 +67,11 @@ if(MSVC)
 
 	get_WIN32_WINNT(ver)
 	add_definitions(-D_WIN32_WINNT=${ver})
-
-	# On Windows, do not install in the system location by default
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
-	endif()
-
-	# On Linux, install in the $HOME/.local folder by default
-elseif(UNIX AND NOT APPLE AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
 endif()
-
-message(STATUS "The program will be installed in ${CMAKE_INSTALL_FULL_SBINDIR}")
 
 # Create a revision file, containing the current git version info, if any
 include(VersionString)
-write_version_header()
+write_version_header(${PROJECT_SOURCE_DIR}/src)
 
 # Optionally use mrc to create resources
 find_package(Mrc)
@@ -95,9 +84,8 @@ endif()
 
 if(USE_RSRC)
 	set(USE_RSRC 1)
-	add_compile_definitions(USE_RSRC WEBAPP_USES_RESOURCES)
-
-	mrc_write_header(${CMAKE_BINARY_DIR}/mrsrc.hpp)
+	add_compile_definitions(WEBAPP_USES_RESOURCES)
+	mrc_write_header(${PROJECT_SOURCE_DIR}/src/mrsrc.hpp)
 endif()
 
 # libraries
@@ -105,12 +93,6 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
-
-include(FindFilesystem)
-list(APPEND REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
-
-include(FindAtomic)
-list(APPEND REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
 find_package(LibArchive REQUIRED)
 
@@ -121,12 +103,8 @@ list(APPEND REQUIRED_LIBRARIES ${PQXX_LIBRARIES} ${PQ_LIBRARIES})
 find_program(YARN yarn REQUIRED)
 
 find_package(zeep 5.1.4 REQUIRED)
-find_package(Boost COMPONENTS program_options iostreams REQUIRED)
-
-if(NOT MSVC AND Boost_USE_STATIC_LIBS)
-	find_package(ZLIB REQUIRED)
-	list(APPEND REQUIRED_LIBRARIES ZLIB::ZLIB)
-endif()
+find_package(libmcfp REQUIRED)
+find_package(gxrio REQUIRED)
 
 add_executable(prsmd
 	${PROJECT_SOURCE_DIR}/src/run-service.cpp
@@ -140,13 +118,19 @@ add_executable(prsmd
 # yarn rules for javascripts
 	
 set(webpack_input
-	${PROJECT_SOURCE_DIR}/webapp/admin.js
 	${PROJECT_SOURCE_DIR}/webapp/custom-bootstrap-theme.scss
+	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
+	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.scss
+	${PROJECT_SOURCE_DIR}/webapp/admin.js
 	${PROJECT_SOURCE_DIR}/webapp/index.js
 	${PROJECT_SOURCE_DIR}/webapp/login.js
-	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
+	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.js
+	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
+	${PROJECT_SOURCE_DIR}/webapp/register.js
 	${PROJECT_SOURCE_DIR}/webapp/request.js
-	${PROJECT_SOURCE_DIR}/webapp/test-api.js)
+	${PROJECT_SOURCE_DIR}/webapp/test-api.js
+	${PROJECT_SOURCE_DIR}/webpack.config.js
+	)
 
 set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/index.js)
 
@@ -162,13 +146,11 @@ add_custom_target(webpack DEPENDS ${webpack_output})
 add_dependencies(prsmd webpack)
 
 if(USE_RSRC)
-	mrc_target_resources(prsmd
-		${PROJECT_SOURCE_DIR}/docroot/
-	)
+	mrc_target_resources(prsmd ${PROJECT_SOURCE_DIR}/docroot/)
 endif()
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd -static-libgcc -static-libstdc++ zeep::zeep std::filesystem LibArchive::LibArchive Boost::program_options Boost::iostreams ${REQUIRED_LIBRARIES})
+target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio ${REQUIRED_LIBRARIES})
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}
