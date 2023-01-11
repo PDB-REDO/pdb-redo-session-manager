@@ -17,10 +17,6 @@
 
 	<div z2:fragment="tables">
 
-		<!-- <script z2:if="${entry.dbEntry}"
-			src="https://pdb-redo.eu/rama-angles/scripts/rama-plot-loader.bundle.js"
-			defer="defer"></script> -->
-
 		<em z2:if="${entry.data.TITLE}" z2:text="${entry.data.TITLE}"></em>
 
 		<!-- <div class="result block">
@@ -488,6 +484,8 @@
 			</div>
 		</div>
 
+		<!-- <script src="https://pdb-redo.eu/rama-angles/scripts/rama-plot-loader.bundle.js"></script> -->
+
 		<div class="result block">
 			<table>
 				<caption>Model quality compared to resolution neighbours</caption>
@@ -535,9 +533,7 @@
 			</table>
 		</div>
 
-		<script z2:inline="javascript">
-			const entryData = /*[[${entry.stats}]]*/ null;
-		</script>
+		<template z2:inline="javascript" id="entry-data">[[${entry}]]</template>
 
 		<!-- Real-space validation -->
 		<div class="result block">

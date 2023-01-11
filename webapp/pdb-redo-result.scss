@@ -181,3 +181,19 @@ table.perc .raw-value {
 .warning:hover .warningtext {
     visibility: visible;
 }
+
+.box {
+    border: 1px solid #ccc;
+    padding: 0;
+    min-width: 2em;
+    margin-bottom: 1em;
+}
+
+.box .titlebar {
+    width: 100%;
+    height: 2em;
+    text-align: center;
+    background-color: #ebebeb;
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
+}

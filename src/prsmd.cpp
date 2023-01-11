@@ -704,12 +704,38 @@ class api_rest_controller : public zh::rest_controller
 
 // --------------------------------------------------------------------
 
+struct Stats
+{
+	double RFREE, RFFIN, OZRAMA, FZRAMA, OCHI12, FCHI12, URESO;
+
+	Stats() {}
+	Stats(double RFREE, double RFFIN, double OZRAMA, double FZRAMA, double OCHI12, double FCHI12, double URESO)
+		: RFREE(RFREE), RFFIN(RFFIN), OZRAMA(OZRAMA), FZRAMA(FZRAMA), OCHI12(OCHI12), FCHI12(FCHI12), URESO(URESO) {}
+	
+	Stats(const Stats &) = default;
+	Stats &operator=(const Stats &) = default;
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("RFREE", RFREE)
+		   & zeep::make_nvp("RFFIN", RFFIN)
+		   & zeep::make_nvp("OZRAMA", OZRAMA)
+		   & zeep::make_nvp("FZRAMA", FZRAMA)
+		   & zeep::make_nvp("OCHI12", OCHI12)
+		   & zeep::make_nvp("FCHI12", FCHI12)
+		   & zeep::make_nvp("URESO", URESO);
+	}
+};
+
 class db_rest_controller : public zeep::http::rest_controller
 {
   public:
 	db_rest_controller()
 		: zh::rest_controller("db")
 	{
+		map_get_request("statistics-for-box-plot", &db_rest_controller::get_statistics_for_box_plot, "ureso");
+
 		// get a list of the files for db entry
 		map_get_request("{id}", &db_rest_controller::get_file_list, "id");
 
@@ -752,6 +778,53 @@ class db_rest_controller : public zeep::http::rest_controller
 		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 		return rep;
+	}
+
+	std::vector<Stats> get_statistics_for_box_plot(double ureso)
+	{
+		auto &config = mcfp::config::instance();
+		fs::path toolsDir = config.get<std::string>("pdb-redo-tools-dir");
+		std::ifstream f(toolsDir / "pdb_redo_stats.csv");
+		if (not f.is_open())
+			throw std::runtime_error("Could not open statistics file");
+		
+		std::string line;
+		getline(f, line);	// skip first
+
+		std::vector<Stats> stats;
+
+		while (getline(f, line))
+		{
+			std::vector<std::string> fld;
+			zeep::split(fld, line, ",");
+			if (fld.size() != 7)
+				continue;
+			stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
+		}
+
+		sort(stats.begin(), stats.end(), [ureso](const Stats &a, const Stats &b) {
+			auto ad = (a.URESO - ureso) * (a.URESO - ureso);
+			auto bd = (b.URESO - ureso) * (b.URESO - ureso);
+			return ad < bd;
+		});
+
+		auto mm = std::accumulate(stats.begin(), stats.begin() + 1000,
+			std::tuple<double,double>{ std::numeric_limits<double>::max(), std::numeric_limits<double>::min() },
+			[](std::tuple<double,double> cur, const Stats &stat)
+			{
+				if (std::get<0>(cur) > stat.URESO)
+					std::get<0>(cur) = stat.URESO;
+				if (std::get<1>(cur) < stat.URESO)
+					std::get<1>(cur) = stat.URESO;
+				return cur;
+			});
+		
+		stats.erase(
+			std::remove_if(stats.begin(), stats.end(),
+				[mmin = std::get<0>(mm), mmax = std::get<1>(mm)](const Stats &stat) { return stat.URESO < mmin or stat.URESO > mmax; }),
+			stats.end());
+
+		return stats;
 	}
 };
 
@@ -927,6 +1000,7 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option("version", "Print version and exit"),
 
 		mcfp::make_option<std::string>("pdb-redo-db-dir", "Directory containing PDB-REDO databank"),
+		mcfp::make_option<std::string>("pdb-redo-tools-dir", "Directory containing PDB-REDO tools (and files)"),
 		mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
 		mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
 		mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
@@ -973,7 +1047,7 @@ Command should be either:
 		exit(config.has("help") ? 0 : 1);
 	}
 
-	for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir" })
+	for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir", "pdb-redo-tools-dir" })
 	{
 		if (config.has(option))
 			continue;

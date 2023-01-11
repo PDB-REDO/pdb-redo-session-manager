@@ -125,6 +125,7 @@ set(webpack_input
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.scss
 	${PROJECT_SOURCE_DIR}/webapp/admin.js
+	${PROJECT_SOURCE_DIR}/webapp/boxplot.js
 	${PROJECT_SOURCE_DIR}/webapp/index.js
 	${PROJECT_SOURCE_DIR}/webapp/login.js
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.js

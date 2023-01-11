@@ -3,6 +3,8 @@
 // import * as d3 from 'd3';
 import { PDBRedoApiRequest } from './request';
 import pdb_redo_style from './pdb-redo-result.scss';
+import {createBoxPlot} from "./boxplot";
+
 
 // Extend the LitElement base class
 class PDBRedoResult extends HTMLElement {
@@ -172,6 +174,22 @@ class PDBRedoResult extends HTMLElement {
 					});
 			})
 			);
+		
+		const entryDataJSON = shadow.querySelector("#entry-data").innerHTML;
+
+		const entryData = JSON.parse(entryDataJSON);
+		
+		const boxPlotTD = shadow.querySelector("#boxPlotTD");
+		if (boxPlotTD != null && entryData != null)
+		{
+			const data = entryData.data;
+
+			if (data.RFREE == null || data.ZCALERR === true || data.TSTCNT !== data.NTSTCNT)
+				data.RFREE = data.RFCALUNB;
+			else
+				this.RFREE = data.RFCAL;
+			createBoxPlot(data, boxPlotTD, this.url);
+		}
 	}
 
 	// render() {
