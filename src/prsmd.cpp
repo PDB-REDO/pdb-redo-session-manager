@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,28 +26,29 @@
 
 #include <zeep/config.hpp>
 
+#include <condition_variable>
 #include <functional>
 #include <iostream>
-#include <tuple>
 #include <thread>
-#include <condition_variable>
+#include <tuple>
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/daemon.hpp>
-#include <zeep/http/rest-controller.hpp>
 #include <zeep/http/html-controller.hpp>
-#include <zeep/http/security.hpp>
 #include <zeep/http/login-controller.hpp>
+#include <zeep/http/rest-controller.hpp>
+#include <zeep/http/security.hpp>
 #include <zeep/http/uri.hpp>
 
 #include <pqxx/pqxx>
 
 #include <mcfp.hpp>
 
-#include "user-service.hpp"
-#include "run-service.hpp"
+#include "data-service.hpp"
 #include "prsm-db-connection.hpp"
 #include "revision.hpp"
+#include "run-service.hpp"
+#include "user-service.hpp"
 
 #include "mrsrc.hpp"
 
@@ -58,7 +59,97 @@ using json = zeep::json::element;
 
 // --------------------------------------------------------------------
 
-#define APP_NAME "prsmd"
+class entry_class_expression_object : public zh::expression_utility_object<entry_class_expression_object>
+{
+  public:
+	static constexpr const char *name() { return "entry"; }
+
+	virtual zh::object evaluate(const zh::scope &scope, const std::string &methodName,
+		const std::vector<zh::object> &parameters) const
+	{
+		zh::object result;
+
+		try
+		{
+			if (methodName == "class" and parameters.size() == 2)
+			{
+				result = "";
+
+				if (parameters.front().is_number() and parameters.back().is_number())
+				{
+					double o = parameters.front().as<double>();
+					double f = parameters.back().as<double>();
+
+					if (o > 1.0)
+					{
+						if (f < o)
+							result = "better";
+						else if (f > o)
+							result = "worse";
+					}
+					else if (f > 1.0)
+						result = "worse";
+				}
+			}
+			else if (methodName == "percClass" and parameters.size() == 2)
+			{
+				result = "";
+
+				if (parameters.front().is_number() and parameters.back().is_number())
+				{
+					double o = parameters.front().as<double>();
+					double f = parameters.back().as<double>();
+
+					if (f == 100 || f > o)
+						result = "better";
+					else if (f < o)
+						result = "worse";
+				}
+			}
+			else if (methodName == "rffinClass" and parameters.size() == 1)
+			{
+				result = "";
+
+				auto &data = parameters.front();
+
+				if (data["RFFIN"].is_number() and data["SIGRFCAL"].is_number())
+				{
+					auto rffin = data["RFFIN"].as<double>();
+					auto sigrfcal = data["SIGRFCAL"].as<double>();
+
+					if (data["RFREE"].is_null() or data["ZCALERR"] == true or data["TSTCNT"] != data["NTSTCNT"])
+					{
+						if (data["RFCALUNB"].is_number())
+						{
+							auto rfcalunb = data["RFCALUNB"].as<double>();
+
+							if (rffin < (rfcalunb - 2.6 * sigrfcal))
+								result = "better";
+							else if (rffin > (rfcalunb + 2.6 * sigrfcal))
+								result = "worse";
+						}
+					}
+					else if (data["RFCAL"].is_number())
+					{
+						double rfcal = data["RFCAL"].as<double>();
+
+						if (rffin < (rfcal - 2.6 * sigrfcal))
+							result = "better";
+						else if (rffin > (rfcal + 2.6 * sigrfcal))
+							result = "worse";
+					}
+				}
+			}
+		}
+		catch (const std::exception &ex)
+		{
+			std::cerr << ex.what() << std::endl;
+		}
+
+		return result;
+	}
+
+} s_entry_class_expression_object;
 
 // --------------------------------------------------------------------
 
@@ -71,31 +162,26 @@ struct Session
 	std::chrono::time_point<std::chrono::system_clock> created;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
-	Session& operator=(const pqxx::row& row)
+	Session &operator=(const pqxx::row &row)
 	{
-		id			= row.at("id").as<unsigned long>();
-		name		= row.at("name").as<std::string>();
-		user		= row.at("user").as<std::string>();
-		token		= row.at("token").as<std::string>();
-		created		= zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("created").as<std::string>());
-		expires		= zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>());
+		id = row.at("id").as<unsigned long>();
+		name = row.at("name").as<std::string>();
+		user = row.at("user").as<std::string>();
+		token = row.at("token").as<std::string>();
+		created = zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("created").as<std::string>());
+		expires = zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>());
 
 		return *this;
 	}
 
-	operator bool() const	{ return id != 0; }
+	operator bool() const { return id != 0; }
 
-	bool expired() const	{ return std::chrono::system_clock::now() > expires; }
+	bool expired() const { return std::chrono::system_clock::now() > expires; }
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("name", name)
-		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("token", token)
-		   & zeep::make_nvp("created", created)
-		   & zeep::make_nvp("expires", expires);
+		ar &zeep::make_nvp("id", id) & zeep::make_nvp("name", name) & zeep::make_nvp("user", user) & zeep::make_nvp("token", token) & zeep::make_nvp("created", created) & zeep::make_nvp("expires", expires);
 	}
 };
 
@@ -106,7 +192,7 @@ struct CreateSessionResult
 	std::string token;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
-	CreateSessionResult(const Session& session)
+	CreateSessionResult(const Session &session)
 		: id(session.id)
 		, name(session.name)
 		, token(session.token)
@@ -114,7 +200,7 @@ struct CreateSessionResult
 	{
 	}
 
-	CreateSessionResult(const pqxx::row& row)
+	CreateSessionResult(const pqxx::row &row)
 		: id(row.at("id").as<unsigned long>())
 		, name(row.at("name").as<std::string>())
 		, token(row.at("token").as<std::string>())
@@ -122,37 +208,34 @@ struct CreateSessionResult
 	{
 	}
 
-	CreateSessionResult& operator=(const Session& session)
+	CreateSessionResult &operator=(const Session &session)
 	{
 		id = session.id;
 		name = session.name;
 		token = session.token;
 		expires = session.expires;
-		
-		return *this;
-	}
-
-	CreateSessionResult& operator=(const pqxx::row& row)
-	{
-		id			= row.at("id").as<unsigned long>();
-		name		= row.at("name").as<std::string>();
-		token		= row.at("token").as<std::string>();
-		expires		= zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>());
 
 		return *this;
 	}
 
-	operator bool() const	{ return id != 0; }
-
-	bool expired() const	{ return std::chrono::system_clock::now() > expires; }
-
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
+	CreateSessionResult &operator=(const pqxx::row &row)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("name", name)
-		   & zeep::make_nvp("token", token)
-		   & zeep::make_nvp("expires", expires);
+		id = row.at("id").as<unsigned long>();
+		name = row.at("name").as<std::string>();
+		token = row.at("token").as<std::string>();
+		expires = zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>());
+
+		return *this;
+	}
+
+	operator bool() const { return id != 0; }
+
+	bool expired() const { return std::chrono::system_clock::now() > expires; }
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
+	{
+		ar &zeep::make_nvp("id", id) & zeep::make_nvp("name", name) & zeep::make_nvp("token", token) & zeep::make_nvp("expires", expires);
 	}
 };
 
@@ -161,13 +244,12 @@ struct CreateSessionResult
 class SessionStore
 {
   public:
-
 	static void init()
 	{
 		sInstance = new SessionStore();
 	}
 
-	static SessionStore& instance()
+	static SessionStore &instance()
 	{
 		return *sInstance;
 	}
@@ -178,21 +260,20 @@ class SessionStore
 		sInstance = nullptr;
 	}
 
-	Session create(const std::string& name, const std::string& user);
+	Session create(const std::string &name, const std::string &user);
 
 	Session get_by_id(unsigned long id);
-	Session get_by_token(const std::string& token);
+	Session get_by_token(const std::string &token);
 	void delete_by_id(unsigned long id);
 
 	std::vector<Session> get_all_sessions();
 
   private:
-
 	SessionStore();
 	~SessionStore();
 
-	SessionStore(const SessionStore&) = delete;
-	SessionStore& operator=(const SessionStore&) = delete;
+	SessionStore(const SessionStore &) = delete;
+	SessionStore &operator=(const SessionStore &) = delete;
 
 	void run_clean_thread();
 
@@ -202,10 +283,10 @@ class SessionStore
 	std::mutex m_cv_m;
 	std::thread m_clean;
 
-	static SessionStore* sInstance;
+	static SessionStore *sInstance;
 };
 
-SessionStore* SessionStore::sInstance = nullptr;
+SessionStore *SessionStore::sInstance = nullptr;
 
 SessionStore::SessionStore()
 	: m_clean(std::bind(&SessionStore::run_clean_thread, this))
@@ -236,7 +317,7 @@ void SessionStore::run_clean_thread()
 				auto r = tx.exec0(R"(DELETE FROM session WHERE CURRENT_TIMESTAMP > expires)");
 				tx.commit();
 			}
-			catch (const std::exception& ex)
+			catch (const std::exception &ex)
 			{
 				std::cerr << ex.what() << std::endl;
 			}
@@ -244,7 +325,7 @@ void SessionStore::run_clean_thread()
 	}
 }
 
-Session SessionStore::create(const std::string& name, const std::string& user)
+Session SessionStore::create(const std::string &name, const std::string &user)
 {
 	User u = UserService::instance().get_user(user);
 
@@ -254,7 +335,8 @@ Session SessionStore::create(const std::string& name, const std::string& user)
 
 	auto r = tx.exec1(
 		R"(INSERT INTO session (user_id, name, token)
-		   VALUES ()" + std::to_string(u.id) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
+		   VALUES ()" +
+		std::to_string(u.id) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
 		   RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
 			   trim(both '"' from to_json(expires)::text) AS expires)");
 
@@ -262,9 +344,8 @@ Session SessionStore::create(const std::string& name, const std::string& user)
 	std::string created = r[1].as<std::string>();
 
 	tx.commit();
-	
-	return
-	{
+
+	return {
 		tokenid,
 		name,
 		user,
@@ -284,18 +365,19 @@ Session SessionStore::get_by_id(unsigned long id)
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
 		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
-		   WHERE a.id = )" + std::to_string(id));
+		   WHERE a.id = )" +
+		std::to_string(id));
 
 	Session result = {};
 	if (r.size() == 1)
 		result = r.front();
 
 	tx.commit();
-	
+
 	return result;
 }
 
-Session SessionStore::get_by_token(const std::string& token)
+Session SessionStore::get_by_token(const std::string &token)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec(
@@ -306,14 +388,15 @@ Session SessionStore::get_by_token(const std::string& token)
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
 		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
-		   WHERE a.token = )" + tx.quote(token));
+		   WHERE a.token = )" +
+		tx.quote(token));
 
 	Session result = {};
 	if (r.size() == 1)
 		result = r.front();
 
 	tx.commit();
-	
+
 	return result;
 }
 
@@ -341,7 +424,7 @@ std::vector<Session> SessionStore::get_all_sessions()
 			WHERE a.user_id = b.id
 			ORDER BY a.created ASC)");
 
-	for (auto row: rows)
+	for (auto row : rows)
 	{
 		Session session;
 		session = row;
@@ -380,7 +463,8 @@ class session_rest_controller : public zh::rest_controller
 		pqxx::transaction tx(prsm_db_connection::instance());
 		auto t = tx.exec1(
 			R"(INSERT INTO session (user_id, name, token)
-			   VALUES ()" + std::to_string(userid) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
+			   VALUES ()" +
+			std::to_string(userid) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
 			RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
 					  trim(both '"' from to_json(expires)::text) AS expires)");
 
@@ -393,7 +477,7 @@ class session_rest_controller : public zh::rest_controller
 class api_rest_controller : public zh::rest_controller
 {
   public:
-	api_rest_controller(const std::string& pdbRedoDir)
+	api_rest_controller(const std::string &pdbRedoDir)
 		: zh::rest_controller("api")
 		, m_pdb_redo_dir(pdbRedoDir)
 	{
@@ -426,7 +510,7 @@ class api_rest_controller : public zh::rest_controller
 		map_delete_request("session/{id}/run/{run}", &api_rest_controller::delete_run, "id", "run");
 	}
 
-	virtual bool handle_request(zh::request& req, zh::reply& rep)
+	virtual bool handle_request(zh::request &req, zh::reply &rep)
 	{
 		bool result = false;
 
@@ -474,13 +558,13 @@ class api_rest_controller : public zh::rest_controller
 
 				// canonical request
 
-				std::vector<std::tuple<std::string,std::string>> params;
-				for (auto& p: req.get_parameters())
+				std::vector<std::tuple<std::string, std::string>> params;
+				for (auto &p : req.get_parameters())
 					params.push_back(std::make_tuple(p.first, p.second));
 				std::sort(params.begin(), params.end());
 				std::ostringstream ps;
 				auto n = params.size();
-				for (auto& [name, value]: params)
+				for (auto &[name, value] : params)
 				{
 					ps << zeep::http::encode_url(name);
 					if (not value.empty())
@@ -495,17 +579,17 @@ class api_rest_controller : public zh::rest_controller
 				auto pqs = pathPart.find('?');
 				if (pqs != std::string::npos)
 					pathPart.erase(pqs, std::string::npos);
-				
+
 				// Correct for a potential context
 				if (not m_server->get_context_name().empty())
 					pathPart = '/' + m_server->get_context_name() + pathPart;
 
 				std::ostringstream ss;
 				ss << req.get_method() << std::endl
-				<< pathPart << std::endl
-				<< ps.str() << std::endl
-				<< req.get_header("host") << std::endl
-				<< contentHash;
+				   << pathPart << std::endl
+				   << ps.str() << std::endl
+				   << req.get_header("host") << std::endl
+				   << contentHash;
 
 				auto canonicalRequest = ss.str();
 				auto canonicalRequestHash = zeep::encode_base64(zeep::sha256(canonicalRequest));
@@ -515,9 +599,9 @@ class api_rest_controller : public zh::rest_controller
 
 				std::ostringstream ss2;
 				ss2 << "PDB-REDO-api" << std::endl
-				<< timestamp << std::endl
-				<< credential << std::endl
-				<< canonicalRequestHash;
+					<< timestamp << std::endl
+					<< credential << std::endl
+					<< canonicalRequestHash;
 				auto stringToSign = ss2.str();
 
 				auto tokenid = credentials[0];
@@ -532,13 +616,11 @@ class api_rest_controller : public zh::rest_controller
 
 				result = zh::rest_controller::handle_request(req, rep);
 			}
-			catch (const std::exception& e)
+			catch (const std::exception &e)
 			{
 				using namespace std::literals;
 
-				rep.set_content(json({
-					{ "error", e.what() }
-				}));
+				rep.set_content(json({ { "error", e.what() } }));
 				rep.set_status(zh::unauthorized);
 
 				result = true;
@@ -567,8 +649,8 @@ class api_rest_controller : public zh::rest_controller
 		return RunService::instance().get_runs_for_user(session.user);
 	}
 
-	Run create_job(unsigned long sessionID, const zh::file_param& diffractionData, const zh::file_param& coordinates,
-		const zh::file_param& restraints, const zh::file_param& sequence, const json& params)
+	Run create_job(unsigned long sessionID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
+		const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
@@ -589,7 +671,7 @@ class api_rest_controller : public zh::rest_controller
 		return RunService::instance().get_result_file_list(session.user, runID);
 	}
 
-	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string& file)
+	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string &file)
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
@@ -602,7 +684,7 @@ class api_rest_controller : public zh::rest_controller
 
 		const auto &[is, name] = RunService::instance().get_zipped_result_file(session.user, runID);
 
-		zh::reply rep{zh::ok};
+		zh::reply rep{ zh::ok };
 		rep.set_content(is, "application/zip");
 		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
@@ -622,44 +704,99 @@ class api_rest_controller : public zh::rest_controller
 
 // --------------------------------------------------------------------
 
-class prsm_html_controller : public zh::html_controller
+class db_rest_controller : public zeep::http::rest_controller
 {
   public:
-	prsm_html_controller(const std::string& pdbRedoDir)
-		: m_pdb_redo_dir(pdbRedoDir)
+	db_rest_controller()
+		: zh::rest_controller("db")
 	{
-		mount("", &prsm_html_controller::welcome);
+		// get a list of the files for db entry
+		map_get_request("{id}", &db_rest_controller::get_file_list, "id");
 
-		mount("admin", &prsm_html_controller::admin);
+		// get all files zipped into an archive
+		map_get_request("{id}/zipped", &db_rest_controller::get_zip_file, "id");
 
-		mount("register", &prsm_html_controller::handle_registration);
+		// get a result file
+		map_get_request("{id}/{file}", &db_rest_controller::get_file, "id", "file");
 
-		mount("admin/deleteSession", "DELETE", &prsm_html_controller::handle_delete_session);
-		mount("{css,scripts,fonts,images}/", &prsm_html_controller::handle_file);
-
-		mount("result", &prsm_html_controller::handle_result);
-
-		mount("entry", &prsm_html_controller::handle_entry);
+		map_get_request("{id}/wf/pdbout.txt", &db_rest_controller::get_wf_file, "id");
+		map_get_request("{id}/wo/pdbout.txt", &db_rest_controller::get_wo_file, "id");
 	}
 
-	void welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-	void admin(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-	void handle_registration(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+	std::vector<std::string> get_file_list(const std::string &pdbID)
+	{
+		return data_service::instance().get_file_list(pdbID);
+	}
 
-	void handle_delete_session(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+	fs::path get_file(const std::string &pdbID, const std::string &file)
+	{
+		return data_service::instance().get_file(pdbID, file);
+	}
 
-	void handle_result(const zh::request& request, const zh::scope& scope, zh::reply& reply);
-	void handle_entry(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+	fs::path get_wf_file(const std::string &pdbID)
+	{
+		return data_service::instance().get_file(pdbID, "wf/pdbout.txt");
+	}
+
+	fs::path get_wo_file(const std::string &pdbID)
+	{
+		return data_service::instance().get_file(pdbID, "wo/pdbout.txt");
+	}
+
+	zh::reply get_zip_file(const std::string &pdbID)
+	{
+		const auto &[is, name] = data_service::instance().get_zip_file(pdbID);
+
+		zh::reply rep{ zh::ok };
+		rep.set_content(is, "application/zip");
+		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+
+		return rep;
+	}
+};
+
+// --------------------------------------------------------------------
+
+class service_html_controller : public zh::html_controller
+{
+  public:
+	service_html_controller(const std::string &pdbRedoDir)
+		: m_pdb_redo_dir(pdbRedoDir)
+	{
+		mount("", &service_html_controller::welcome);
+
+		mount("admin", &service_html_controller::admin);
+
+		mount("register", &service_html_controller::handle_registration);
+
+		mount("admin/deleteSession", "DELETE", &service_html_controller::handle_delete_session);
+		mount("{css,scripts,fonts,images}/", &service_html_controller::handle_file);
+
+		mount("result", &service_html_controller::handle_result);
+
+		mount("entry", &service_html_controller::handle_entry);
+		mount("db-entry", &service_html_controller::handle_db_entry);
+	}
+
+	void welcome(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	void admin(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	void handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+
+	void handle_delete_session(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+
+	void handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	void handle_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	void handle_db_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply);
 
 	std::string m_pdb_redo_dir;
 };
 
-void prsm_html_controller::welcome(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+void service_html_controller::welcome(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	get_template_processor().create_reply_from_template("index.html", scope, reply);
 }
 
-void prsm_html_controller::admin(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+void service_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	zh::scope sub(scope);
 
@@ -671,7 +808,7 @@ void prsm_html_controller::admin(const zh::request& request, const zh::scope& sc
 	get_template_processor().create_reply_from_template("admin.html", sub, reply);
 }
 
-void prsm_html_controller::handle_delete_session(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+void service_html_controller::handle_delete_session(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	unsigned long sessionID = std::stoul(request.get_parameter("sessionid", "0"));
 	if (sessionID != 0)
@@ -680,12 +817,12 @@ void prsm_html_controller::handle_delete_session(const zh::request& request, con
 	reply = zh::reply::stock_reply(zh::ok);
 }
 
-void prsm_html_controller::handle_registration(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+void service_html_controller::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	get_template_processor().create_reply_from_template("register.html", scope, reply);
 }
 
-void prsm_html_controller::handle_result(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+void service_html_controller::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	auto token_id = request.get_parameter("token-id");
 	auto token_secret = request.get_parameter("token-secret");
@@ -705,7 +842,7 @@ void prsm_html_controller::handle_result(const zh::request& request, const zh::s
 	get_template_processor().create_reply_from_template("pdb-redo-result.html", sub, reply);
 }
 
-void prsm_html_controller::handle_entry(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+void service_html_controller::handle_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	zeep::json::element entry;
 
@@ -717,9 +854,63 @@ void prsm_html_controller::handle_entry(const zh::request& request, const zh::sc
 	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
 }
 
+void service_html_controller::handle_db_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+{
+	auto pdbID = request.get_parameter("pdb-id");
+
+	std::ifstream dataJson(data_service::instance().get_file(pdbID, "data.json"));
+
+	zeep::json::element data;
+	zeep::json::parse_json(dataJson, data);
+
+	zeep::json::element entry{
+		{ "id", pdbID },
+		{ "dbEntry", true }
+	};
+
+	entry["data"] = std::move(data["properties"]);
+
+	auto &link = entry["link"];
+	fs::path db("db/" + pdbID);
+	for (auto file : data_service::instance().get_file_list(pdbID))
+	{
+		if (zeep::ends_with(file, "final.pdb"))
+			link["final_pdb"] = db / file;
+		else if (zeep::ends_with(file, "final.cif"))
+			link["final_cif"] = db / file;
+		else if (zeep::ends_with(file, "final.mtz"))
+			link["final_mtz"] = db / file;
+		else if (zeep::ends_with(file, "besttls.pdb.gz"))
+			link["besttls_pdb"] = db / file;
+		else if (zeep::ends_with(file, "besttls.mtz.gz"))
+			link["besttls_mtz"] = db / file;
+		else if (zeep::ends_with(file, ".refmac"))
+			link["refmac_settings"] = db / file;
+		else if (zeep::ends_with(file, "homology.rest"))
+			link["homology_rest"] = db / file;
+		else if (zeep::ends_with(file, "hbond.rest"))
+			link["hbond_rest"] = db / file;
+		else if (zeep::ends_with(file, "metal.rest"))
+			link["metal_rest"] = db / file;
+		else if (zeep::ends_with(file, "nucleic.rest"))
+			link["nucleic_rest"] = db / file;
+		else if (zeep::ends_with(file, "wo/pdbout.txt"))
+			link["wo"] = db / file;
+		else if (zeep::ends_with(file, "wf/pdbout.txt"))
+			link["wf"] = db / file;
+	}
+
+	link["alldata"] = db / "zipped";
+
+	zh::scope sub(scope);
+	sub.put("entry", entry);
+
+	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
+}
+
 // --------------------------------------------------------------------
 
-int a_main(int argc, char* const argv[])
+int a_main(int argc, char *const argv[])
 {
 	using namespace std::literals;
 
@@ -735,7 +926,8 @@ int a_main(int argc, char* const argv[])
 		mcfp::make_option<std::string>("config", "Specify the config file to use"),
 		mcfp::make_option("version", "Print version and exit"),
 
-		mcfp::make_option<std::string>("pdb-redo-dir", "Directory containing PDB-REDO server data"),
+		mcfp::make_option<std::string>("pdb-redo-db-dir", "Directory containing PDB-REDO databank"),
+		mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
 		mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
 		mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
 		mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
@@ -770,7 +962,7 @@ int a_main(int argc, char* const argv[])
 	if (config.has("help") or config.operands().empty())
 	{
 		std::cerr << config << std::endl
-			 << R"(
+				  << R"(
 Command should be either:
 
   start     start a new server
@@ -780,29 +972,31 @@ Command should be either:
 			 )" << std::endl;
 		exit(config.has("help") ? 0 : 1);
 	}
-	
-	if (not config.has("pdb-redo-dir"))
+
+	for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir" })
 	{
-		std::cerr << "Missing pdb-redo-dir option" << std::endl;
+		if (config.has(option))
+			continue;
+		std::cerr << "Missing " << option << " option" << std::endl;
 		exit(1);
 	}
 
 	try
 	{
 		std::stringstream vConn;
-		for (std::string opt: { "db-host", "db-port", "db-dbname", "db-user", "db-password" })
+		for (std::string opt : { "db-host", "db-port", "db-dbname", "db-user", "db-password" })
 		{
 			if (config.has(opt) == 0)
 				continue;
-			
+
 			vConn << opt.substr(3) << "=" << config.get<std::string>(opt) << ' ';
 		}
 
 		prsm_db_connection::init(vConn.str());
 
 		std::string admin = config.get<std::string>("admin");
-		std::string pdbRedoDir = config.get<std::string>("pdb-redo-dir");
-		std::string runsDir = pdbRedoDir + "/runs";
+		std::string pdbRedoServicesDir = config.get<std::string>("pdb-redo-services-dir");
+		std::string runsDir = pdbRedoServicesDir + "/runs";
 		if (config.has("runs-dir"))
 			runsDir = config.get<std::string>("runs-dir");
 
@@ -810,7 +1004,7 @@ Command should be either:
 
 		SessionStore::init();
 		UserService::init(admin);
-		
+
 		std::string secret;
 		if (config.has("secret"))
 			secret = config.get<std::string>("secret");
@@ -824,8 +1018,8 @@ Command should be either:
 		if (config.has("context"))
 			context = config.get<std::string>("context");
 
-		zh::daemon server([secret, pdbRedoDir,context]()
-		{
+		zh::daemon server([secret, pdbRedoServicesDir, context]()
+			{
 			auto sc = new zh::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
 			sc->add_rule("/admin/**", { "ADMIN" });
@@ -853,17 +1047,19 @@ Command should be either:
 
 			s->add_controller(new zh::login_controller());
 
-			s->add_controller(new prsm_html_controller(pdbRedoDir));
+			s->add_controller(new service_html_controller(pdbRedoServicesDir));
 			s->add_controller(new session_rest_controller());
-			s->add_controller(new api_rest_controller(pdbRedoDir));
+			s->add_controller(new api_rest_controller(pdbRedoServicesDir));
 
-			return s;
-		}, APP_NAME );
+			s->add_controller(new db_rest_controller());
+
+			return s; },
+			kProjectName);
 
 		std::string user = "www-data";
 		if (config.has("user") != 0)
 			user = config.get<std::string>("user");
-		
+
 		std::string address = "0.0.0.0";
 		if (config.has("address"))
 			address = config.get<std::string>("address");
@@ -901,7 +1097,7 @@ Command should be either:
 	catch (const std::exception &ex)
 	{
 		std::cerr << "exception:" << std::endl
-			 << ex.what() << std::endl;
+				  << ex.what() << std::endl;
 		result = 1;
 	}
 

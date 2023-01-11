@@ -1,35 +1,183 @@
-@use "sass:math";
+// @use "sass:math";
 
-// (Required) Import Bootstrap
-@import "bootstrap/scss/_functions";
-@import "bootstrap/scss/_variables";
-@import "bootstrap/scss/_mixins";
+// // (Required) Import Bootstrap
+// @import "bootstrap/scss/_functions";
+// @import "bootstrap/scss/_variables";
+// @import "bootstrap/scss/_mixins";
 
-$font-family-sans-serif: "Verdana", "Arial", "Helvetica", "sans-serif";
+// $font-family-sans-serif: "Verdana", "Arial", "Helvetica", "sans-serif";
 
-$primary: rgb(100, 100, 100);
+// $primary: rgb(100, 100, 100);
 
-$nav-primary: #FF9933;
-$nav-secondary: #ffecbf;
-$nav-link: #3366cc;
+// $nav-primary: #FF9933;
+// $nav-secondary: #ffecbf;
+// $nav-link: #3366cc;
 
-$nav-primary-hover: #d8c7a5;
+// $nav-primary-hover: #d8c7a5;
 
-$theme-colors: (
-	"nav-primary": $nav-primary,
-	"nav-secondary": $nav-secondary,
+// $theme-colors: (
+// 	"nav-primary": $nav-primary,
+// 	"nav-secondary": $nav-secondary,
 
-	"primary": $primary
-);
+// 	"primary": $primary
+// );
 
-$navbar-dark-color: $nav-link;
-$navbar-dark-hover-color: $nav-link;
-$navbar-dark-active-color: $nav-link;
-$navbar-dark-disabled-color: rgba($nav-link, .5);
+// $navbar-dark-color: $nav-link;
+// $navbar-dark-hover-color: $nav-link;
+// $navbar-dark-active-color: $nav-link;
+// $navbar-dark-disabled-color: rgba($nav-link, .5);
 
-$navbar-padding-y: 0;
-$nav-link-padding-y: math.div($spacer, 2);
+// $navbar-padding-y: 0;
+// $nav-link-padding-y: math.div($spacer, 2);
 
-// (Required) Import Bootstrap
-@import "bootstrap/scss/bootstrap";
+// // (Required) Import Bootstrap
+// @import "bootstrap/scss/bootstrap";
 
+// Result page specific colouring
+
+* {
+    font-family: "Verdana", "Arial", "Helvetica", "sans-serif";
+    color: #4D4D4D;
+    margin: 0;
+    padding: 0;
+}
+
+table {
+	min-width: 685px;
+	caption-side: top;
+    border-collapse: collapse;
+}
+
+caption {
+    padding: 5px;
+    border-bottom: 1px solid #eeddbe;
+	color: black;
+    background-color: #e8e3d9;
+    /*color: white;*/
+    font-weight: bold;
+    font-size: large;
+    text-align: left;
+}
+
+th {
+    padding: 5px;
+    /*border: 1px solid #FDEDCB;;*/
+    border-bottom: 1px solid #a3967f;;
+    background-color: #fff5e0;
+    font-weight: bold;
+    text-align: left;
+}
+
+td {
+    padding: 5px;
+    border-bottom: 1px solid #d6c6aa;;
+}
+
+table.c8 td {
+    width: 12.5%;
+}
+
+table.c4 td {
+    width: 25%;
+}
+
+table.c3 td {
+    width: 40%;
+}
+
+table.c3 td + td {
+    width: 30%;
+}
+
+td.c {
+    text-align: center;
+}
+
+td.rj {
+    text-align: right;
+}
+
+td.worse {
+    background-color: #ffa599;
+}
+
+td.better {
+    background-color: #d5f5b5;
+}
+
+td.group {
+    font-style: italic;
+    padding-left: 1em;
+}
+
+.label {
+    font-style: italic;
+}
+
+td + td.label {
+    padding-left: 3em;
+}
+
+table.raw .perc-value {
+    display: none;
+}
+
+a {
+    color: #3366cc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+
+table.raw .perc-value {
+    display: none;
+}
+
+.toggle {
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.toggle:hover {
+    color: #777777;
+}
+
+table.raw #raw, table.perc #perc {
+    text-decoration: underline;
+}
+
+table.raw #perc, table.perc #raw {
+    color: #3366cc;
+}
+
+table.perc .raw-value {
+    display: none;
+}
+
+.warning {
+    position: relative;
+    float: left;
+    border-bottom: 1px dotted black;
+}
+
+.warning .warningtext {
+    visibility: hidden;
+    background-color: #4d4d4d;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    width: 300px;
+    top: 100%;
+    left: 50%;
+    margin-left: -150px;
+    position: absolute;
+    z-index: 1;
+}
+
+.warning:hover .warningtext {
+    visibility: visible;
+}

@@ -30,15 +30,11 @@
 #include <regex>
 #include <stdexcept>
 
-// libarchive
-#include <archive.h>
-#include <archive_entry.h>
-
-#include <gxrio.hpp>
 #include <zeep/streambuf.hpp>
 
 #include "run-service.hpp"
 #include "user-service.hpp"
+#include "zip-support.hpp"
 
 namespace fs = std::filesystem;
 namespace zh = zeep::http;
@@ -327,92 +323,6 @@ fs::path RunService::get_result_file(const std::string &username, unsigned long 
 
 	return result;
 }
-
-// --------------------------------------------------------------------
-
-class ZipWriter
-{
-  public:
-	ZipWriter()
-		: m_s(new std::stringstream)
-	{
-		m_a = archive_write_new();
-		archive_write_set_format_zip(m_a);
-		archive_write_open(m_a, this, &open_cb, &write_cb, &close_cb);
-	}
-
-	~ZipWriter()
-	{
-		archive_write_free(m_a);
-	}
-
-	void add(fs::path file, fs::path name)
-	{
-		gxrio::ifstream in(file);
-
-		bool compressed = file.extension() == ".gz";
-		assert(compressed == (name.extension() == ".gz"));
-
-		std::vector<char> data;
-
-		if (compressed)
-			name.replace_extension();
-
-		for (;;)
-		{
-			char buffer[10240];
-			auto n = in.rdbuf()->sgetn(buffer, sizeof(buffer));
-
-			if (n == 0)
-				break;
-
-			data.insert(data.end(), buffer, buffer + n);
-		}
-
-		auto entry = archive_entry_new();
-		archive_entry_set_pathname(entry, name.c_str());
-		archive_entry_set_filetype(entry, AE_IFREG);
-		archive_entry_set_perm(entry, 0644);
-		archive_entry_set_size(entry, data.size());
-		archive_write_header(m_a, entry);
-
-		archive_write_data(m_a, data.data(), data.size());
-
-		archive_entry_free(entry);
-	}
-
-	std::istream *finish()
-	{
-		archive_write_close(m_a);
-
-		return m_s.release();
-	}
-
-  private:
-	static int open_cb(struct archive *a, void *self)
-	{
-		return ARCHIVE_OK;
-	}
-
-	static la_ssize_t write_cb(struct archive *a, void *self, const void *buffer, size_t length)
-	{
-		return static_cast<ZipWriter *>(self)->write(static_cast<const char *>(buffer), length);
-	}
-
-	static int close_cb(struct archive *a, void *self)
-	{
-		return ARCHIVE_OK;
-	}
-
-	la_ssize_t write(const char *buffer, size_t length)
-	{
-		m_s->write(buffer, length);
-		return length;
-	}
-
-	struct archive *m_a;
-	std::unique_ptr<std::stringstream> m_s;
-};
 
 // --------------------------------------------------------------------
 

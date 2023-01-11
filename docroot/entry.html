@@ -1,0 +1,561 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [
+<!ENTITY Aring "&#197;">
+<!ENTITY alpha "&#945;">
+<!ENTITY beta "&#946;">
+<!ENTITY gamma "&#947;">
+<!ENTITY deg "&#176;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head>
+	<meta charset="UTF-8" />
+	<title>PDB-REDO entry</title>
+</head>
+
+<body>
+
+	<div z2:fragment="tables">
+
+		<!-- <script z2:if="${entry.dbEntry}"
+			src="https://pdb-redo.eu/rama-angles/scripts/rama-plot-loader.bundle.js"
+			defer="defer"></script> -->
+
+		<em z2:if="${entry.data.TITLE}" z2:text="${entry.data.TITLE}"></em>
+
+		<!-- <div class="result block">
+			<p>
+				This information was created with PDB-REDO version <span
+					z2:text="${entry.data.VERSION}"></span>.
+				<span z2:if="${not entry.upToDate and not (entry.data.NOPDB or entry.data.NOSF) }">
+					<span z2:switch="${entry.updatePending}">
+						<span z2:case="${true}">Update to version <span z2:text="${version}" /> is
+							pending.</span>
+						<span z2:case="${false}">
+							<a z2:if="${user.isValid()}"
+								z2:href="@{'/db-update/' + ${entry.id}}">Request update</a>
+							<span z2:if="${not user.isValid()}">Please <a z2:href="@{/login}">log in</a>
+								to request an update.</span>
+						</span>
+					</span>
+				</span>
+
+				<span z2:if="${not entry.dbEntry}">Download the full log file <a
+						z2:href="@{/${entry.getLink('log')}}">here</a>.
+				</span>
+			</p>
+		</div> -->
+
+		<div class="alert alert-warning" role="alert" z2:if="${entry.data.NOPDB}">
+			The PDB file was edited manually to make PDB-REDO run
+		</div>
+
+		<div class="alert alert-warning" role="alert" z2:if="${entry.data.NOSF}">
+			Structure factor file was edited manually to make PDB-REDO run
+		</div>
+
+		<div class="alert alert-info" role="alert" z2:if="${entry.data.COMMENT != null}">
+			<span z2:text="${entry.data.COMMENT}"></span>
+		</div>
+
+		<!-- <script src="/static/scripts/entry.js" z2:src="@{/scripts/entry.js}"
+			type="application/ecmascript"></script> -->
+
+		<div class="result" z2:with="data=${entry.data},id=${entry.id}">
+
+			<!--@thymesVar id="data" type="pdbredo.business.entities.PDBRedoEntry" -->
+
+			<table class="c8">
+				<caption>Crystallographic data</caption>
+				<tr>
+					<th colspan="8">From PDB header</th>
+				</tr>
+				<tr>
+					<td class="label">Spacegroup</td>
+					<td class="ar" z2:text="${data.SPACEGROUP != null ? data.SPACEGROUP : 'N/A'}"></td>
+					<td class="ar"><span class="label">a: </span><span
+							z2:text="${data.AAXIS != null ? #numbers.formatDecimal(data.AAXIS, 1, 3) : 'N/A'}" />
+						&Aring;
+					</td>
+					<td class="ar"><span class="label">b: </span><span
+							z2:text="${data.BAXIS != null ? #numbers.formatDecimal(data.BAXIS, 1, 3) : 'N/A'}" />
+						&Aring;
+					</td>
+					<td class="ar"><span class="label">c: </span><span
+							z2:text="${data.CAXIS != null ? #numbers.formatDecimal(data.CAXIS, 1, 3) : 'N/A'}" />
+						&Aring;
+					</td>
+					<td class="ar"><span class="label">&alpha;: </span><span
+							z2:text="${data.ALPHA != null ? #numbers.formatDecimal(data.ALPHA, 1, 2) : 'N/A'}" />&deg;
+					</td>
+					<td class="ar"><span class="label">&beta;: </span><span
+							z2:text="${data.BETA != null ? #numbers.formatDecimal(data.BETA, 1, 2) : 'N/A'}" />&deg;
+					</td>
+					<td class="ar"><span class="label">&gamma;: </span><span
+							z2:text="${data.GAMMA != null ? #numbers.formatDecimal(data.GAMMA, 1, 2) : 'N/A'}" />&deg;
+					</td>
+				</tr>
+				<tr>
+					<td class="label">Resolution</td>
+					<td class="ar"><span
+							z2:text="${data.RESOLUTION != null ? #numbers.formatDecimal(data.RESOLUTION, 1, 2) : 'N/A'}" />
+						&Aring;</td>
+					<td class="label">Reflections</td>
+					<td class="ar" z2:text="${data.NREFCNT != null ? data.NREFCNT : 'N/A'}" />
+					<td class="label">Test set</td>
+					<td class="ar" z2:text="${
+	(data.TSTCNT == null or data.NREFCNT == null) ? 'N/A' :
+		data.TSTCNT + ' (' + #numbers.formatDecimal(100.0 * data.TSTCNT / data.NREFCNT, 1, 1) + '%)'
+}" />
+					<td colspan="2"></td>
+				</tr>
+				<tr>
+					<td class="label">R</td>
+					<td class="ar"
+						z2:text="${data.RFACT != null ? #numbers.formatDecimal(data.RFACT, 1, 4) : 'N/A'}" />
+					<td class="label">R-free</td>
+					<td class="ar">
+						<span
+							z2:text="${data.RFREE != null ? #numbers.formatDecimal(data.RFREE, 1, 4) : 'N/A'}" />
+						<span class="warning" z2:if="${data.RFREE == 'N/A'}">
+							<img z2:src="@{/images/waarschuwing.svg}" />
+							<span class="warningtext">
+								R-free could not be extracted from the PDB header
+							</span>
+						</span>
+					</td>
+					<td colspan="4"></td>
+				</tr>
+				<tr>
+					<th colspan="8">According to PDB-REDO</th>
+				</tr>
+				<tr>
+					<td class="label">Resolution</td>
+					<td class="ar"><span
+							z2:text="${data.URESO != null ? #numbers.formatDecimal(data.URESO, 1, 2) : 'N/A'}" />
+						&Aring;</td>
+					<td class="label">Reflections</td>
+					<td class="ar" z2:text="${data.NREFCNT != null ? data.NREFCNT : 'N/A'}" />
+					<td class="label">Test set</td>
+					<td class="ar">
+						<span z2:text="${
+	(data.NTSTCNT == null or data.NREFCNT == null) ? 'N/A' :
+		data.NTSTCNT + ' (' + #numbers.formatDecimal(100.0 * data.NTSTCNT / data.NREFCNT, 1, 1) + '%)'
+	}" />
+						<span class="warning" z2:if="${data.TSTCNT != data.NTSTCNT}">
+							<img z2:src="@{/images/waarschuwing.svg}" />
+							<span class="warningtext">
+								New test set, PDB-REDO compensated for this.
+							</span>
+						</span>
+					</td>
+					<td class="label">Twin</td>
+					<td class="ar">
+						<span z2:text="${data.ISTWIN != null ? data.ISTWIN : 'N/A'}" />
+						<span class="warning" z2:if="${data.ISTWIN and data.FALSETWIN}">
+							<img z2:src="@{/images/waarschuwing.svg}" />
+							<span class="warningtext">
+								Data treated as twinned, but there may be other (symmetry) issues
+							</span>
+						</span>
+					</td>
+				</tr>
+				<tr>
+					<th colspan="8">PDB-REDO files</th>
+				</tr>
+				<tr>
+					<td class="c" colspan="2">
+						Re-refined and rebuilt structure
+						<br />
+						(
+						<a z2:href="@{/${entry.link['final_pdb']}}">PDB</a> |
+						<a z2:href="@{/${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a> |
+						<a z2:href="@{/${entry.link['final_mtz']}}">MTZ</a>)
+					</td>
+					<td class="c" colspan="2">
+						Re-refined (only) structure
+						<br />
+						(
+						<a z2:href="@{/${entry.link['besttls_pdb']}}">PDB</a> |
+						<a z2:href="@{/${entry.link['besttls_mtz']}}">MTZ</a>)
+					</td>
+					<td class="c" colspan="2">
+						<a z2:href="@{/${entry.link['alldata']}}">All files</a>
+						<br />
+						(compressed)
+					</td>
+				</tr>
+
+				<z2:block z2:if="${entry.link['refmac_settings']}">
+					<tr>
+						<th colspan="8">REFMAC5 command files</th>
+					</tr>
+					<tr>
+						<td class="c" colspan="8">
+							<list class="refmaclinks no-list">
+								<li z2:if="${entry.link['refmac_settings']}"><a
+										z2:href="@{/${entry.link['refmac_settings']}}">Refinement
+										settings</a></li>
+								<li z2:if="${entry.link['homology_rest']}"><a
+										z2:href="@{/${entry.link['homology_rest']}}">Homology
+										restraints</a></li>
+								<li z2:if="${entry.link['hbond_rest']}"><a
+										z2:href="@{/${entry.link['hbond_rest']}}">H-bond
+										restraints</a></li>
+								<li z2:if="${entry.link['metal_rest']}"><a
+										z2:href="@{/${entry.link['metal_rest']}}">Metal restraints</a>
+								</li>
+								<li z2:if="${entry.link['nucleic_rest']}"><a
+										z2:href="@{/${entry.link['nucleic_rest']}}">DNA/RNA
+										restraints</a></li>
+							</list>
+						</td>
+					</tr>
+				</z2:block>
+
+				<tr z2:if="${entry.dbEntry}">
+					<th colspan="8">Links</th>
+				</tr>
+				<tr z2:if="${entry.dbEntry}">
+					<td class="c" colspan="2">
+						<a target="_BLANK"
+							z2:href="@{|https://www.ebi.ac.uk/pdbe/entry/pdb/${id}|}">PDBe</a>
+					</td>
+					<td class="c" colspan="2">
+						<a target="_BLANK"
+							z2:href="@{'http://www.rcsb.org/pdb/explore/explore.do?structureId='+${id}}">RCSB
+							PDB</a>
+					</td>
+					<td class="c" colspan="2">
+						<a target="_BLANK"
+							z2:href="@{'https://3dbionotes.cnb.csic.es/?queryId='+${id} + '&amp;pdb_redo'}">3D
+							bionotes</a>
+						<!--<a target="_BLANK" z2:href="@{'http://www.ebi.ac.uk/thornton-srv/databases/cgi-bin/pdbsum/GetPage.pl?pdbcode='+${id}}">PDBsum</a>-->
+					</td>
+					<td class="c" colspan="2">
+						<a target="_BLANK"
+							z2:href="@{'http://proteopedia.org/wiki/index.php/'+${id}}">Proteopedia</a>
+					</td>
+				</tr>
+
+				<tr z2:if="${not entry.dbEntry}">
+					<th colspan="8">Links</th>
+				</tr>
+				<tr z2:if="${not entry.dbEntry}">
+					<td class="c" colspan="2">
+						<button id="btn3DBionotes">Submit to 3DBionotes</button>
+						<a style="display: none" href="#" id="link3DBionotes" target="_blank">Show in
+							3DBionotes <i class="fas fa-external-link-alt"></i></a>
+						<span style="display:none" id="error3DBionotes"></span>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<div class="result block" z2:with="data=${entry.data}">
+			<table class="c3 perc perc-raw-toggle">
+				<caption>Validation metrics from PDB-REDO</caption>
+				<tr>
+					<th />
+					<th class="ar">PDB</th>
+					<th class="ar">PDB-REDO</th>
+				</tr>
+				<tr>
+					<th colspan="3">Crystallographic refinement</th>
+				</tr>
+				<tr>
+					<td class="label">R</td>
+					<td class="ar"
+						z2:text="${data.RCAL != null ? #numbers.formatDecimal(data.RCAL, 1, 4) : 'N/A'}">
+					</td>
+					<td class="ar"
+						z2:text="${data.RFIN != null ? #numbers.formatDecimal(data.RFIN, 1, 4) : 'N/A'}">
+					</td>
+				</tr>
+				<tr>
+					<td class="label">R-free</td>
+					<td class="ar">
+						<span
+							z2:switch="${data.RFREE == 'N/A' or data.ZCALERR or data.TSTCNT != data.NTSTCNT }">
+							<span z2:case="${true}">
+								<span
+									z2:text="${data.RFCALUNB != null ? #numbers.formatDecimal(data.RFCALUNB, 1, 4) : 'N/A'}" />
+								<span class="warning">
+									<img z2:src="@{/images/waarschuwing.svg}" />
+									<span class="warningtext">R-free was considered biased, the
+										estimated unbiased R-free was used.</span>
+								</span>
+							</span>
+							<span z2:case="*"
+								z2:text="${data.RFCAL != null ? #numbers.formatDecimal(data.RFCAL, 1, 4) : 'N/A'}"></span>
+						</span>
+					</td>
+					<td class="ar"
+						z2:text="${data.RFFIN != null ? #numbers.formatDecimal(data.RFFIN, 1, 4) : 'N/A'}"
+						z2:classappend="${#entry.rffinClass(data)}"></td>
+				</tr>
+				<tr>
+					<td class="label">Bond length RMS Z-score</td>
+					<td class="ar"
+						z2:text="${data.OBRMSZ != null ? #numbers.formatDecimal(data.OBRMSZ, 1, 3) : 'N/A'}">
+					</td>
+					<td class="ar"
+						z2:text="${data.FBRMSZ != null ? #numbers.formatDecimal(data.FBRMSZ, 1, 3) : 'N/A'}"
+						z2:classappend="${#entry.class(data.OBRMSZ, data.FBRMSZ)}"></td>
+				</tr>
+				<tr>
+					<td class="label">Bond angle RMS Z-score</td>
+					<td class="ar"
+						z2:text="${data.OARMSZ != null ? #numbers.formatDecimal(data.OARMSZ, 1, 3) : 'N/A'}">
+					</td>
+					<td class="ar"
+						z2:text="${data.FARMSZ != null ? #numbers.formatDecimal(data.FARMSZ, 1, 3) : 'N/A'}"
+						z2:classappend="${#entry.class(data.OARSZ, data.FARMSZ)}"></td>
+				</tr>
+				<tr>
+					<th colspan="3">Model quality
+						(<span id="raw" class="toggle">raw scores</span> | <span id="perc"
+							class="toggle">percentiles</span>)
+					</th>
+				</tr>
+				<tr z2:if="${entry.data.GOT_PROT == null or entry.data.GOT_PROT}">
+					<td class="label">Ramachandran plot appearance</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OZRAMA != null ? #numbers.formatDecimal(data.OZRAMA, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOZRAMA != null ? data.TOZRAMA : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOZRAMA, data.TFZRAMA)}">
+						<span class="raw-value"
+							z2:text="${data.FZRAMA != null ? #numbers.formatDecimal(data.FZRAMA, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFZRAMA != null ? data.TFZRAMA : 'N/A'}" />
+					</td>
+				</tr>
+				<tr z2:if="${entry.data.GOT_PROT == null or entry.data.GOT_PROT}">
+					<td class="label">Rotamer normality</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OCHI12 != null ? #numbers.formatDecimal(data.OCHI12, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOCHI12 != null ? data.TOCHI12 : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOCHI12, data.TFCHI12)}">
+						<span class="raw-value"
+							z2:text="${data.FCHI12 != null ? #numbers.formatDecimal(data.FCHI12, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFCHI12 != null ? data.TFCHI12 : 'N/A'}" />
+					</td>
+				</tr>
+				<tr>
+					<td class="label">Coarse packing</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OZPAK1 != null ? #numbers.formatDecimal(data.OZPAK1, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOZPAK1 != null ? data.TOZPAK1 : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOZPAK1, data.TFZPAK1)}">
+						<span class="raw-value"
+							z2:text="${data.FZPAK1 != null ? #numbers.formatDecimal(data.FZPAK1, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFZPAK1 != null ? data.TFZPAK1 : 'N/A'}" />
+					</td>
+				</tr>
+				<tr>
+					<td class="label">Fine packing</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OZPAK2 != null ? #numbers.formatDecimal(data.OZPAK2, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOZPAK2 != null ? data.TOZPAK2 : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOZPAK2, data.TFZPAK2}">
+						<span class="raw-value"
+							z2:text="${data.FZPAK2 != null ? #numbers.formatDecimal(data.FZPAK2, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFZPAK2 != null ? data.TFZPAK2 : 'N/A'}" />
+					</td>
+				</tr>
+				<tr z2:if="${
+	entry.data.OCONFAL != null and
+	entry.data.TOCONFAL != null and
+	entry.data.FCONFAL != null and
+	entry.data.TFCONFAL != null}">
+					<td class="label">Dinucleotide conformation (CONFAL)</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OCONFAL != null ? #numbers.formatDecimal(data.OCONFAL, 1, 1) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOCONFAL != null ? data.TOCONFAL : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOCONFAL, data.TFCONFAL)}">
+						<span class="raw-value"
+							z2:text="${data.FCONFAL != null ? #numbers.formatDecimal(data.FCONFAL, 1, 1) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFCONFAL != null ? data.TFCONFAL : 'N/A'}" />
+					</td>
+
+				</tr>
+
+				<tr z2:if="${entry.data.GOT_NUC != null and entry.data.GOT_NUC}">
+					<td class="label">Base pair conformation</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OBPGRMSZ != null ? #numbers.formatDecimal(data.OBPGRMSZ, 1, 1) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOBPGRMSZ != null ? data.TOBPGRMSZ : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOBPGRMSZ, data.TFBPGRMSZ)}">
+						<span class="raw-value"
+							z2:text="${data.FBPGRMSZ != null ? #numbers.formatDecimal(data.FBPGRMSZ, 1, 1) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFBPGRMSZ != null ? data.TFBPGRMSZ : 'N/A'}" />
+					</td>
+
+				</tr>
+
+				<tr>
+					<td class="label">Bump severity</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OWBMPS != null ? #numbers.formatDecimal(data.OWBMPS, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOWBMPS != null ? data.TOWBMPS : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOWBMPS, data.TFWBMPS)}">
+						<span class="raw-value"
+							z2:text="${data.FWBMPS != null ? #numbers.formatDecimal(data.FWBMPS, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFWBMPS != null ? data.TFWBMPS : 'N/A'}" />
+					</td>
+				</tr>
+				<tr>
+					<td class="label">Hydrogen bond satisfaction</td>
+					<td class="ar">
+						<span class="raw-value"
+							z2:text="${data.OHBSAT != null ? #numbers.formatDecimal(data.OHBSAT, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TOHBSAT != null ? data.TOHBSAT : 'N/A'}" />
+					</td>
+					<td class="ar"
+						z2:classappend="${#entry.percClass(data.TOHBSAT, data.TFHBSAT)}">
+						<span class="raw-value"
+							z2:text="${data.FHBSAT != null ? #numbers.formatDecimal(data.FHBSAT, 1, 3) : 'N/A'}" />
+						<span class="perc-value"
+							z2:text="${data.TFHBSAT != null ? data.TFHBSAT : 'N/A'}" />
+					</td>
+				</tr>
+
+				<tr z2:if="${entry.link['wo'] or entry.link['wf']}">
+					<td class="label">WHAT_CHECK</td>
+					<td class="ar">
+						<a z2:if="${entry.link['wo']}" z2:href="@{/${entry.link['wo']}}">Report</a>
+						<span z2:if="${not entry.link['wo']}" z2:case="*">No Report</span>
+					</td>
+					<td class="ar">
+						<a z2:if="${entry.link['wf']}" z2:href="@{/${entry.link['wf']}}">Report</a>
+						<span z2:if="${not entry.link['wf']}" z2:case="*">No Report</span>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<div class="result block" z2:if="${entry.dbEntry}">
+			<div z2:if="${entry.dbEntry and (entry.data.GOT_PROT == null or entry.data.GOT_PROT)}">
+				<ramachandran-plot width="450" z2:pdb-id="${entry.id}"
+					url="https://pdb-redo.eu/rama-angles/">
+					<!-- Placeholders to improve time to first paint -->
+					<h1>Kleywegt-like plot</h1>
+
+					<!-- Check for JavaScript -->
+					<p id="jsyes"></p>
+					<script type="text/javascript">
+						document.getElementById('jsyes').innerHTML = 'Loading...';
+					</script>
+					<noscript>
+						Could not render the kleywegt-like plot. Check that JavaScript is enabled.
+					</noscript>
+				</ramachandran-plot>
+			</div>
+		</div>
+
+		<div class="result block">
+			<table>
+				<caption>Model quality compared to resolution neighbours</caption>
+				<tr>
+					<td id="boxPlotTD"></td>
+				</tr>
+			</table>
+		</div>
+
+		<div class="result block" z2:with="data=${entry.data}">
+			<table class="c3 perc perc-raw-toggle">
+				<caption>Significant model changes</caption>
+				<tr>
+					<th>Description</th>
+					<th class="ar">Count</th>
+				</tr>
+				<tr>
+					<td class="label">Rotamers changed</td>
+					<td class="ar" z2:text="${data.HBFLIP != null ? data.HBFLIP : 'N/A'}"></td>
+				</tr>
+				<tr>
+					<td class="label">Side chains flipped</td>
+					<td class="ar" z2:text="${data.NSCBLT != null ? data.NSCBLT : 'N/A'}"></td>
+				</tr>
+				<tr>
+					<td class="label">Waters removed</td>
+					<td class="ar" z2:text="${data.NWATDEL != null ? data.NWATDEL : 'N/A'}"></td>
+				</tr>
+				<tr>
+					<td class="label">Peptides flipped</td>
+					<td class="ar" z2:text="${data.NBBFLIP != null ? data.NBBFLIP : 'N/A'}"></td>
+				</tr>
+				<tr>
+					<td class="label">Chiralities fixed</td>
+					<td class="ar" z2:text="${data.NCHIRFX != null ? data.NCHIRFX : 'N/A'}"></td>
+				</tr>
+				<tr>
+					<td class="label">Residues fitting density better</td>
+					<td class="ar" z2:text="${data.RSCCB != null ? data.RSCCB : 'N/A'}"></td>
+				</tr>
+				<tr>
+					<td class="label">Residues fitting density worse</td>
+					<td class="ar" z2:text="${data.RSCCW != null ? data.RSCCW : 'N/A'}"></td>
+				</tr>
+			</table>
+		</div>
+
+		<script z2:inline="javascript">
+			const entryData = /*[[${entry.stats}]]*/ null;
+		</script>
+
+		<!-- Real-space validation -->
+		<div class="result block">
+			<table>
+				<caption>Change in density map fit (RSCC)</caption>
+				<tr>
+					<td id="drsccTD"></td>
+				</tr>
+			</table>
+		</div>
+
+		<script z2:inline="javascript">
+			const stats0Cyc = /*[[${entry.getLink('0cyc_json')}]]*/ null,
+				statsFinal = /*[[${entry.getLink('final_json')}]]*/ null;
+		</script>
+
+	</div>
+
+</body>
+
+</html>

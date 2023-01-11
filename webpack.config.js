@@ -6,7 +6,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 const SCRIPTS = __dirname + "/webapp/";
 const SCSS = __dirname + "/scss/";
-const DEST = __dirname + "/docroot/scripts/";
+const DEST = __dirname + "/docroot/";
 
 module.exports = (env) => {
 
@@ -29,8 +29,8 @@ module.exports = (env) => {
 		},
 
 		output: {
-			path: DEST,
-			filename: "[name].js"
+			path: DEST + "/scripts/",
+			filename: "./[name].js"
 		},
 
 		devtool: "source-map",
@@ -48,24 +48,28 @@ module.exports = (env) => {
 					}
 				},
 				{
-					test: /\.tsx?$/,
-					exclude: /node_modules/,
-					use: {
-						loader: "babel-loader",
-						options: {
-							presets: ['@babel/preset-env']
-						}
-					}
+					test: /pdb-redo-result\.scss$/,
+					use: [
+						'css-loader',
+						'sass-loader'
+					]
 				},
 				{
-					test: /\.(sa|sc|c)ss$/,
+					test: /pdb-redo-bootstrap\.scss$/,
 					use: [
-						// 'style-loader',
 						PRODUCTION ? MiniCssExtractPlugin.loader : "style-loader",
 						'css-loader',
 						'sass-loader'
 					]
 				},
+				// {
+				// 	test: /\.(sa|sc|c)ss$/,
+				// 	use: [
+				// 		"style-loader",
+				// 		'css-loader',
+				// 		'sass-loader'
+				// 	]
+				// },
 				{
 					test: /\.(eot|svg|ttf|woff(2)?)(\?v=\d+\.\d+\.\d+)?/,
 					loader: 'file-loader',
@@ -89,7 +93,6 @@ module.exports = (env) => {
 				}
 			]
 		},
-
 
 		resolve: {
 			extensions: ['.tsx', '.ts', '.js'],

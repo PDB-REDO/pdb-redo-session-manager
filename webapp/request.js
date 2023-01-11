@@ -55,7 +55,6 @@ export class PDBRedoApiRequest extends Request {
 		}
 
 		const canonicalRequest = [init.method, url.pathname, params, url.host, contentHash.toString(CryptoES.enc.Base64)].join("\n");
-		console.log(`canonical request: ${canonicalRequest}`);
 		const canonicalRequestHash = CryptoES.SHA256(canonicalRequest);
 
 		// create the scope

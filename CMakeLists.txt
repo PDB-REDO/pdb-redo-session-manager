@@ -107,12 +107,15 @@ find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 
 add_executable(prsmd
+	${PROJECT_SOURCE_DIR}/src/data-service.cpp
+	${PROJECT_SOURCE_DIR}/src/data-service.hpp
 	${PROJECT_SOURCE_DIR}/src/run-service.cpp
 	${PROJECT_SOURCE_DIR}/src/run-service.hpp
 	${PROJECT_SOURCE_DIR}/src/user-service.cpp
 	${PROJECT_SOURCE_DIR}/src/user-service.hpp
 	${PROJECT_SOURCE_DIR}/src/prsm-db-connection.hpp
 	${PROJECT_SOURCE_DIR}/src/prsm-db-connection.cpp
+	${PROJECT_SOURCE_DIR}/src/zip-support.hpp
 	${PROJECT_SOURCE_DIR}/src/prsmd.cpp)
 
 # yarn rules for javascripts
@@ -132,7 +135,7 @@ set(webpack_input
 	${PROJECT_SOURCE_DIR}/webpack.config.js
 	)
 
-set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/index.js)
+set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/pdb-redo-result.js)
 
 add_custom_command(
 	OUTPUT ${webpack_output}

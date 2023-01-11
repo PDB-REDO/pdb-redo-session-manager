@@ -31,7 +31,7 @@ class PDBRedoResult extends HTMLElement {
 
 		this.data = null;
 		this.error = null;
-		this.link = 'https://services.pdb-redo.eu';
+		this.url = 'https://services.pdb-redo.eu';
 
 		// the shadow context
 		const shadow = this.attachShadow({ mode: 'open' });
@@ -62,10 +62,59 @@ class PDBRedoResult extends HTMLElement {
 
 	connectedCallback() {
 		const url = this.getAttribute('url');
-		const tokenID = this.getAttribute('token-id');
-		const tokenSecret = this.getAttribute('token-secret');
-		const jobID = this.getAttribute('job-id');
+		if (url != null)
+			this.url = url;
 
+		this.pdbID = this.getAttribute('pdb-id');
+
+		this.tokenID = this.getAttribute('token-id');
+		this.tokenSecret = this.getAttribute('token-secret');
+		this.jobID = this.getAttribute('job-id');
+
+		if (this.url != null) {
+			if (this.pdbID != null)
+				this.reloadDBData();
+			else if (this.tokenID != null && this.tokenSecret != null && this.jobID != null)
+				this.reloadJobData();
+		}
+	}
+
+	attributeChangedCallback(name, oldValue, newValue) {
+
+		let needReload = false;
+		switch (name) {
+			case 'url':
+				if (this.url !== newValue) {
+					this.url = newValue;
+					needReload = true;
+				}
+				break;
+
+			case 'pdb-id':
+				if (this.pdbID !== newValue) {
+					this.pdbID = newValue;
+					needReload = true;
+				}
+				break;
+		}
+
+		if (needReload && this.url != null) {
+			if (this.pdbID != null)
+				this.reloadDBData();
+			else
+				this.reloadJobData();
+		}
+	}
+
+	reloadDBData() {
+		fetch(`${this.url}/db-entry?pdb-id=${this.pdbID}`,)
+			.then(r => {
+				if (r.ok)
+					return r.text();
+			}).then(r => this.putEntry(r));
+	}
+
+	reloadJobData() {
 		const shadow = this.shadowRoot;
 		// shadow.querySelector('style').textContent = `
 		// 	@import(url ${url}/css/style.css);
@@ -79,7 +128,7 @@ class PDBRedoResult extends HTMLElement {
 		})).then(data => {
 			const fd = new FormData();
 			fd.append('data.json', JSON.stringify(data));
-	
+
 			fetch(`${url}/entry`, {
 				method: "POST",
 				body: fd
@@ -88,9 +137,41 @@ class PDBRedoResult extends HTMLElement {
 					return r.text();
 			}).then(r => {
 				shadow.querySelector('div').innerHTML = r;
+
+				/* Code to manage a the toggle between raw and percentile values */
+				Array.from(shadow.querySelectorAll(".toggle"))
+					.forEach(p => p.addEventListener('click', (e) => {
+						const state = e.target.id;
+						const raw = state === "raw";
+						Array.from(document.getElementsByClassName("perc-raw-toggle"))
+							.forEach(e => {
+								e.classList.toggle('perc', raw === false);
+								e.classList.toggle('raw', raw === true);
+							});
+					})
+					);
+
 			});
 		});
+	}
 
+	putEntry(r) {
+		const shadow = this.shadowRoot;
+
+		shadow.querySelector('div').innerHTML = r;
+
+		/* Code to manage a the toggle between raw and percentile values */
+		Array.from(shadow.querySelectorAll(".toggle"))
+			.forEach(p => p.addEventListener('click', (e) => {
+				const state = e.target.id;
+				const raw = state === "raw";
+				Array.from(shadow.querySelectorAll(".perc-raw-toggle"))
+					.forEach(e => {
+						e.classList.toggle('perc', raw === false);
+						e.classList.toggle('raw', raw === true);
+					});
+			})
+			);
 	}
 
 	// render() {
