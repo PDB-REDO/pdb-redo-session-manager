@@ -3,6 +3,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const path = require('path');
 
 const SCRIPTS = __dirname + "/webapp/";
 const SCSS = __dirname + "/scss/";
@@ -65,20 +66,21 @@ module.exports = (env) => {
 				// {
 				// 	test: /\.(sa|sc|c)ss$/,
 				// 	use: [
-				// 		"style-loader",
+				// 		PRODUCTION ? MiniCssExtractPlugin.loader : "style-loader",
 				// 		'css-loader',
 				// 		'sass-loader'
 				// 	]
 				// },
+
 				{
-					test: /\.(eot|svg|ttf|woff(2)?)(\?v=\d+\.\d+\.\d+)?/,
-					loader: 'file-loader',
-					options: {
-						name: '[name].[ext]',
-						outputPath: 'fonts/',
-						publicPath: '../fonts/'
+					test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+					include: path.resolve(__dirname, './node_modules/bootstrap-icons/font/fonts'),
+					type: 'asset/resource',
+					generator: {
+						filename: 'fonts/[name][ext][query]'
 					}
 				},
+
 				{
 					test: /\.(png|jpg|gif)$/,
 					use: [
@@ -101,8 +103,6 @@ module.exports = (env) => {
 		plugins: [
 			new CleanWebpackPlugin({
 				cleanOnceBeforeBuildPatterns: [
-					'css/**/*',
-					'css/*',
 					'scripts/**/*',
 					'fonts/**/*'
 				]

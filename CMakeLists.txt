@@ -102,7 +102,7 @@ list(APPEND REQUIRED_LIBRARIES ${PQXX_LIBRARIES} ${PQ_LIBRARIES})
 
 find_program(YARN yarn REQUIRED)
 
-find_package(zeep 5.1.4 REQUIRED)
+find_package(zeep 6 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 

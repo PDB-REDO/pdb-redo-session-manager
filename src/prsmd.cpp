@@ -836,37 +836,33 @@ class service_html_controller : public zh::html_controller
 	service_html_controller(const std::string &pdbRedoDir)
 		: m_pdb_redo_dir(pdbRedoDir)
 	{
-		mount("", &service_html_controller::welcome);
+		map_get("", &service_html_controller::welcome);
 
 		mount("admin", &service_html_controller::admin);
 
-		mount("register", &service_html_controller::handle_registration);
+		// mount("register", &service_html_controller::handle_registration);
 
-		mount("admin/deleteSession", "DELETE", &service_html_controller::handle_delete_session);
+		map_delete("admin/deleteSession", &service_html_controller::handle_delete_session, "sessionid");
 		mount("{css,scripts,fonts,images}/", &service_html_controller::handle_file);
 
-		mount("result", &service_html_controller::handle_result);
-
-		mount("entry", &service_html_controller::handle_entry);
-		mount("db-entry", &service_html_controller::handle_db_entry);
+		// map_post("job-entry", &service_html_controller::handle_entry, "token-id", "token-secret", "job-id");
+		map_post("db-entry", &service_html_controller::handle_db_entry, "pdb-id");
 	}
 
-	void welcome(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	zh::reply welcome(const zh::scope &scope);
 	void admin(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-	void handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	// void handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply);
 
-	void handle_delete_session(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-
-	void handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-	void handle_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-	void handle_db_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
+	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
+	zh::reply handle_db_entry(const zh::scope &scope, const std::string &pdbID);
 
 	std::string m_pdb_redo_dir;
 };
 
-void service_html_controller::welcome(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+zh::reply service_html_controller::welcome(const zh::scope &scope)
 {
-	get_template_processor().create_reply_from_template("index.html", scope, reply);
+	return get_template_processor().create_reply_from_template("index.html", scope);
 }
 
 void service_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
@@ -881,56 +877,51 @@ void service_html_controller::admin(const zh::request &request, const zh::scope 
 	get_template_processor().create_reply_from_template("admin.html", sub, reply);
 }
 
-void service_html_controller::handle_delete_session(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+zh::reply service_html_controller::handle_delete_session(const zh::scope &scope, unsigned long sessionID)
 {
-	unsigned long sessionID = std::stoul(request.get_parameter("sessionid", "0"));
-	if (sessionID != 0)
-		SessionStore::instance().delete_by_id(sessionID);
-
-	reply = zh::reply::stock_reply(zh::ok);
+	SessionStore::instance().delete_by_id(sessionID);
+	return zh::reply::stock_reply(zh::ok);
 }
 
-void service_html_controller::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// void service_html_controller::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// {
+// 	get_template_processor().create_reply_from_template("register.html", scope, reply);
+// }
+
+// void service_html_controller::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// {
+// 	auto token_id = request.get_parameter("token-id");
+// 	auto token_secret = request.get_parameter("token-secret");
+// 	auto job_id = request.get_parameter("job-id");
+
+// 	zh::scope sub(scope);
+
+// 	if (not token_id.empty())
+// 		sub.put("token-id", token_id);
+
+// 	if (not token_secret.empty())
+// 		sub.put("token-secret", token_secret);
+
+// 	if (not job_id.empty())
+// 		sub.put("job-id", job_id);
+
+// 	get_template_processor().create_reply_from_template("pdb-redo-result.html", sub, reply);
+// }
+
+// zh::reply service_html_controller::handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID)
+// {
+// 	zeep::json::element entry;
+
+// 	zeep::json::parse_json(request.get_parameter("data.json"), entry["data"]);
+
+// 	zh::scope sub(scope);
+// 	sub.put("entry", entry);
+
+// 	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
+// }
+
+zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const std::string &pdbID)
 {
-	get_template_processor().create_reply_from_template("register.html", scope, reply);
-}
-
-void service_html_controller::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
-{
-	auto token_id = request.get_parameter("token-id");
-	auto token_secret = request.get_parameter("token-secret");
-	auto job_id = request.get_parameter("job-id");
-
-	zh::scope sub(scope);
-
-	if (not token_id.empty())
-		sub.put("token-id", token_id);
-
-	if (not token_secret.empty())
-		sub.put("token-secret", token_secret);
-
-	if (not job_id.empty())
-		sub.put("job-id", job_id);
-
-	get_template_processor().create_reply_from_template("pdb-redo-result.html", sub, reply);
-}
-
-void service_html_controller::handle_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply)
-{
-	zeep::json::element entry;
-
-	zeep::json::parse_json(request.get_parameter("data.json"), entry["data"]);
-
-	zh::scope sub(scope);
-	sub.put("entry", entry);
-
-	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
-}
-
-void service_html_controller::handle_db_entry(const zh::request &request, const zh::scope &scope, zh::reply &reply)
-{
-	auto pdbID = request.get_parameter("pdb-id");
-
 	std::ifstream dataJson(data_service::instance().get_file(pdbID, "data.json"));
 
 	zeep::json::element data;
@@ -978,7 +969,7 @@ void service_html_controller::handle_db_entry(const zh::request &request, const 
 	zh::scope sub(scope);
 	sub.put("entry", entry);
 
-	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
+	return get_template_processor().create_reply_from_template("entry::tables", sub);
 }
 
 // --------------------------------------------------------------------

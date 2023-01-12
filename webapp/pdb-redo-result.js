@@ -109,7 +109,7 @@ class PDBRedoResult extends HTMLElement {
 	}
 
 	reloadDBData() {
-		fetch(`${this.url}/db-entry?pdb-id=${this.pdbID}`,)
+		fetch(`${this.url}/db-entry?pdb-id=${this.pdbID}`, { method: "post"})
 			.then(r => {
 				if (r.ok)
 					return r.text();
