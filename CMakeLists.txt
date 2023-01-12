@@ -96,9 +96,8 @@ find_package(Threads)
 
 find_package(LibArchive REQUIRED)
 
-pkg_check_modules(PQ libpq REQUIRED)
-pkg_check_modules(PQXX libpqxx>=7.2 REQUIRED)
-list(APPEND REQUIRED_LIBRARIES ${PQXX_LIBRARIES} ${PQ_LIBRARIES})
+set(ENV{PKG_CONFIG_PATH} "$ENV{HOME}/.local/lib/pkgconfig/")
+pkg_check_modules(PKG_PQ libpqxx>=7.2 libpq IMPORTED_TARGET REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
@@ -154,7 +153,7 @@ if(USE_RSRC)
 endif()
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio ${REQUIRED_LIBRARIES})
+target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio ${REQUIRED_LIBRARIES} PkgConfig::PKG_PQ)
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}
