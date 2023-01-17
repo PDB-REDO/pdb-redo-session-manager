@@ -496,6 +496,29 @@
 		</div>
 
 		<div class="result" z2:with="data=${entry.data}">
+			<table class="">
+				<caption>Kleywegt-like plot</caption>
+				<tr>
+					<td>
+						<ramachandran-plot width="450" z2:base-url="@{/}" no-header="no-header" no-shadow="no-shadow">
+							<!-- Placeholders to improve time to first paint -->
+							<h1>Kleywegt-like plot</h1>
+				
+							<!-- Check for JavaScript -->
+							<p id="jsyes"></p>
+							<script type="text/javascript">
+								document.getElementById('jsyes').innerHTML = 'Loading...';
+							</script>
+							<noscript>
+								Could not render the kleywegt-like plot. Check that JavaScript is enabled.
+							</noscript>
+						</ramachandran-plot>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<div class="result" z2:with="data=${entry.data}">
 			<table class="c3 perc perc-raw-toggle">
 				<caption>Significant model changes</caption>
 				<tr>
@@ -532,30 +555,6 @@
 				</tr>
 			</table>
 		</div>
-
-		<div class="result" z2:with="data=${entry.data}">
-			<table class="">
-				<caption>Kleywegt-like plot</caption>
-				<tr>
-					<td>
-						<ramachandran-plot width="450" z2:base-url="@{/}" no-header="no-header" no-shadow="no-shadow">
-							<!-- Placeholders to improve time to first paint -->
-							<h1>Kleywegt-like plot</h1>
-				
-							<!-- Check for JavaScript -->
-							<p id="jsyes"></p>
-							<script type="text/javascript">
-								document.getElementById('jsyes').innerHTML = 'Loading...';
-							</script>
-							<noscript>
-								Could not render the kleywegt-like plot. Check that JavaScript is enabled.
-							</noscript>
-						</ramachandran-plot>
-					</td>
-				</tr>
-			</table>
-		</div>
-
 	</div>
 
 </body>
