@@ -23,7 +23,6 @@ export class RamachandranPlot extends LitElement {
 	static get properties() {
 		return {
 			width: { type: Number },
-			pdbID: { type: String, attribute: 'pdb-id' },
 			error: { type: String },
 			noshadow: { type: Boolean, attribute: 'no-shadow'},
 			noheader: { type: Boolean, attribute: 'no-header'}
@@ -256,11 +255,6 @@ export class RamachandranPlot extends LitElement {
 			{
 				case 'width':
 					needRebuildSVG = true;
-					break;
-
-				case 'pdbID':
-					if (this.pdbID !== null)
-						needReloadPDB = true;
 					break;
 			}
 		});
