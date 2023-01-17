@@ -4,7 +4,7 @@
 import { PDBRedoApiRequest } from './request';
 import pdb_redo_style from './pdb-redo-result.scss';
 import {createBoxPlot} from "./boxplot";
-
+import { RamachandranPlot } from './ramaplot';
 
 // Extend the LitElement base class
 class PDBRedoResult extends HTMLElement {
@@ -190,6 +190,10 @@ class PDBRedoResult extends HTMLElement {
 				this.RFREE = data.RFCAL;
 			createBoxPlot(data, boxPlotTD, this.url);
 		}
+
+		const ramaPlot = shadow.querySelector('ramachandran-plot');
+		console.log(ramaPlot);
+		
 	}
 
 	// render() {
@@ -261,6 +265,6 @@ class PDBRedoResult extends HTMLElement {
 
 
 }
-// Register the new element with the browser.
-customElements.define('pdb-redo-result', PDBRedoResult);
 
+customElements.define('pdb-redo-result', PDBRedoResult);
+customElements.define('ramachandran-plot', RamachandranPlot);

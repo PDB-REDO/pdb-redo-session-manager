@@ -1006,7 +1006,10 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
 		mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"));
 
-	config.parse(argc, argv);
+	std::error_code ec;
+	config.parse(argc, argv, ec);
+	if (ec)
+		throw std::runtime_error("Error parsing arguments: " + ec.message());
 
 	if (config.has("version"))
 	{
@@ -1020,7 +1023,9 @@ int a_main(int argc, char *const argv[])
 		exit(config.has("help") ? 0 : 1);
 	}
 
-	config.parse_config_file("config", "prsmd.conf", { fs::current_path().string(), "/etc/" });
+	config.parse_config_file("config", "prsmd.conf", { fs::current_path().string(), "/etc/" }, ec);
+	if (ec)
+		throw std::runtime_error("Error parsing config file: " + ec.message());
 
 	// --------------------------------------------------------------------
 

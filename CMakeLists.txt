@@ -129,6 +129,7 @@ set(webpack_input
 	${PROJECT_SOURCE_DIR}/webapp/login.js
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.js
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
+	${PROJECT_SOURCE_DIR}/webapp/ramaplot.js
 	${PROJECT_SOURCE_DIR}/webapp/register.js
 	${PROJECT_SOURCE_DIR}/webapp/request.js
 	${PROJECT_SOURCE_DIR}/webapp/test-api.js
