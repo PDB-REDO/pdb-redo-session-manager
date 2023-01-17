@@ -19,6 +19,8 @@
 
 		<em z2:if="${entry.data.TITLE}" z2:text="${entry.data.TITLE}"></em>
 
+		<template z2:inline="javascript" id="entry-data">[[${entry}]]</template>
+
 		<!-- <div class="result block">
 			<p>
 				This information was created with PDB-REDO version <span
@@ -465,27 +467,6 @@
 			</table>
 		</div>
 
-		<div class="result block" z2:if="${entry.dbEntry}">
-			<div z2:if="${entry.dbEntry and (entry.data.GOT_PROT == null or entry.data.GOT_PROT)}">
-				<ramachandran-plot width="450" z2:pdb-id="${entry.id}"
-					url="https://pdb-redo.eu/rama-angles/">
-					<!-- Placeholders to improve time to first paint -->
-					<h1>Kleywegt-like plot</h1>
-
-					<!-- Check for JavaScript -->
-					<p id="jsyes"></p>
-					<script type="text/javascript">
-						document.getElementById('jsyes').innerHTML = 'Loading...';
-					</script>
-					<noscript>
-						Could not render the kleywegt-like plot. Check that JavaScript is enabled.
-					</noscript>
-				</ramachandran-plot>
-			</div>
-		</div>
-
-		<!-- <script src="https://pdb-redo.eu/rama-angles/scripts/rama-plot-loader.bundle.js"></script> -->
-
 		<div class="result block">
 			<table>
 				<caption>Model quality compared to resolution neighbours</caption>
@@ -533,22 +514,19 @@
 			</table>
 		</div>
 
-		<template z2:inline="javascript" id="entry-data">[[${entry}]]</template>
+		<ramachandran-plot width="450" z2:base-url="@{/}">
+			<!-- Placeholders to improve time to first paint -->
+			<h1>Kleywegt-like plot</h1>
 
-		<!-- Real-space validation -->
-		<div class="result block">
-			<table>
-				<caption>Change in density map fit (RSCC)</caption>
-				<tr>
-					<td id="drsccTD"></td>
-				</tr>
-			</table>
-		</div>
-
-		<script z2:inline="javascript">
-			const stats0Cyc = /*[[${entry.getLink('0cyc_json')}]]*/ null,
-				statsFinal = /*[[${entry.getLink('final_json')}]]*/ null;
-		</script>
+			<!-- Check for JavaScript -->
+			<p id="jsyes"></p>
+			<script type="text/javascript">
+				document.getElementById('jsyes').innerHTML = 'Loading...';
+			</script>
+			<noscript>
+				Could not render the kleywegt-like plot. Check that JavaScript is enabled.
+			</noscript>
+		</ramachandran-plot>
 
 	</div>
 
