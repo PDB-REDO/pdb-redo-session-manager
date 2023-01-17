@@ -1,6 +1,3 @@
-// Import the LitElement base class and html helper function
-// import { LitElement, html, css } from 'lit';
-// import * as d3 from 'd3';
 import { PDBRedoApiRequest } from './request';
 import pdb_redo_style from './pdb-redo-result.scss';
 import {createBoxPlot} from "./boxplot";
@@ -8,16 +5,6 @@ import { RamachandranPlot } from './ramaplot';
 
 // Extend the LitElement base class
 class PDBRedoResult extends HTMLElement {
-
-	// static get properties() {
-	// 	return {
-	// 		tokenID: { type: String, attribute: 'token-id' },
-	// 		tokenSecret: { type: String, attribute: 'token-secret' },
-	// 		jobID: { type: String, attribute: 'job-id' },
-	// 		error: { type: String },
-	// 		link: { type: String, attribute: 'url' }
-	// 	}
-	// }
 
 	constructor() {
 		super();
