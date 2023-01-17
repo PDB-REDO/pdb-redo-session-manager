@@ -192,8 +192,7 @@ class PDBRedoResult extends HTMLElement {
 		}
 
 		const ramaPlot = shadow.querySelector('ramachandran-plot');
-		console.log(ramaPlot);
-		
+		ramaPlot.setData(entryData.data, entryData['rama-angles']);
 	}
 
 	// render() {

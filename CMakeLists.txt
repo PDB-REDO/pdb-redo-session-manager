@@ -136,7 +136,7 @@ set(webpack_input
 	${PROJECT_SOURCE_DIR}/webpack.config.js
 	)
 
-set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/pdb-redo-result.js)
+set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/index.js)
 
 add_custom_command(
 	OUTPUT ${webpack_output}

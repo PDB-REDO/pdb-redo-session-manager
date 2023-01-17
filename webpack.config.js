@@ -58,7 +58,8 @@ module.exports = (env) => {
 				{
 					test: /pdb-redo-bootstrap\.scss$/,
 					use: [
-						PRODUCTION ? MiniCssExtractPlugin.loader : "style-loader",
+						// PRODUCTION ? MiniCssExtractPlugin.loader : "style-loader",
+						"style-loader",
 						'css-loader',
 						'sass-loader'
 					]

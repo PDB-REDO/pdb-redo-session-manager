@@ -17,47 +17,66 @@
 
 	<div z2:fragment="tables">
 
-		<em z2:if="${entry.data.TITLE}" z2:text="${entry.data.TITLE}"></em>
-
 		<template z2:inline="javascript" id="entry-data">[[${entry}]]</template>
 
-		<!-- <div class="result block">
-			<p>
-				This information was created with PDB-REDO version <span
-					z2:text="${entry.data.VERSION}"></span>.
-				<span z2:if="${not entry.upToDate and not (entry.data.NOPDB or entry.data.NOSF) }">
-					<span z2:switch="${entry.updatePending}">
-						<span z2:case="${true}">Update to version <span z2:text="${version}" /> is
-							pending.</span>
-						<span z2:case="${false}">
-							<a z2:if="${user.isValid()}"
-								z2:href="@{'/db-update/' + ${entry.id}}">Request update</a>
-							<span z2:if="${not user.isValid()}">Please <a z2:href="@{/login}">log in</a>
-								to request an update.</span>
+		<div class="result">
+			<table>
+				<caption>PDB-REDO results</caption>
+				
+				<tr z2:if="${entry.data.TITLE}">
+					<td>
+						<em z2:text="${entry.data.TITLE}"></em>
+					</td>
+				</tr>
+
+				<tr>
+					<td>
+						This information was created with PDB-REDO version <span
+							z2:text="${entry.data.VERSION}"></span>.
+						<span z2:if="${not entry.upToDate and not (entry.data.NOPDB or entry.data.NOSF) }">
+							<span z2:switch="${entry.updatePending}">
+								<span z2:case="${true}">Update to version <span z2:text="${version}" /> is
+									pending.</span>
+								<span z2:case="${false}">
+									<a z2:if="${user.isValid()}"
+										z2:href="@{'/db-update/' + ${entry.id}}">Request update</a>
+									<span z2:if="${not user.isValid()}">Please <a z2:href="@{/login}">log in</a>
+										to request an update.</span>
+								</span>
+							</span>
 						</span>
-					</span>
-				</span>
+		
+						<span z2:if="${not entry.dbEntry}">Download the full log file <a
+								z2:href="@{/${entry.getLink('log')}}">here</a>.
+						</span>
+					</td>
 
-				<span z2:if="${not entry.dbEntry}">Download the full log file <a
-						z2:href="@{/${entry.getLink('log')}}">here</a>.
-				</span>
-			</p>
-		</div> -->
-
-		<div class="alert alert-warning" role="alert" z2:if="${entry.data.NOPDB}">
-			The PDB file was edited manually to make PDB-REDO run
+					<tr z2:if="${entry.data.NOPDB}">
+						<td>
+							<div class="alert alert-warning" role="alert">
+								The PDB file was edited manually to make PDB-REDO run
+							</div>
+						</td>
+					</tr>
+			
+					<tr z2:if="${entry.data.NOSF}">
+						<td>
+							<div class="alert alert-warning" role="alert">
+								Structure factor file was edited manually to make PDB-REDO run
+							</div>
+						</td>
+					</tr>
+			
+					<tr z2:if="${entry.data.COMMENT != null}">
+						<td>
+							<div class="alert alert-info" role="alert">
+								<span z2:text="${entry.data.COMMENT}"></span>
+							</div>
+						</td>
+					</tr>
+				</tr>
+			</table>
 		</div>
-
-		<div class="alert alert-warning" role="alert" z2:if="${entry.data.NOSF}">
-			Structure factor file was edited manually to make PDB-REDO run
-		</div>
-
-		<div class="alert alert-info" role="alert" z2:if="${entry.data.COMMENT != null}">
-			<span z2:text="${entry.data.COMMENT}"></span>
-		</div>
-
-		<!-- <script src="/static/scripts/entry.js" z2:src="@{/scripts/entry.js}"
-			type="application/ecmascript"></script> -->
 
 		<div class="result" z2:with="data=${entry.data},id=${entry.id}">
 
@@ -250,7 +269,7 @@
 			</table>
 		</div>
 
-		<div class="result block" z2:with="data=${entry.data}">
+		<div class="result" z2:with="data=${entry.data}">
 			<table class="c3 perc perc-raw-toggle">
 				<caption>Validation metrics from PDB-REDO</caption>
 				<tr>
@@ -467,7 +486,7 @@
 			</table>
 		</div>
 
-		<div class="result block">
+		<div class="result">
 			<table>
 				<caption>Model quality compared to resolution neighbours</caption>
 				<tr>
@@ -476,7 +495,7 @@
 			</table>
 		</div>
 
-		<div class="result block" z2:with="data=${entry.data}">
+		<div class="result" z2:with="data=${entry.data}">
 			<table class="c3 perc perc-raw-toggle">
 				<caption>Significant model changes</caption>
 				<tr>
@@ -514,19 +533,28 @@
 			</table>
 		</div>
 
-		<ramachandran-plot width="450" z2:base-url="@{/}">
-			<!-- Placeholders to improve time to first paint -->
-			<h1>Kleywegt-like plot</h1>
-
-			<!-- Check for JavaScript -->
-			<p id="jsyes"></p>
-			<script type="text/javascript">
-				document.getElementById('jsyes').innerHTML = 'Loading...';
-			</script>
-			<noscript>
-				Could not render the kleywegt-like plot. Check that JavaScript is enabled.
-			</noscript>
-		</ramachandran-plot>
+		<div class="result" z2:with="data=${entry.data}">
+			<table class="">
+				<caption>Kleywegt-like plot</caption>
+				<tr>
+					<td>
+						<ramachandran-plot width="450" z2:base-url="@{/}" no-header="no-header" no-shadow="no-shadow">
+							<!-- Placeholders to improve time to first paint -->
+							<h1>Kleywegt-like plot</h1>
+				
+							<!-- Check for JavaScript -->
+							<p id="jsyes"></p>
+							<script type="text/javascript">
+								document.getElementById('jsyes').innerHTML = 'Loading...';
+							</script>
+							<noscript>
+								Could not render the kleywegt-like plot. Check that JavaScript is enabled.
+							</noscript>
+						</ramachandran-plot>
+					</td>
+				</tr>
+			</table>
+		</div>
 
 	</div>
 

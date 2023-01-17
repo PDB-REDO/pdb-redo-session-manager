@@ -18,89 +18,70 @@
 	<div class="container">
 
 		<div class="row">
-			<div class="column-sm mx-5 my-2">
+			<div class="col column-sm mx-5 my-2">
 				<h6>Token generator</h6>
 				<form id="token-form" action="/api/session" method="post">
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">user name</span>
-						</div>
-
+						<span class="input-group-text" id="input-group-tg-user-name">user name</span>
 						<input class="form-control form-control-sm" maxlength="254" id="user" name="user" type="text"
-							required="true" />
+							aria-describedby="input-group-tg-user-name" required="true" />
 					</div>
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">password</span>
-						</div>
+						<span class="input-group-text" id="input-group-tg-password">password</span>
 						<input class="form-control form-control-sm" maxlength="254" id="password" name="password"
-							type="password" required="true" />
+							type="password" required="true" aria-describedby="input-group-tg-password" />
 					</div>
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">session name</span>
-						</div>
+						<span class="input-group-text" id="input-group-tg-name">session name</span>
 						<input class="form-control form-control-sm" maxlength="254" id="name" name="name" type="text"
-							required="true" />
+							aria-describedby="input-group-tg-name" required="true" />
 					</div>
-					<button type="submit" form="token-form" class="btn btn-primary mt-3">Create</button>
+					<button type="submit" form="token-form" class="btn btn-sm btn-primary mt-3">Create</button>
 				</form>
 			</div>
 
-			<div class="column-sm mx-5 my-2">
+			<div class="col column-sm mx-5 my-2">
 
 				<h6>Generated token</h6>
 
 				<form id="delete-token-form">
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">name</span>
-						</div>
-
+						<span class="input-group-text" id="input-group-gt-name">name</span>
 						<input class="form-control form-control-sm" maxlength="254" id="token-name" name="token-name"
-							type="text" readonly="readonly" />
+							type="text" readonly="readonly" aria-describedby="input-group-gt-name" />
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">id</span>
-						</div>
-
+						<span class="input-group-text" id="input-group-gt-token-id">id</span>
 						<input class="form-control form-control-sm" maxlength="254" id="token-id" name="token-id"
-							type="number" readonly="readonly" />
+							type="number" readonly="readonly" aria-describedby="input-group-gt-token-id" />
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">token</span>
-						</div>
-
+						<span class="input-group-text" id="input-group-gt-token-secret">token</span>
 						<input class="form-control form-control-sm" maxlength="254" id="token-secret"
-							name="token-secret" type="text" readonly="readonly" />
+							name="token-secret" type="text" readonly="readonly" aria-describedby="input-group-gt-token-secret" />
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">expires</span>
-						</div>
-
+						<span class="input-group-text" id="input-group-gt-expires">expires</span>
 						<input class="form-control form-control-sm" maxlength="254" id="token-expires"
-							name="token-expires" type="datetime" readonly="readonly" />
+							name="token-expires" type="datetime" readonly="readonly" aria-describedby="input-group-gt-expires" />
 					</div>
 
-					<button type="submit" form="delete-token-form" class="btn btn-primary mt-3">Delete</button>
+					<button type="submit" form="delete-token-form" class="btn btn-sm btn-primary mt-3">Delete</button>
 				</form>
 			</div>
 		</div>
 
 		<div class="row">
-			<div class="column" style="width: 100%;">
+			<div class="col column" style="width: 100%;">
 				<hr />
 			</div>
 		</div>
 
 		<div class="row">
-			<div class="column mx-5 my-2">
+			<div class="col column mx-5 my-2">
 				<h6>Fetch token</h6>
 
 				<form id="fetch-token-form" action="#">
@@ -125,7 +106,7 @@
 				</form>
 			</div>
 
-			<div class="column mx-5 my-2">
+			<div class="col column mx-5 my-2">
 				<h6>Fetch token result</h6>
 
 				<form id="fetch-token-result">
@@ -157,83 +138,47 @@
 		</div>
 
 		<div class="row">
-			<div class="column mx-5 my-2">
+			<div class="col column mx-5 my-2">
 				<h6>Submit Job</h6>
 
 				<form id="submit-job-form" action="#" enctype="multipart/form-data">
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Token id</span>
-						</div>
+						<span class="input-group-text" id="input-group-submit-token-id">Token id</span>
 						<input class="form-control form-control-sm" maxlength="6" id="token-id" name="token-id"
-							type="text" pattern="[0-9]+" />
+							type="text" pattern="[0-9]+" aria-describedby="input-group-submit-token-id" />
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Token secret</span>
-						</div>
-
+						<span class="input-group-text" id="input-group-submit-token-secret">Token secret</span>
 						<input class="form-control form-control-sm" maxlength="254" id="token-secret"
-							name="token-secret" type="text" />
+							name="token-secret" type="text" aria-describedby="input-group-submit-token-id" />
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend" data-toggle="tooltip" data-placement="bottom" title="MTZ file">
-							<span class="input-group-text" id="input-group-mtz-file">Diffraction data</span>
-						</div>
-
-						<div class="custom-file">
-							<input type="file" class="custom-file-input" aria-describedby="input-group-mtz-file"
-								name="mtz-file" id="mtz-file" />
-							<label class="custom-file-label" for="mtz-file">Choose file</label>
-						</div>
+						<label class="input-group-text" for="input-group-mtz-file">MTZ file</label>
+						<input type="file" class="form-control" id="input-group-mtz-file"/>
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend" data-toggle="tooltip" data-placement="bottom"
-							title="PDB or mmCIF structure file">
-							<span class="input-group-text" id="input-group-pdb-file">Coordinates</span>
-						</div>
-
-						<div class="custom-file">
-							<input type="file" class="custom-file-input" aria-describedby="input-group-pdb-file"
-								name="pdb-file" id="pdb-file" />
-							<label class="custom-file-label" for="pdb-file">Choose file</label>
-						</div>
+						<label class="input-group-text" for="input-group-pdb-file">Coordinates</label>
+						<input type="file" class="form-control" id="input-group-pdb-file"/>
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend" data-toggle="tooltip" data-placement="bottom"
-							title="The restraints file is needed for new ligands or links, but not for common ligands or links already in the CCP4 dictionary, e.g. AMP, ATP, Glycerol, etc); if you are not certain if your ligand is already in the CCP4 dictionary, don't give a restraint file">
-							<span class="input-group-text" id="input-group-restraints-file">Restraints</span>
-						</div>
-
-						<div class="custom-file">
-							<input type="file" class="custom-file-input" aria-describedby="input-group-restraints-file"
-								name="restraints-file" id="restraints-file" />
-							<label class="custom-file-label" for="restraints-file">Choose file</label>
-						</div>
+						<label class="input-group-text" for="input-group-restraints-file">Restraints</label>
+						<input type="file" class="form-control" id="input-group-restraints-file"/>
 					</div>
 
 					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend" data-toggle="tooltip" data-placement="bottom"
-							title="The sequence file will be used to attempt building missing loops, if homologous structures are available; it is also useful to know when to add OXT (terminal oxygen) if necessary and in general gives better results in homology restraints at low resolution refinement">
-							<span class="input-group-text" id="input-group-sequence-file">Sequence</span>
-						</div>
-
-						<div class="custom-file">
-							<input type="file" class="custom-file-input" aria-describedby="input-group-sequence-file"
-								name="sequence-file" id="sequence-file" />
-							<label class="custom-file-label" for="sequence-file">Choose file</label>
-						</div>
+						<label class="input-group-text" for="input-group-sequence-file">Sequence</label>
+						<input type="file" class="form-control" id="input-group-sequence-file"/>
 					</div>
 
-					<button type="submit" form="submit-job-form" class="btn btn-primary mt-3">Submit</button>
+					<button type="submit" form="submit-job-form" class="btn btn-sm btn-primary mt-3">Submit</button>
 				</form>
 			</div>
 
-			<div class="column mx-5 my-2">
+			<div class="col column mx-5 my-2">
 				<h6>Submit Job result</h6>
 
 				<form id="submit-job-result">

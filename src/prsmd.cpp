@@ -933,6 +933,7 @@ zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const
 	};
 
 	entry["data"] = std::move(data["properties"]);
+	entry["rama-angles"] = std::move(data["rama-angles"]);
 
 	auto &link = entry["link"];
 	fs::path db("db/" + pdbID);

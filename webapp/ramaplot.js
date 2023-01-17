@@ -361,19 +361,17 @@ export class RamachandranPlot extends LitElement {
 	}
 
 	// routine to create precalculated data array
-	setData(data) {
-
-
+	setData(data, rama) {
 
 		this.stats = {
 			orig: {
-				zscore: data.properties.,
+				zscore: data.OZRAMA,
 				preferred: 0,
 				allowed: 0,
 				outliers: 0
 			},
 			redo: {
-				zscore: redoZscore,
+				zscore: data.FZRAMA,
 				preferred: 0,
 				allowed: 0,
 				outliers: 0
@@ -382,40 +380,41 @@ export class RamachandranPlot extends LitElement {
 
 		// The actual data
 		const dataMap = new Map();
-		const p = (molecules, s) => {
-			molecules.forEach(molecule => {
-				molecule.chains.forEach(chain => {
-					chain.models[0].residues.forEach(residue => {
-						const key = `${chain.chain_id}-${residue.residue_number}`;
-						if (! dataMap.has(key))
-							dataMap.set(key, {
-								chain: chain.chain_id,
-								residue_name: residue.residue_name,
-								residue_number: residue.residue_number,
-								key: key
-							});
-						const d = dataMap.get(key);
-						d[s] = {
-							phi: residue.phi,
-							psi: residue.psi,
-							cis_peptide: residue.cis_peptide === 'Y',
-							rama: residue.rama
-						}
 
-						// update stats
-						switch (residue.rama)
+		rama.forEach(entity => {
+			entity.chains.forEach(chain => {
+				chain.models[0].residues.forEach(residue => {
+					const key = `${chain.asym_id}-${residue.seq_id}`;
+					dataMap.set(key, {
+						chain: chain.asym_id,
+						residue_name: residue.compound_id,
+						residue_number: residue.seq_id,
+						key: key,
+						orig: {
+							phi: residue.orig.phi,
+							psi: residue.orig.psi,
+							rama: residue.orig.rama,
+							cis_peptide: residue.orig.cis
+						},
+						redo: {
+							phi: residue.redo.phi,
+							psi: residue.redo.psi,
+							rama: residue.redo.rama,
+							cis_peptide: residue.redo.cis
+						}
+					});
+
+					for (let s of ['orig', 'redo']) {
+						switch (residue[s].rama)
 						{
 							case 'Favored': this.stats[s].preferred += 1; break;
 							case 'Allowed': this.stats[s].allowed += 1; break;
 							case 'OUTLIER': this.stats[s].outliers += 1; break;
 						}
-					})
+					}
 				})
-			});
-		};
-
-		p(orig, 'orig');
-		p(redo, 'redo');
+			})
+		});
 
 		this.data = [...dataMap.values()];
 
@@ -545,8 +544,8 @@ export class RamachandranPlot extends LitElement {
 				.classed("dot", true)
 				.classed(t, true)
 				.attr("r", radius)
-				.on("mouseover", (d, i, n) => this.onMouseOver(d, n[i]))
-				.on("mouseout", (d, i, n) => this.onMouseOut(d, n[i]));
+				.on("mouseover", (e, d) => this.onMouseOver(e.target, d))
+				.on("mouseout", (e, d) => this.onMouseOut(e.target, d));
 
 			ggs.merge(gs)
 				.select(`circle.${t}`)
@@ -556,8 +555,8 @@ export class RamachandranPlot extends LitElement {
 			ggs.append("line")
 				.classed("change", true)
 				.classed(`${t}-part`, true)
-				.on("mouseover", (d, i, n) => this.onMouseOver(d, n[i]))
-				.on("mouseout", (d, i, n) => this.onMouseOut(d, n[i]));
+				.on("mouseover", (e, d) => this.onMouseOver(e.target, d))
+				.on("mouseout", (e, d) => this.onMouseOut(e.target, d));
 	
 			ggs.merge(gs)
 				.select(`line.change.${t}-part`)
@@ -649,7 +648,7 @@ export class RamachandranPlot extends LitElement {
 		}
 	}
 
-	onMouseOver(d, n) {
+	onMouseOver(n, d) {
 		n.parentNode.classList.add("hover");
 		
 		this.hoveredItem = {
@@ -664,7 +663,7 @@ export class RamachandranPlot extends LitElement {
 		this.updateBackground();
 	}
 
-	onMouseOut(d, n) {
+	onMouseOut(n, d) {
 		n.parentNode.classList.remove("hover");
 		this.hoveredItem = null;
 		this.requestUpdate();
