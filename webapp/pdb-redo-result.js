@@ -33,22 +33,6 @@ class PDBRedoResult extends HTMLElement {
 		style.innerHTML = pdb_redo_style;
 	}
 
-	loadData(req) {
-		let statusOK = false;
-		return fetch(req)
-			.then(response => {
-				statusOK = response.ok;
-				return response.json()
-			})
-			.then(data => {
-				if (!statusOK)
-					this.setAttribute('error', `error fetching data for ${this.jobID} : ${data.error}`);
-				else {
-					return data;
-				}
-			});
-	}
-
 	connectedCallback() {
 		const url = this.getAttribute('url');
 		if (url != null)
@@ -105,42 +89,26 @@ class PDBRedoResult extends HTMLElement {
 
 	reloadJobData() {
 		const shadow = this.shadowRoot;
-		// shadow.querySelector('style').textContent = `
-		// 	@import(url ${url}/css/style.css);
-		// `;
 
-		this.loadData(new PDBRedoApiRequest(`${url}/api/session/${tokenID}/run/${jobID}/output/data.json`, {
+		fetch(new PDBRedoApiRequest(`${this.url}/api/session/${this.tokenID}/run/${this.jobID}/output/data.json`, {
 			token: {
-				id: tokenID,
-				secret: tokenSecret,
+				id: this.tokenID,
+				secret: this.tokenSecret,
 			}
-		})).then(data => {
+		})).then(r => {
+			if (r.ok)
+				return r.json();
+		}).then(data => {
 			const fd = new FormData();
 			fd.append('data.json', JSON.stringify(data));
 
-			fetch(`${url}/entry`, {
+			fetch(`${this.url}/entry`, {
 				method: "POST",
 				body: fd
 			}).then(r => {
 				if (r.ok)
 					return r.text();
-			}).then(r => {
-				shadow.querySelector('div').innerHTML = r;
-
-				/* Code to manage a the toggle between raw and percentile values */
-				Array.from(shadow.querySelectorAll(".toggle"))
-					.forEach(p => p.addEventListener('click', (e) => {
-						const state = e.target.id;
-						const raw = state === "raw";
-						Array.from(document.getElementsByClassName("perc-raw-toggle"))
-							.forEach(e => {
-								e.classList.toggle('perc', raw === false);
-								e.classList.toggle('raw', raw === true);
-							});
-					})
-					);
-
-			});
+			}).then(r => this.putEntry(r));
 		});
 	}
 
@@ -179,77 +147,14 @@ class PDBRedoResult extends HTMLElement {
 		}
 
 		const ramaPlot = shadow.querySelector('ramachandran-plot');
-		ramaPlot.setData(entryData.data, entryData['rama-angles']);
+		if (typeof entryData['rama-angles'] === "object" && entryData['rama-angles'] != null)
+			ramaPlot.setData(entryData.data, entryData['rama-angles']);
+		else
+		{
+			const ramaPlotDiv = shadow.querySelector('#rama-plot-div');
+			ramaPlotDiv.classList.add('hide');
+		}
 	}
-
-	// render() {
-	// 	return html`
-	// 		<link rel="stylesheet" href="${new URL('css/w3.css', this.pdbRedoBaseURI)}">
-	// 		<!-- template content -->
-	// 		<p>${this.data ? this.data.TITLE : 'no title yet'}</p>
-	// 		`;
-	// }
-
-	// updated(changedProperties) {
-	// 	// let needRebuildSVG = d3.select(this.shadowRoot.querySelector('svg')).select('g').empty();
-	// 	let needReloadData = this.data == null && this.getAttribute('error') == '';
-
-	// 	changedProperties.forEach((oldValue, propName) => {
-	// 		switch (propName) {
-	// 			case 'width':
-	// 				needRebuildSVG = true;
-	// 				break;
-
-	// 			case 'jobID':
-	// 				if (this.jobID !== null)
-	// 					needReloadData = true;
-	// 				break;
-
-	// 			case 'url':
-	// 				this.link = this.link.replace(/\/+$/, '');
-	// 				break;
-	// 		}
-	// 	});
-
-	// 	// if (needRebuildSVG)
-	// 	// {
-	// 	// 	this.rebuildSVG();
-	// 	// 	if (! needReloadData)
-	// 	// 		this.updateGraph();
-	// 	// }
-
-	// 	if (needReloadData) {
-	// 		this.removeAttribute('error');
-
-	// 		const req = new PDBRedoApiRequest(`${this.link}/api/session/${this.tokenID}/run/${this.jobID}/output/data.json`, {
-	// 			token: {
-	// 				id: this.tokenID,
-	// 				secret: this.tokenSecret,
-	// 			}
-	// 		});
-
-	// 		let statusOK = false;
-	// 		fetch(req)
-	// 			.then(response => {
-	// 				statusOK = response.ok;
-	// 				return response.json()
-	// 			})
-	// 			.then(data => {
-	// 				if (!statusOK)
-	// 					this.setAttribute('error', `error fetching data for ${this.jobID} : ${data.error}`);
-	// 				else {
-	// 					this.data = data;
-	// 					this.requestUpdate();
-	// 				}
-	// 			}).catch(err => {
-	// 				console.log(err);
-	// 				this.setAttribute('error', `error fetching data for ${this.pdbID}`)
-	// 			});
-	// 	}
-	// }
-
-
-
 }
 
 customElements.define('pdb-redo-result', PDBRedoResult);

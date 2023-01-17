@@ -262,29 +262,8 @@ export class RamachandranPlot extends LitElement {
 		if (needRebuildSVG)
 		{
 			this.rebuildSVG();
-			if (needReloadPDB == false && this.data != null)
+			if (needReloadPDB == false)
 				this.updateGraph();
-		}
-
-		if (needReloadPDB)
-		{
-			this.removeAttribute('error');
-
-			// Promise.all(['orig','redo'].map(type => 
-			// 			if (r.ok)
-			// 				return r.json();
-			// 			this.setAttribute('error', `error fetching orig data for ${this.pdbID} : ${r.statusText}`);
-			// 		})
-			// 	)).then(data => {
-			// 		const [orig, origZscore] = [data[0][this.pdbID].molecules, data[0][this.pdbID].zscore];
-			// 		const [redo, redoZscore] = [data[1][this.pdbID].molecules, data[1][this.pdbID].zscore];
-			// 		this.makeData(orig, redo, origZscore, redoZscore);
-			// 		this.updateGraph();
-			// 	})
-			// 	.catch(err => {
-			// 		console.log(err);
-			// 		this.setAttribute('error', `error fetching data for ${this.pdbID}`)
-			// 	});
 		}
 	}
 

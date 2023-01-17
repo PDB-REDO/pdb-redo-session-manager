@@ -45,6 +45,7 @@ $nav-link-padding-y: math.div($spacer, 2);
 $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 
 @mixin hover-focus() {
+
 	&:hover,
 	&:focus {
 		@content;
@@ -53,18 +54,19 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 
 .navbar-dark {
 	.navbar-nav {
-	  .nav-link {
-		@include hover-focus() {
-			background-color: $nav-primary-hover;
+		.nav-link {
+			@include hover-focus() {
+				background-color: $nav-primary-hover;
+			}
 		}
-	  }
-	  .nav-link.active {
-		background-color: lighten($nav-link, 5%);
-		color: white;
-	  }
+
+		.nav-link.active {
+			background-color: lighten($nav-link, 5%);
+			color: white;
+		}
 	}
 
-	& > div {
+	&>div {
 		background-color: $nav-secondary;
 	}
 }
@@ -72,19 +74,19 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 // for the pdb-redo header
 
 header {
-    min-height: 6em;
-    padding-bottom: 1em;
+	min-height: 6em;
+	padding-bottom: 1em;
 }
 
 .h-left {
-    float: left;
-    min-height: 6em;
-    width: 10em;
+	float: left;
+	min-height: 6em;
+	width: 10em;
 }
 
 .h-right {
-    padding-left: 10em;
-    width: 100%;
+	padding-left: 10em;
+	width: 100%;
 }
 
 .h-left img {
@@ -93,79 +95,114 @@ header {
 	width: auto;
 }
 
-header div.first, header div.second {
-    /*padding: 0.5em;*/
-    /*font-size: small;*/
-    /*margin-left: 6em;*/
-    padding: 1em !important;
+header div.first,
+header div.second {
+	/*padding: 0.5em;*/
+	/*font-size: small;*/
+	/*margin-left: 6em;*/
+	padding: 1em !important;
 	min-height: 3em;
 }
 
 header a {
-    text-decoration: none;
+	text-decoration: none;
 }
 
 header a:hover {
-    text-decoration: underline;
+	text-decoration: underline;
 }
 
 header div.first {
-    background-color: $nav-primary;
-    color: white;
+	background-color: $nav-primary;
+	color: white;
 }
 
 header div.second {
-    background-color: $nav-secondary;
+	background-color: $nav-secondary;
 }
 
 header div.second nav {
-    color: $nav-link;
+	color: $nav-link;
 }
 
 header div.first a {
-    color: white;
-    text-decoration: none;
+	color: white;
+	text-decoration: none;
 }
 
-header div.second a, .login-links a {
-    color: $nav-link;
+header div.second a,
+.login-links a {
+	color: $nav-link;
 }
 
 header div.second nav {
-    float: left;
-    clear: none;
+	float: left;
+	clear: none;
 }
 
 header div.second span.user-panel {
-    float: right;
+	float: right;
 }
 
 header div.second div.clear {
-    clear: both;
+	clear: both;
 }
 
 @media all and (max-width: 1024px) {
 
-    header {
-        min-height: 4em;
-    }
+	header {
+		min-height: 4em;
+	}
 
-    .h-left {
-        height: 4em;
-        width: 8em;
-    }
+	.h-left {
+		height: 4em;
+		width: 8em;
+	}
 
-    .h-right {
-        padding-left: 8em;
-    }
+	.h-right {
+		padding-left: 8em;
+	}
 
-    header img {
-       min-height: calc(4em + 30px);
-    }
+	header img {
+		min-height: calc(4em + 30px);
+	}
 
-    header div.first, header div.second {
-        padding: 0;
-        height: 2em;
-    }
+	header div.first,
+	header div.second {
+		padding: 0;
+		height: 2em;
+	}
 }
 
+// copied over from old website
+
+main {
+	display: flex;
+}
+
+a {
+	color: #3366cc;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+aside {
+	font-size: small;
+	width: 10em;
+	float: right;
+
+	span {
+		display: block;
+		font-weight: bold;
+		text-align: center;
+		padding-bottom: 2em;
+	}
+
+	img {
+		max-width: 100%;
+		padding-bottom: 1em;
+	}
+}

@@ -131,15 +131,6 @@ a {
 	}
 }
 
-.toggle {
-	cursor: pointer;
-	font-weight: normal;
-}
-
-.toggle:hover {
-	color: #777777;
-}
-
 table {
 	&.raw .perc-value {
 		display: none;
@@ -150,8 +141,16 @@ table {
 	}
 
 	&.perc #raw, &.raw #perc {
-		text-decoration: underline;
+		cursor: pointer;
 		color: #3366cc;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+
+	.toggle {
+		font-weight: normal;
 	}
 }
 
@@ -194,4 +193,8 @@ table {
 		padding-top: 0.2em;
 		padding-bottom: 0.2em;
 	}
+}
+
+.hide {
+	display: none;
 }

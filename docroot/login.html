@@ -13,27 +13,23 @@
 
 <body>
 
-<script type="text/javascript">
-const nonce = /*[[${nonce}]]*/ null, username = /*[[${username}]]*/ null;
-</script>
+	<script type="text/javascript">
+		const nonce = /*[[${nonce}]]*/ null, username = /*[[${username}]]*/ null;
+	</script>
 
 	<nav z2:replace="~{menu :: navbar('session')}" />
 
-	<div id="login-dialog" class="modal fade" z2:fragment="login-dialog" tabindex="-1" role="dialog"
-		aria-labelledby="id_dialog_label">
-		<div class="modal-dialog" role="document">
+	<div id="login-dialog" class="modal" z2:fragment="login-dialog" tabindex="-1">
+		<div class="modal-dialog">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="id_dialog_label">Use a local account to log in.</h5>
-					<!--<button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
-					<!--<span aria-hidden="true">&times;</span>-->
-					<!--</button>-->
 				</div>
 
 				<div class="modal-body">
 
 					<form id="local-login-form" z2:action="@{/login}" method="post" class="form-group">
-						<input type="hidden" name="uri" z2:value="${uri ?: '/'}"/>
+						<input type="hidden" name="uri" z2:value="${uri ?: '/'}" />
 
 						<div z2:if="${param.error}" class="alert alert-warning" role="alert">
 							Invalid username and password.
@@ -63,6 +59,7 @@ const nonce = /*[[${nonce}]]*/ null, username = /*[[${username}]]*/ null;
 					<span class="error" id="failedToLoginMsg" style="display: none">Login failed</span>
 
 				</div>
+
 				<div class="modal-footer">
 					<!--<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
 					<button type="submit" form="local-login-form" class="btn btn-primary">Log in</button>

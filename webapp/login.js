@@ -1,5 +1,4 @@
-// import '@fortawesome/fontawesome-free/css/all.min.css';
-import 'bootstrap/js/dist/modal'
+import { Modal } from 'bootstrap';
 
 class LoginDialog {
 	constructor() {
@@ -7,8 +6,7 @@ class LoginDialog {
 
 		if (dlg != null)
 			this.setDialog(dlg);
-		else
-		{
+		else {
 			fetch("login-dialog")
 				.then(dlg => dlg.text())
 				.then(dlg => {
@@ -27,7 +25,7 @@ class LoginDialog {
 	}
 
 	setDialog(dlg) {
-		this.dialog = dlg;
+		this.dialog = new Modal(dlg);
 
 		this.form = document.forms["local-login-form"];
 		this.error = document.getElementById("failedToLoginMsg");
@@ -36,8 +34,9 @@ class LoginDialog {
 	}
 
 	show() {
-		$(this.error).hide();
-		$(this.dialog).modal();
+		// $(this.error).hide();
+		// $(this.dialog).modal();
+		this.dialog.show();
 	}
 
 	cancel() {

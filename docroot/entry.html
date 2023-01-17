@@ -177,31 +177,34 @@
 						</span>
 					</td>
 				</tr>
-				<tr>
-					<th colspan="8">PDB-REDO files</th>
-				</tr>
-				<tr>
-					<td class="c" colspan="2">
-						Re-refined and rebuilt structure
-						<br />
-						(
-						<a z2:href="@{/${entry.link['final_pdb']}}">PDB</a> |
-						<a z2:href="@{/${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a> |
-						<a z2:href="@{/${entry.link['final_mtz']}}">MTZ</a>)
-					</td>
-					<td class="c" colspan="2">
-						Re-refined (only) structure
-						<br />
-						(
-						<a z2:href="@{/${entry.link['besttls_pdb']}}">PDB</a> |
-						<a z2:href="@{/${entry.link['besttls_mtz']}}">MTZ</a>)
-					</td>
-					<td class="c" colspan="2">
-						<a z2:href="@{/${entry.link['alldata']}}">All files</a>
-						<br />
-						(compressed)
-					</td>
-				</tr>
+
+				<z2:block z2:if="${entry.link}">
+					<tr>
+						<th colspan="8">PDB-REDO files</th>
+					</tr>
+					<tr>
+						<td class="c" colspan="2">
+							Re-refined and rebuilt structure
+							<br />
+							(
+							<a z2:href="@{/${entry.link['final_pdb']}}">PDB</a> |
+							<a z2:href="@{/${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a> |
+							<a z2:href="@{/${entry.link['final_mtz']}}">MTZ</a>)
+						</td>
+						<td class="c" colspan="2">
+							Re-refined (only) structure
+							<br />
+							(
+							<a z2:href="@{/${entry.link['besttls_pdb']}}">PDB</a> |
+							<a z2:href="@{/${entry.link['besttls_mtz']}}">MTZ</a>)
+						</td>
+						<td class="c" colspan="2">
+							<a z2:href="@{/${entry.link['alldata']}}">All files</a>
+							<br />
+							(compressed)
+						</td>
+					</tr>
+				</z2:block>
 
 				<z2:block z2:if="${entry.link['refmac_settings']}">
 					<tr>
@@ -252,18 +255,6 @@
 					<td class="c" colspan="2">
 						<a target="_BLANK"
 							z2:href="@{'http://proteopedia.org/wiki/index.php/'+${id}}">Proteopedia</a>
-					</td>
-				</tr>
-
-				<tr z2:if="${not entry.dbEntry}">
-					<th colspan="8">Links</th>
-				</tr>
-				<tr z2:if="${not entry.dbEntry}">
-					<td class="c" colspan="2">
-						<button id="btn3DBionotes">Submit to 3DBionotes</button>
-						<a style="display: none" href="#" id="link3DBionotes" target="_blank">Show in
-							3DBionotes <i class="fas fa-external-link-alt"></i></a>
-						<span style="display:none" id="error3DBionotes"></span>
 					</td>
 				</tr>
 			</table>
@@ -495,7 +486,7 @@
 			</table>
 		</div>
 
-		<div class="result" z2:with="data=${entry.data}">
+		<div class="result" z2:with="data=${entry.data}" id="rama-plot-div">
 			<table class="">
 				<caption>Kleywegt-like plot</caption>
 				<tr>

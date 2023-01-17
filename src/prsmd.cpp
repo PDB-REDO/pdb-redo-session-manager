@@ -582,7 +582,10 @@ class api_rest_controller : public zh::rest_controller
 
 				// Correct for a potential context
 				if (not m_server->get_context_name().empty())
-					pathPart = '/' + m_server->get_context_name() + pathPart;
+				{
+					zeep::http::uri uri(m_server->get_context_name());
+					pathPart = fs::path("/") / uri.get_path() / fs::path(pathPart).relative_path();
+				}
 
 				std::ostringstream ss;
 				ss << req.get_method() << std::endl
@@ -847,6 +850,7 @@ class service_html_controller : public zh::html_controller
 
 		// map_post("job-entry", &service_html_controller::handle_entry, "token-id", "token-secret", "job-id");
 		map_post("db-entry", &service_html_controller::handle_db_entry, "pdb-id");
+		map_post("entry", &service_html_controller::handle_entry, "data.json");
 	}
 
 	zh::reply welcome(const zh::scope &scope);
@@ -856,13 +860,14 @@ class service_html_controller : public zh::html_controller
 	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
 	zh::reply handle_db_entry(const zh::scope &scope, const std::string &pdbID);
+	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data);
 
 	std::string m_pdb_redo_dir;
 };
 
 zh::reply service_html_controller::welcome(const zh::scope &scope)
 {
-	return get_template_processor().create_reply_from_template("index.html", scope);
+	return get_template_processor().create_reply_from_template("token-tests.html", scope);
 }
 
 void service_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
@@ -919,6 +924,56 @@ zh::reply service_html_controller::handle_delete_session(const zh::scope &scope,
 
 // 	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
 // }
+
+zh::reply service_html_controller::handle_entry(const zh::scope &scope, const zeep::json::element &data)
+{
+
+
+	zeep::json::element entry{
+		{ "id", data["pdbid"] },
+		{ "dbEntry", false }
+	};
+
+	entry["data"] = std::move(data["properties"]);
+	entry["rama-angles"] = std::move(data["rama-angles"]);
+
+	// auto &link = entry["link"];
+	// fs::path db("db/" + pdbID);
+	// for (auto file : data_service::instance().get_file_list(pdbID))
+	// {
+	// 	if (zeep::ends_with(file, "final.pdb"))
+	// 		link["final_pdb"] = db / file;
+	// 	else if (zeep::ends_with(file, "final.cif"))
+	// 		link["final_cif"] = db / file;
+	// 	else if (zeep::ends_with(file, "final.mtz"))
+	// 		link["final_mtz"] = db / file;
+	// 	else if (zeep::ends_with(file, "besttls.pdb.gz"))
+	// 		link["besttls_pdb"] = db / file;
+	// 	else if (zeep::ends_with(file, "besttls.mtz.gz"))
+	// 		link["besttls_mtz"] = db / file;
+	// 	else if (zeep::ends_with(file, ".refmac"))
+	// 		link["refmac_settings"] = db / file;
+	// 	else if (zeep::ends_with(file, "homology.rest"))
+	// 		link["homology_rest"] = db / file;
+	// 	else if (zeep::ends_with(file, "hbond.rest"))
+	// 		link["hbond_rest"] = db / file;
+	// 	else if (zeep::ends_with(file, "metal.rest"))
+	// 		link["metal_rest"] = db / file;
+	// 	else if (zeep::ends_with(file, "nucleic.rest"))
+	// 		link["nucleic_rest"] = db / file;
+	// 	else if (zeep::ends_with(file, "wo/pdbout.txt"))
+	// 		link["wo"] = db / file;
+	// 	else if (zeep::ends_with(file, "wf/pdbout.txt"))
+	// 		link["wf"] = db / file;
+	// }
+
+	// link["alldata"] = db / "zipped";
+
+	zh::scope sub(scope);
+	sub.put("entry", entry);
+
+	return get_template_processor().create_reply_from_template("entry::tables", sub);
+}
 
 zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const std::string &pdbID)
 {

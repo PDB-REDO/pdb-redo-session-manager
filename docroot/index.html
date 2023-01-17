@@ -7,242 +7,227 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
 	<title>PDB-REDO Session Manager</title>
-
-	<script z2:src="@{/scripts/test-api.js}"></script>
 </head>
 
 <body>
 
 	<nav z2:replace="~{menu :: navbar('session')}" />
 
+	<aside>
+		<span>Hosting</span>
+
+		<a href="http://www.nki.nl" target="_BLANK"><img width="125" z2:src="@{/images/nki-logo.png}"
+				alt="The Netherlands Cancer Institute" /></a>
+
+		<span>Funding</span>
+
+		<a href="http://www.nwo.nl/cw" target="_BLANK" class="noHover"><img z2:src="@{/images/nwo-logo.png}"
+				alt="NWO logo" /></a>
+
+
+		<a href="https://jnj.com" target="_BLANK" class="noHover">
+			<img z2:src="@{/images/johnson-johnson-logo.jpg}" alt="Johnson and Johnson logo" /></a>
+
+		<a href="http://portal.west-life.eu" target="_BLANK" class="noHover"><img z2:src="@{/images/logo_westlife.png}"
+				width="125" alt="West-Life logo" /></a>
+		<a href="https://inext-discovery.eu/" target="_BLANK" class="noHover">
+			<img z2:src="@{/images/inext.jpg}" alt="iNEXT logo" /></a>
+
+		<span>Powered by</span>
+		<a href="http://ccp4.ac.uk/" target="_BLANK" class="noHover"><img z2:src="@{/images/ccp4-logo.gif}"
+				alt="CCP4 logo" /></a>
+
+		<a href="http://swift.cmbi.umcn.nl/whatif/" target="_BLANK" class="noHover"><img
+				z2:src="@{/images/whatif_200_powered.png}" width="125" alt="WHAT-IF logo" /></a>
+		<a href="http://www.sdsc.edu/" target="_BLANK" class="noHover">
+			<img z2:src="@{/images/SDSC_logo.png}" alt="SDSC logo" /></a>
+
+		<a href="http://www.yasara.org" target="_BLANK" class="noHover"><img z2:src="@{/images/yasara_powered.png}"
+				width="125" alt="YASARA logo" /></a>
+		<a href="http://innovation.columbia.edu/technologies/CU20391" target="_BLANK" class="noHover"><img
+				z2:src="@{/images/x3dna-dssr-logo.png}" alt="3DNA logo" /></a>
+	</aside>
+
 	<div class="container">
 
-		<div class="row">
-			<div class="col column-sm mx-5 my-2">
-				<h6>Token generator</h6>
-				<form id="token-form" action="/api/session" method="post">
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-tg-user-name">user name</span>
-						<input class="form-control form-control-sm" maxlength="254" id="user" name="user" type="text"
-							aria-describedby="input-group-tg-user-name" required="true" />
-					</div>
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-tg-password">password</span>
-						<input class="form-control form-control-sm" maxlength="254" id="password" name="password"
-							type="password" required="true" aria-describedby="input-group-tg-password" />
-					</div>
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-tg-name">session name</span>
-						<input class="form-control form-control-sm" maxlength="254" id="name" name="name" type="text"
-							aria-describedby="input-group-tg-name" required="true" />
-					</div>
-					<button type="submit" form="token-form" class="btn btn-sm btn-primary mt-3">Create</button>
-				</form>
+		<article>
+			<h2>PDB-REDO: updated and optimised crystallographic structures</h2>
+
+			<p>PDB-REDO is a procedure to optimise crystallographic structure models, providing
+				algorithms that make a fully automated decision making system for refinement,
+				rebuilding and validation. It combines popular crystallographic software from
+				<a href="http://www.ccp4.ac.uk/">CCP4</a>, e.g.
+				<a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/">REFMAC</a> and
+				<a href="https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/">COOT</a>,
+				with with our specially developed rebuilding tools
+				<a href="https://pdb-redo.eu/publications/bioinformatics.pdf">Centrifuge, Pepflip &amp; SideAide</a>
+				and structure analysis tools like
+				<a href="http://swift.cmbi.ru.nl/whatif/">WHAT IF</a> and
+				<a href="http://www.glycosciences.de/tools/pdbcare/">PDB-care</a>.
+				PDB-REDO optimises refinement settings (e.g. geometric and B-factor restraint weights,
+				B-factor model, TLS groups, NCS and homology restraints), refines with REFMAC, partially
+				rebuilds the structure (rejects waters, refines side chains, checks peptide planes),
+				refines some more, and then validates the results.
+			</p>
+
+			<p>With PDB-REDO you can obtain updated and optimised versions of existing entries of the
+				<a href="http://www.wwpdb.org/">PDB</a> from our DataBank, or you can optimise your own
+				structure model using our Server. If you want to know more or install PDB-REDO on your
+				own computers, please check <a href="#MORE">below</a>.
+			</p>
+		</article>
+
+
+		<article>
+			<h2>PDB-REDO Databank</h2>
+
+			<p>The PDB-REDO databank contains optimised versions of existing PDB entries with electron
+				density maps, a description of model changes, and a wealth of model validation data. It is a
+				good starting point for any structural biology project.</p>
+			<p>All the entries are treated with a consistent protocol that reduces the effects of
+				differences in age, software, and depositors. This makes PDB-REDO a great datatset for large
+				scale structure analysis studies.</p>
+
+			<form method="get" class="redo" z2:action="@{/db/get/}" name="redo">
+				<label for="pdbCode">Enter a PDB code</label>
+				<input id="pdbCode" name="pdbCode" size="5" maxlength="4" type="text" class="redo" align="middle"
+					placeholder="1cbs" />
+				<button type="submit">Submit</button>
+			</form>
+
+			<p><a href="download-info.html" z2:href="@{/download-info.html}">Here</a> you can find more information
+				about downloading
+				PDB-REDO databank entries. And <a href="license.txt" z2:href="@{/license.txt}">here</a> you can find
+				the
+				data usage license.</p>
+		</article>
+
+		<article>
+			<h2>PDB-REDO server</h2>
+
+			<p>The PDB-REDO server helps you to get a publication quality structure. It takes your current
+				model (PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
+				model, new maps, validation reports, and many tools to continue working on your model,
+				including COOT menus customised for inspecting your structure.</p>
+			<button z2:if="${not user.valid}" id="extraLoginBtn">Log in</button>
+		</article>
+
+		<div z2:if="${user.valid}" class="box">
+			<div class="titlebar">
+				<span class="title">Submit new PDB-REDO run</span>
 			</div>
-
-			<div class="col column-sm mx-5 my-2">
-
-				<h6>Generated token</h6>
-
-				<form id="delete-token-form">
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-gt-name">name</span>
-						<input class="form-control form-control-sm" maxlength="254" id="token-name" name="token-name"
-							type="text" readonly="readonly" aria-describedby="input-group-gt-name" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-gt-token-id">id</span>
-						<input class="form-control form-control-sm" maxlength="254" id="token-id" name="token-id"
-							type="number" readonly="readonly" aria-describedby="input-group-gt-token-id" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-gt-token-secret">token</span>
-						<input class="form-control form-control-sm" maxlength="254" id="token-secret"
-							name="token-secret" type="text" readonly="readonly" aria-describedby="input-group-gt-token-secret" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-gt-expires">expires</span>
-						<input class="form-control form-control-sm" maxlength="254" id="token-expires"
-							name="token-expires" type="datetime" readonly="readonly" aria-describedby="input-group-gt-expires" />
-					</div>
-
-					<button type="submit" form="delete-token-form" class="btn btn-sm btn-primary mt-3">Delete</button>
-				</form>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="col column" style="width: 100%;">
-				<hr />
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="col column mx-5 my-2">
-				<h6>Fetch token</h6>
-
-				<form id="fetch-token-form" action="#">
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Token id</span>
-						</div>
-						<input class="form-control form-control-sm" maxlength="6" id="token-id" name="token-id"
-							type="text" pattern="[0-9]+" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Token secret</span>
-						</div>
-
-						<input class="form-control form-control-sm" maxlength="254" id="token-secret"
-							name="token-secret" type="text" />
-					</div>
-
-					<button type="submit" form="fetch-token-form" class="btn btn-primary mt-3">Fetch</button>
-				</form>
-			</div>
-
-			<div class="col column mx-5 my-2">
-				<h6>Fetch token result</h6>
-
-				<form id="fetch-token-result">
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">name</span>
-						</div>
-
-						<input class="form-control form-control-sm" maxlength="254" id="token-name" name="token-name"
-							type="text" readonly="readonly" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">expires</span>
-						</div>
-
-						<input class="form-control form-control-sm" maxlength="254" id="token-expires"
-							name="token-expires" type="datetime" readonly="readonly" />
-					</div>
-				</form>
+			<div class="content">
+				<div z2:replace="~{submit :: submit-form}"></div>
 			</div>
 		</div>
 
-		<div class="row">
-			<div class="column" style="width: 100%;">
-				<hr />
-			</div>
+		<div z2:if="${user.valid}" z2:remove="tag">
+			<table z2:replace="~{job-overview :: result-table}"></table>
 		</div>
 
-		<div class="row">
-			<div class="col column mx-5 my-2">
-				<h6>Submit Job</h6>
-
-				<form id="submit-job-form" action="#" enctype="multipart/form-data">
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-submit-token-id">Token id</span>
-						<input class="form-control form-control-sm" maxlength="6" id="token-id" name="token-id"
-							type="text" pattern="[0-9]+" aria-describedby="input-group-submit-token-id" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-submit-token-secret">Token secret</span>
-						<input class="form-control form-control-sm" maxlength="254" id="token-secret"
-							name="token-secret" type="text" aria-describedby="input-group-submit-token-id" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<label class="input-group-text" for="input-group-mtz-file">MTZ file</label>
-						<input type="file" class="form-control" id="input-group-mtz-file"/>
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<label class="input-group-text" for="input-group-pdb-file">Coordinates</label>
-						<input type="file" class="form-control" id="input-group-pdb-file"/>
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<label class="input-group-text" for="input-group-restraints-file">Restraints</label>
-						<input type="file" class="form-control" id="input-group-restraints-file"/>
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<label class="input-group-text" for="input-group-sequence-file">Sequence</label>
-						<input type="file" class="form-control" id="input-group-sequence-file"/>
-					</div>
-
-					<button type="submit" form="submit-job-form" class="btn btn-sm btn-primary mt-3">Submit</button>
-				</form>
+		<div class="box">
+			<div class="titlebar">
+				<span class="title">More PDB-REDO</span>
 			</div>
+			<div class="content">
+				<a name="MORE"></a>
 
-			<div class="col column mx-5 my-2">
-				<h6>Submit Job result</h6>
+				Click on the links below to download the software, access the PDB-REDO databank, etc
+				<br /><br />
 
-				<form id="submit-job-result">
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">job id</span>
-						</div>
-
-						<input class="form-control form-control-sm" maxlength="254" id="job-id" name="job-id"
-							type="text" readonly="readonly" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">job status</span>
-						</div>
-
-						<input class="form-control form-control-sm" maxlength="254" id="job-status"
-							name="job-status" type="text" readonly="readonly" />
-					</div>
-				</form>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="column" style="width: 100%;">
-				<hr />
-			</div>
-		</div>
-
-
-		<div class="row">
-			<div class="column-sm mx-5 my-2">
-
-				<h6>Using token</h6>
-
-				<form id="fetch-runs-form" action="#" enctype="multipart/form-data" class="mb-5">
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Token id</span>
-						</div>
-						<input class="form-control form-control-sm" maxlength="6" name="token-id" type="text" pattern="[0-9]+" />
-					</div>
-
-					<div class="input-group input-group-sm mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Token secret</span>
-						</div>
-
-						<input class="form-control form-control-sm" maxlength="254" name="token-secret" type="text" />
-					</div>
-
-					<button type="submit" form="fetch-runs-form" class="btn btn-primary mt-3">Submit</button>
-				</form>
-
-				<table id="run-table" class="table table-striped table-sm">
-					<thead>
+				<div class="programListTable">
+					<table style="margin-left: 0;">
 						<tr>
-							<th scope="run">Run</th>
-							<th scope="run">Status</th>
+							<td>
+								<!--a href="http://pdb-redo.eu/software/downloads.html"-->
+								PDB-REDO software
+								<!--/a-->
+							</td>
+							<td><em>Download the scripts and programs</em> (<a
+									href="https://pdb-redo.eu/software/pdb-redo.tar.bz2">Linux and Bash on Windows
+									10</a>)
+							</td>
 						</tr>
-					</thead>
-					<tbody></tbody>
-				</table>
+						<tr>
+							<td><a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/" target="_BLANK">REFMAC</a>
+							</td>
+							<td><em>The PDB-REDO refinement engine from the G. Murshudov group</em></td>
+						</tr>
+					</table>
+				</div>
+
+				<h3>The Science behind PDB-REDO</h3>
+				Click on the links below to get a reprint of PDB-REDO publications
+				<br /><br />
+
+				<div class="programListTable">
+					<table style="margin-left: 0;">
+						<tr>
+							<td><a z2:href="@{/publications/webserver.pdf}" target="_BLANK">Web server </a></td>
+							<td>Joosten RP, Long F, Murshudov GN, Perrakis A. The PDB_REDO server for macromolecular
+								structure model optimization. IUCrJ. 2014 May 30;1(Pt 4):213-20.
+							</td>
+						</tr>
+						<tr>
+							<td><a z2:href="@{/publications/CCP42011.pdf}" target="_BLANK">Decision making </a></td>
+							<td>Joosten RP, Joosten K, Murshudov GN, Perrakis A. PDB_REDO: constructive validation,
+								more
+								than just looking for errors. Acta Cryst. 2012; D68:484-496.
+							</td>
+						</tr>
+						<tr>
+							<td><a z2:href="@{/publications/bioinformatics.pdf}" target="_BLANK">Model rebuilding
+								</a>
+							</td>
+							<td>Joosten RP, Joosten K, Cohen SX, Vriend G, Perrakis A. Automatic rebuilding and
+								optimization of crystallographic structures in the Protein Data Bank. Bioinformatics
+								2011; 27:3392-3398.
+							</td>
+						</tr>
+						<tr>
+							<td><a z2:href="@{/publications/nar.pdf}" target="_BLANK">Database stuff</a></td>
+							<td>Joosten RP, Te Beek TAH, Krieger E, Hekkelman ML, Hooft RWW, Schneider R, Sander C,
+								Vriend G. A series of PDB related databases for everyday needs. Nucl. Acids Res.
+								2011;
+								39:D411-D419.
+							</td>
+						</tr>
+						<tr>
+							<td><a z2:href="@{/publications/science.pdf}" target="_BLANK">No data, no
+									re&#8209;refinement</a></td>
+							<td>Joosten RP, Vriend G. PDB improvement starts with data deposition. Science 2007;
+								317:195-196.
+							</td>
+						</tr>
+						<tr>
+							<td><a z2:href="@{/publications/actacrystd.pdf}" target="_BLANK">The value of
+									re&#8209;refinement </a>
+							</td>
+							<td>Joosten RP, Womack T, Vriend G, Bricogne G. Re-refinement from deposited X&#8209;ray
+								data can deliver improved models for most PDB entries. Acta Cryst. 2009;
+								D65:176-185.
+							</td>
+						</tr>
+						<tr>
+							<td><a z2:href="@{/publications/japplcryst.pdf}" target="_BLANK">PDB-REDO idea </a></td>
+							<td>Joosten RP, et al and Vriend G. PDB_REDO: automated re&#8209;refinement of
+								X&#8209;ray
+								structure models in the PDB. J. Appl. Cryst. 2009; 42:376-384.
+							</td>
+						</tr>
+
+						<tr>
+							<td><a z2:href="@{/publications/Beusekom_et_al-2018-Protein_Science.pdf}"
+									target="_blank">Homology restraints</a></td>
+							<td>van
+								Beusekom B, Touw WG, Tatineni M, Somani S, Rajagopal G, Luo J, Gilliland GL,
+								Perrakis A, Joosten RP Homology-based hydrogen bond information improves
+								crystallographic structures in the PDB. Protein Science. 2018;27:798-808.
+							</td>
+						</tr>
+
+					</table>
+				</div>
 			</div>
 		</div>
 	</div>
