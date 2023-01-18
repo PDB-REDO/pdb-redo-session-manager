@@ -129,7 +129,6 @@ table.perc-raw-toggle {
 			color: inherit;
 			background-color: inherit;
 			text-align: center;
-			cursor: pointer;
 			white-space: nowrap
 		}
 
@@ -200,4 +199,10 @@ table.perc-raw-toggle {
 
 .hide {
 	display: none;
+}
+
+.no-list {
+    list-style: none;
+    margin: 0;
+    padding: 1px;
 }

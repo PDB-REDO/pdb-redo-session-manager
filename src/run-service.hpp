@@ -48,11 +48,78 @@ enum class RunStatus
 
 // --------------------------------------------------------------------
 
+
+struct DDataFit {
+	double zdfree;
+	double rangeLower;
+	double rangeUpper;
+	std::string position;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("zdfree", zdfree)
+		   & zeep::make_nvp("range-lower", rangeLower)
+		   & zeep::make_nvp("range-upper", rangeUpper)
+		   & zeep::make_nvp("position", position);
+	}
+};
+
+struct ProteinGeometry {
+	double dzscore;
+	double rangeLower;
+	double rangeUpper;
+	std::string position;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("dzscore", dzscore)
+		   & zeep::make_nvp("range-lower", rangeLower)
+		   & zeep::make_nvp("range-upper", rangeUpper)
+		   & zeep::make_nvp("position", position);
+	}
+};
+
+struct NucleicAcidGeometry {
+	double drmsz;
+	double rangeLower;
+	double rangeUpper;
+	std::string position;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("drmsz", drmsz)
+		   & zeep::make_nvp("range-lower", rangeLower)
+		   & zeep::make_nvp("range-upper", rangeUpper)
+		   & zeep::make_nvp("position", position);
+	}
+};
+
+struct Score
+{
+	DDataFit ddatafit;
+	std::optional<ProteinGeometry> proteinGeometry;
+	std::optional<NucleicAcidGeometry> nucleicAcidGeometry;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("ddatafit", ddatafit)
+		   & zeep::make_nvp("geometry", proteinGeometry)
+		   & zeep::make_nvp("basePairs", nucleicAcidGeometry);
+	}
+};
+
 struct Run
 {
 	uint32_t id;
 	std::string user;
 	RunStatus status;
+	bool has_image;
+	std::chrono::time_point<std::chrono::system_clock> date;
+	std::optional<Score> score;
 
 	static Run create(const std::filesystem::path& dir, const std::string& username);
 
@@ -61,7 +128,10 @@ struct Run
 	{
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("status", status);
+		   & zeep::make_nvp("status", status)
+		   & zeep::make_nvp("hasImage", has_image)
+		   & zeep::make_nvp("date", date)
+		   & zeep::make_nvp("score", score);
 	}
 };
 
@@ -83,6 +153,7 @@ class RunService
 
 	std::vector<std::string> get_result_file_list(const std::string& username, unsigned long runID);
 	std::filesystem::path get_result_file(const std::string& username, unsigned long runID, const std::string& file);
+	std::filesystem::path get_image_file(const std::string& username, unsigned long runID);
 
 	std::tuple<std::istream *, std::string> get_zipped_result_file(const std::string& username, unsigned long runID);
 

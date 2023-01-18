@@ -102,12 +102,12 @@ module.exports = (env) => {
 		},
 
 		plugins: [
-			new CleanWebpackPlugin({
-				cleanOnceBeforeBuildPatterns: [
-					'scripts/**/*',
-					'fonts/**/*'
-				]
-			}),
+			// new CleanWebpackPlugin({
+			// 	cleanOnceBeforeBuildPatterns: [
+			// 		'scripts/**/*',
+			// 		'fonts/**/*'
+			// 	]
+			// }),
 			new MiniCssExtractPlugin({
 				filename: './css/[name].css',
 				chunkFilename: './css/[id].css'
@@ -124,6 +124,14 @@ module.exports = (env) => {
 
 	if (PRODUCTION) {
 		webpackConf.mode = "production";
+
+		webpackConf.plugins.push(
+			new CleanWebpackPlugin({
+				cleanOnceBeforeBuildPatterns: [
+					'scripts/**/*',
+					'fonts/**/*'
+				]
+			}));
 	} else {
 		webpackConf.mode = "development";
 		webpackConf.devtool = 'source-map';

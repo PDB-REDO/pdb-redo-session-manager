@@ -120,7 +120,6 @@ add_executable(prsmd
 # yarn rules for javascripts
 	
 set(webpack_input
-	${PROJECT_SOURCE_DIR}/webapp/custom-bootstrap-theme.scss
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
 	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.scss
 	${PROJECT_SOURCE_DIR}/webapp/admin.js
@@ -134,7 +133,7 @@ set(webpack_input
 	${PROJECT_SOURCE_DIR}/webapp/request.js
 	${PROJECT_SOURCE_DIR}/webapp/test-api.js
 	${PROJECT_SOURCE_DIR}/webpack.config.js
-	)
+)
 
 set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/index.js)
 

@@ -39,7 +39,7 @@
 						<a class="nav-link" z2:href="@{/admin}">Admin</a>
 					</li>
 
-					<li z2:if="${username}" class="nav-item">
+					<li z2:if="${#security.username}" class="nav-item">
 						<a class="nav-link" z2:href="@{/logout}">Logout</a>
 					</li>
 	

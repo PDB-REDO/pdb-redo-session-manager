@@ -101,6 +101,7 @@ class PDBRedoResult extends HTMLElement {
 		}).then(data => {
 			const fd = new FormData();
 			fd.append('data.json', JSON.stringify(data));
+			fd.append('link-url', `${this.url}/job/${this.jobID}/output/`);
 
 			fetch(`${this.url}/entry`, {
 				method: "POST",

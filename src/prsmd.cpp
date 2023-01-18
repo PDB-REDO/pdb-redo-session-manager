@@ -833,6 +833,71 @@ class db_rest_controller : public zeep::http::rest_controller
 
 // --------------------------------------------------------------------
 
+class job_html_controller : public zh::html_controller
+{
+  public:
+	job_html_controller()
+		: zh::html_controller("job")
+	{
+		map_get("", &job_html_controller::get_job_listing);
+		map_get("output/{job-id}/{file}", &job_html_controller::get_output_file, "job-id", "file");
+		map_get("image/{job-id}", &job_html_controller::get_image_file, "job-id");
+	}
+
+	zh::reply get_job_listing(const zh::scope &scope)
+	{
+		auto credentials = scope.get_credentials();
+
+		zh::scope sub(scope);
+
+		std::error_code ec;
+		json runs;
+
+		for (auto &run : RunService::instance().get_runs_for_user(credentials["username"].as<std::string>()))
+		{
+			json run_j;
+			to_element(run_j, run);
+			runs.emplace_back(std::move(run_j));
+		}
+		sub.put("runs", std::move(runs));
+
+		return get_template_processor().create_reply_from_template("job-overview", sub);
+	}
+
+	zh::reply get_output_file(const zh::scope &scope, unsigned long job_id, const std::string &file)
+	{
+		auto credentials = scope.get_credentials();
+
+		auto f = RunService::instance().get_result_file(credentials["username"].as<std::string>(), job_id, file);
+
+		std::error_code ec;
+		if (not fs::exists(f, ec))
+			return zh::reply::stock_reply(zh::not_found);
+		
+		zh::reply result(zh::ok);
+		result.set_content(new std::ifstream(f), "text/plain");
+		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		return result;
+	}
+
+	zh::reply get_image_file(const zh::scope &scope, unsigned long job_id)
+	{
+		auto credentials = scope.get_credentials();
+
+		auto f = RunService::instance().get_image_file(credentials["username"].as<std::string>(), job_id);
+
+		std::error_code ec;
+		if (not fs::exists(f, ec))
+			return zh::reply::stock_reply(zh::not_found);
+		
+		zh::reply result(zh::ok);
+		result.set_content(new std::ifstream(f, std::ios::in | std::ios::binary), "image/png");
+		return result;
+	}
+};
+
+// --------------------------------------------------------------------
+
 class service_html_controller : public zh::html_controller
 {
   public:
@@ -850,7 +915,7 @@ class service_html_controller : public zh::html_controller
 
 		// map_post("job-entry", &service_html_controller::handle_entry, "token-id", "token-secret", "job-id");
 		map_post("db-entry", &service_html_controller::handle_db_entry, "pdb-id");
-		map_post("entry", &service_html_controller::handle_entry, "data.json");
+		map_post("entry", &service_html_controller::handle_entry, "data.json", "link-url");
 	}
 
 	zh::reply welcome(const zh::scope &scope);
@@ -860,7 +925,7 @@ class service_html_controller : public zh::html_controller
 	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
 	zh::reply handle_db_entry(const zh::scope &scope, const std::string &pdbID);
-	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data);
+	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
 
 	std::string m_pdb_redo_dir;
 };
@@ -925,9 +990,9 @@ zh::reply service_html_controller::handle_delete_session(const zh::scope &scope,
 // 	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
 // }
 
-zh::reply service_html_controller::handle_entry(const zh::scope &scope, const zeep::json::element &data)
+zh::reply service_html_controller::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
 {
-
+	auto pdbID = data["pdbid"].as<std::string>();
 
 	zeep::json::element entry{
 		{ "id", data["pdbid"] },
@@ -937,37 +1002,26 @@ zh::reply service_html_controller::handle_entry(const zh::scope &scope, const ze
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);
 
-	// auto &link = entry["link"];
-	// fs::path db("db/" + pdbID);
-	// for (auto file : data_service::instance().get_file_list(pdbID))
-	// {
-	// 	if (zeep::ends_with(file, "final.pdb"))
-	// 		link["final_pdb"] = db / file;
-	// 	else if (zeep::ends_with(file, "final.cif"))
-	// 		link["final_cif"] = db / file;
-	// 	else if (zeep::ends_with(file, "final.mtz"))
-	// 		link["final_mtz"] = db / file;
-	// 	else if (zeep::ends_with(file, "besttls.pdb.gz"))
-	// 		link["besttls_pdb"] = db / file;
-	// 	else if (zeep::ends_with(file, "besttls.mtz.gz"))
-	// 		link["besttls_mtz"] = db / file;
-	// 	else if (zeep::ends_with(file, ".refmac"))
-	// 		link["refmac_settings"] = db / file;
-	// 	else if (zeep::ends_with(file, "homology.rest"))
-	// 		link["homology_rest"] = db / file;
-	// 	else if (zeep::ends_with(file, "hbond.rest"))
-	// 		link["hbond_rest"] = db / file;
-	// 	else if (zeep::ends_with(file, "metal.rest"))
-	// 		link["metal_rest"] = db / file;
-	// 	else if (zeep::ends_with(file, "nucleic.rest"))
-	// 		link["nucleic_rest"] = db / file;
-	// 	else if (zeep::ends_with(file, "wo/pdbout.txt"))
-	// 		link["wo"] = db / file;
-	// 	else if (zeep::ends_with(file, "wf/pdbout.txt"))
-	// 		link["wf"] = db / file;
-	// }
+	if (data_link.has_value())
+	{
+		auto &link = entry["link"];
+		zeep::http::uri db(*data_link);
 
-	// link["alldata"] = db / "zipped";
+		link["final_pdb"] = (db / (pdbID + "_final.pdb")).string();
+		link["final_cif"] = (db / (pdbID + "_final.cif")).string();
+		link["final_mtz"] = (db / (pdbID + "_final.mtz")).string();
+		link["besttls_pdb"] = (db / (pdbID + "_besttls.pdb.gz")).string();
+		link["besttls_mtz"] = (db / (pdbID + "_besttls.mtz.gz")).string();
+		link["refmac_settings"] = (db / (pdbID + ".refmac")).string();
+		link["homology_rest"] = (db / "homology.rest").string();
+		link["hbond_rest"] = (db / "hbond.rest").string();
+		link["metal_rest"] = (db / "metal.rest").string();
+		link["nucleic_rest"] = (db / "nucleic.rest").string();
+		link["wo"] = (db / "wo/pdbout.txt").string();
+		link["wf"] = (db / "wf/pdbout.txt").string();
+
+		link["alldata"] = (db / "zipped").string();
+	}
 
 	zh::scope sub(scope);
 	sub.put("entry", entry);
@@ -1149,6 +1203,8 @@ Command should be either:
 			auto sc = new zh::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
 			sc->add_rule("/admin/**", { "ADMIN" });
+			sc->add_rule("/job", { "USER" });
+			sc->add_rule("/job/**", { "USER" });
 			sc->add_rule("/**", {});
 
 			sc->register_password_encoder<prsm_pw_encoder>();
@@ -1178,6 +1234,8 @@ Command should be either:
 			s->add_controller(new api_rest_controller(pdbRedoServicesDir));
 
 			s->add_controller(new db_rest_controller());
+
+			s->add_controller(new job_html_controller());
 
 			return s; },
 			kProjectName);

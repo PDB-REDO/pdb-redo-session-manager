@@ -1,0 +1,99 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO Job Results for [[${#security.username}]]</title>
+</head>
+
+<body class="site">
+
+	<nav z2:replace="~{menu :: navbar('session')}" />
+
+	<main class="container site-content">
+
+		<div class="alert alert-secondary" role="alert">
+			These are your stored jobs. Please note that they will be automatically deleted in 21 days.
+		</div>
+
+		<table class="table table-hover">
+			<caption></caption>
+			<tbody>
+				<tr>
+					<th class="sortable">id</th>
+					<th>Model</th>
+					<th class="sortable">Date</th>
+					<th class="sortable">Status</th>
+					<th>Input files</th>
+					<th>Action</th>
+				</tr>
+
+				<tr z2:each="run: ${runs}" z2:classappend="${runStat.even}? 'even'"
+					z2:attr="keys=${'i:' + run.id + '|||s:' + run.date + '|s:' + run.status + '||s:' + run.group}">
+
+					<td z2:text="${run.id}">ID</td>
+
+					<td>
+						<span
+							z2:if="${not run.hasImage and (run.status == 'queued' or run.status == 'running' or run.status == 'starting')}">Creation
+							of structure cartoon in progress</span>
+						<img z2:if="${run.hasImage}" z2:src="@{|/job/image/${run.id}|}" alt="structure cartoon" />
+					</td>
+
+					<td z2:text="${#dates.format(run.date, '%F %T')}"></td>
+
+					<td><span z2:text="${run.status}" z2:if="${run.status != 'ended'}"></span></td>
+
+					<td>
+						<div class="sliders" z2:if="${run.score}">
+							<div class="slider" z2:if="${run.score.geometry}">
+								<div class="slider-label">Protein Geometry</div>
+								<div class="slider-background"
+									z2:classappend="${run.score.geometry.position != null} ? 'slider-gradient' : 'slider-no-data'">
+								</div>
+								<div class="slider-position" z2:style="${run.score.geometry.position}"></div>
+							</div>
+							<div class="slider" z2:if="${run.score.basePairs}">
+								<div class="slider-label">Nucleic acid geometry</div>
+								<div class="slider-background"
+									z2:classappend="${run.score.basePairs.position != null} ? 'slider-gradient' : 'slider-no-data'">
+								</div>
+								<div class="slider-position" z2:style="${run.score.basePairs.position}"></div>
+							</div>
+							<div class="slider" z2:if="${run.score.ddatafit}">
+								<div class="slider-label">Fit model/data</div>
+								<div class="slider-background"
+									z2:classappend="${run.score.ddatafit.position != null} ? 'slider-gradient' : 'slider-no-data'">
+								</div>
+								<div class="slider-position" z2:style="${run.score.ddatafit.position}"></div>
+							</div>
+						</div>
+					</td>
+
+					<td>
+						<ul class="no-list">
+							<li z2:each="file: ${run.inputFiles}" z2:text="${file}"></li>
+						</ul>
+					</td>
+
+					<td>
+						<a class="btn btn-sm btn-outline-secondary bi bi-trash"
+							z2:if="${run.status == 'stopped' or run.status == 'ended' or run.status == 'running'}"
+							z2:href="@{|/delete/${run.id}|}"></a>
+					</td>
+
+				</tr>
+			</tbody>
+		</table>
+	</main>
+
+
+
+	<footer z2:replace="~{footer::content}" />
+</body>
+
+</html>

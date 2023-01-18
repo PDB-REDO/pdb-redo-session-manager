@@ -9,29 +9,33 @@
 	<title>PDB-REDO Session Manager - Error</title>
 </head>
 
-<body>
+<body class="site">
 	<nav z2:replace="~{menu :: navbar('session')}" />
 
-	<div class="container-fluid">
+	<div class="container site-content">
 
-		<div class="alert alert-danger mt-5" role="alert">
-			<div>
+		<div class="container-fluid mt-5">
+			<div class="alert alert-danger" role="alert">
 				<span z2:if="${error.nr}" class="error-nr" z2:text="${error.nr}"></span>
-				<span class="error-head-text" z2:text="${error.head}"/>
+				<span class="error-head-text" z2:text="${error.head}"></span>
 			</div>
-			
+		</div>
+
+		<div class="container-fluid mt-5">
+			<p class="error-main-text" z2:text="${error.description}"></p>
+			<p z2:if="${error.message}" z2:text="${error.message}"></p>
+		</div>
+
+		<div class="container-fluid mt-5">
+			<ul class="error-info">
+				<li z2:if="${error.request.method}">Method: <em z2:text="${error.request.method}"></em></li>
+				<li z2:if="${error.request.uri}">URI: <em z2:text="${error.request.uri}"></em></li>
+				<li z2:if="${error.request.username}">Username: <em z2:text="${error.request.username}"></em></li>
+			</ul>
 		</div>
 	</div>
-	<div id="main" class="container-fluid">
-		<p class="error-main-text" z2:text="${error.description}"></p>
-		<p z2:if="${error.message}" z2:text="${error.message}"></p>
-	</div>
 
-	<ul class="container-fluid error-info">
-		<li z2:if="${error.request.method}">Method: <em z2:text="${error.request.method}"></em></li>
-		<li z2:if="${error.request.uri}">URI: <em z2:text="${error.request.uri}"></em></li>
-		<li z2:if="${error.request.username}">Username: <em z2:text="${error.request.username}"></em></li>
-	</ul>
-	<footer z2:replace="~{footer::content}"/>
+	<footer z2:replace="~{footer::content}" />
 </body>
+
 </html>

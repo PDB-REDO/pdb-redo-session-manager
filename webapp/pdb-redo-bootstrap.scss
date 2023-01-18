@@ -176,8 +176,29 @@ header div.second div.clear {
 
 // copied over from old website
 
-main {
+.site {
 	display: flex;
+	min-height: 100vh;
+	height: 100%;
+	flex-direction: column;
+}
+
+.site header, .site footer {
+	flex: none;
+}
+
+.site-content {
+	flex: 1 0 auto;
+	padding: var(--space) var(--space) 0;
+	width: 100%;
+}
+
+.site-content::after {
+	content: '\00a0'; /* &nbsp; */
+	display: block;
+	margin-top: var(--space);
+	height: 0px;
+	visibility: hidden;
 }
 
 a {
@@ -205,4 +226,101 @@ aside {
 		max-width: 100%;
 		padding-bottom: 1em;
 	}
+}
+
+.error-info {
+	list-style: none;
+}
+
+.nummer {
+	text-align: right;
+}
+
+.error-head-text {
+	font-size: large;
+}
+
+.logo img {
+	margin: -15px 0;
+	height: 2em;
+	background-color: white;
+}
+
+footer {
+	clear: both;
+	border-top: 1px solid #888;
+	padding: 0.5em;
+	margin-top: 2em;
+	font-size:  small;
+	color: #555;
+    white-space: pre;
+}
+
+ul.error-info {
+	margin: 0;
+	list-style: none;
+}
+
+a.action {
+	color: #888;
+}
+
+a.action:hover {
+	color: #555;
+}
+
+// pdb-e sliders
+
+.sliders {
+	display: inline-flex;
+	flex-direction: column;
+}
+
+.slider {
+    position: relative;
+    width: 100%;
+}
+
+.slider-label {
+    clear: both;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: x-small;
+    text-overflow: ellipsis;
+}
+
+.slider-background {
+    margin: 1px;
+    border: 1px solid rgb(204, 204, 204);
+    padding: 0;
+    height: 11px;
+    width: 100%;
+    background-clip: border-box;
+    background-origin: padding-box;
+    background-position-x: 0;
+    background-position-y: 0;
+    background: transparent repeat scroll 0 0;
+    background-size: auto auto;
+    box-sizing: content-box;
+    float: left;
+}
+
+.slider-gradient {
+    background-image:
+        linear-gradient(to right, rgb(255, 0, 0) 0, rgb(255, 255, 255) 50%, rgb(255, 255, 255) 51%, rgb(102, 153, 102) 100%);
+}
+
+.slider-no-data {
+    background: lightgray;
+}
+
+.slider-position {
+    position: absolute;
+    height: 11px;
+    width: 20%;
+    border: 2px solid black;
+    background-color: rgba(255, 255, 255, 0.7);
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
 }

@@ -31,6 +31,7 @@
 #include <stdexcept>
 
 #include <zeep/streambuf.hpp>
+#include <zeep/json/parser.hpp>
 
 #include "run-service.hpp"
 #include "user-service.hpp"
@@ -118,6 +119,64 @@ Run Run::create(const fs::path &dir, const std::string &username)
 		run.status = RunStatus::ENDED;
 	if (fs::exists(dir / "deletingProcess.txt"))
 		run.status = RunStatus::DELETING;
+
+	run.has_image = fs::exists(dir / "pdbin.png");
+
+	using namespace std::chrono;
+	auto ft = fs::last_write_time(dir);
+    run.date = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+
+	// load the scores
+	std::ifstream scoreFile(dir / "output" / "pdbe.json");
+	if (scoreFile.is_open())
+	{
+		zeep::json::element score;
+		zeep::json::parse_json(scoreFile, score);
+
+		Score v;
+		from_element(score, v);
+
+		double range = v.ddatafit.rangeUpper - v.ddatafit.rangeLower;
+		double dDataFit = (v.ddatafit.zdfree - v.ddatafit.rangeLower) / range;
+
+		int b = static_cast<int>(std::ceil(dDataFit * 5) - 1);
+		if (b < 0)
+			b = 0;
+		if (b > 4)
+			b = 4;
+
+		v.ddatafit.position = "left: " + std::to_string(b * 20) + "%;";
+
+		if (v.proteinGeometry.has_value())
+		{
+			double range = v.proteinGeometry->rangeUpper - v.proteinGeometry->rangeLower;
+			double geometry = (v.proteinGeometry->dzscore - v.proteinGeometry->rangeLower) / range;
+
+			int b = static_cast<int>(std::ceil(geometry * 5) - 1);
+			if (b < 0)
+				b = 0;
+			if (b > 4)
+				b = 4;
+
+			v.proteinGeometry->position = "left: " + std::to_string(b * 20) + "%;";
+		}
+
+		if (v.nucleicAcidGeometry.has_value())
+		{
+			double range = v.nucleicAcidGeometry->rangeUpper - v.nucleicAcidGeometry->rangeLower;
+			double geometry = (v.nucleicAcidGeometry->drmsz - v.nucleicAcidGeometry->rangeLower) / range;
+
+			int b = static_cast<int>(std::ceil(geometry * 5) - 1);
+			if (b < 0)
+				b = 0;
+			if (b > 4)
+				b = 4;
+
+			v.nucleicAcidGeometry->position = "left: " + std::to_string(b * 20) + "%;";
+		}
+
+		run.score = v;
+	}
 
 	return run;
 }
@@ -316,12 +375,20 @@ fs::path RunService::get_result_file(const std::string &username, unsigned long 
 	std::ostringstream s;
 	s << std::setw(10) << std::setfill('0') << runID;
 
-	fs::path result = dir / s.str() / "output" / file;
+	return dir / s.str() / "output" / file;
+}
 
-	if (not fs::exists(result))
-		throw std::runtime_error("Result file does not exist");
+fs::path RunService::get_image_file(const std::string &username, unsigned long runID)
+{
+	auto dir = m_runsdir / username;
 
-	return result;
+	if (not fs::exists(dir))
+		throw std::runtime_error("Run does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << runID;
+
+	return dir / s.str() / "pdbin.png";
 }
 
 // --------------------------------------------------------------------
