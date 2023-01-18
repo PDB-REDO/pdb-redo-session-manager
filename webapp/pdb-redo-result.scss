@@ -1,45 +1,18 @@
 // @use "sass:math";
 
-// // (Required) Import Bootstrap
-// @import "bootstrap/scss/_functions";
-// @import "bootstrap/scss/_variables";
-// @import "bootstrap/scss/_mixins";
-
-// $font-family-sans-serif: "Verdana", "Arial", "Helvetica", "sans-serif";
-
-// $primary: rgb(100, 100, 100);
-
-// $nav-primary: #FF9933;
-// $nav-secondary: #ffecbf;
-// $nav-link: #3366cc;
-
-// $nav-primary-hover: #d8c7a5;
-
-// $theme-colors: (
-// 	"nav-primary": $nav-primary,
-// 	"nav-secondary": $nav-secondary,
-
-// 	"primary": $primary
-// );
-
-// $navbar-dark-color: $nav-link;
-// $navbar-dark-hover-color: $nav-link;
-// $navbar-dark-active-color: $nav-link;
-// $navbar-dark-disabled-color: rgba($nav-link, .5);
-
-// $navbar-padding-y: 0;
-// $nav-link-padding-y: math.div($spacer, 2);
-
-// // (Required) Import Bootstrap
-// @import "bootstrap/scss/bootstrap";
-
 // Result page specific colouring
 
+$pdb_redo_color_1: #a3967f;
+$pdb_redo_color_2: #d6c6aa;
+$pdb_redo_color_3: #eeddbe;
+$pdb_redo_color_4: #fff5e0;
+$pdb_redo_color_5: #e8e3d9;
+
 * {
-    font-family: "Verdana", "Arial", "Helvetica", "sans-serif";
-    color: #4D4D4D;
-    margin: 0;
-    padding: 0;
+	font-family: "Verdana", "Arial", "Helvetica", "sans-serif";
+	color: #4D4D4D;
+	margin: 0;
+	padding: 0;
 }
 
 div.result {
@@ -49,103 +22,133 @@ div.result {
 table {
 	min-width: 685px;
 	caption-side: top;
-    border-collapse: collapse;
+	border-collapse: collapse;
 
 	&.c8 td {
 		width: 12.5%;
 	}
-	
+
 	&.c4 td {
 		width: 25%;
 	}
-	
+
 	&.c3 td {
 		width: 40%;
 	}
-	
-	&.c3 td + td {
+
+	&.c3 td+td {
 		width: 30%;
 	}
 }
 
 caption {
-    padding: 5px;
-    border-bottom: 1px solid #eeddbe;
+	padding: 5px;
+	border-bottom: 1px solid $pdb_redo_color_3;
 	color: black;
-    background-color: #e8e3d9;
-    /*color: white;*/
-    font-weight: bold;
-    font-size: large;
-    text-align: left;
+	background-color: $pdb_redo_color_5;
+	font-weight: bold;
+	font-size: large;
+	text-align: left;
 }
 
 th {
-    padding: 5px;
-    /*border: 1px solid #FDEDCB;;*/
-    border-bottom: 1px solid #a3967f;;
-    background-color: #fff5e0;
-    font-weight: bold;
-    text-align: left;
+	padding: 5px;
+	border-bottom: 1px solid $pdb_redo_color_1;
+	background-color: $pdb_redo_color_4;
+	font-weight: bold;
+	text-align: left;
 }
 
 td {
-    padding: 5px;
-    border-bottom: 1px solid #d6c6aa;;
+	padding: 5px;
+	border-bottom: 1px solid $pdb_redo_color_2;
+	;
 }
 
 td.c {
-    text-align: center;
+	text-align: center;
 }
 
 .ar {
-    text-align: right;
+	text-align: right;
 }
 
 td.worse {
-    background-color: #ffa599;
+	background-color: #ffa599;
 }
 
 td.better {
-    background-color: #d5f5b5;
+	background-color: #d5f5b5;
 }
 
 td.group {
-    font-style: italic;
-    padding-left: 1em;
+	font-style: italic;
+	padding-left: 1em;
 }
 
 .label {
-    font-style: italic;
+	font-style: italic;
 }
 
-td + td.label {
-    padding-left: 3em;
+td+td.label {
+	padding-left: 3em;
 }
 
 a {
-    color: #3366cc;
-    text-decoration: none;
+	color: #3366cc;
+	text-decoration: none;
 
 	&:hover {
 		text-decoration: underline;
 	}
 }
 
-table {
+table.perc-raw-toggle {
 	&.raw .perc-value {
 		display: none;
-	}	
-	
+	}
+
 	&.perc .raw-value {
 		display: none;
 	}
 
-	&.perc #raw, &.raw #perc {
+	div.button-bar {
+		display: inline-flex;
+		background-color: $pdb_redo_color_4;
+		border: 1px solid $pdb_redo_color_1;
+		padding: 0;
+
+		button {
+			display: inline-block;
+			border-style: none;
+			display: inline-block;
+			padding: 3px 6px;
+			vertical-align: middle;
+			overflow: hidden;
+			text-decoration: none;
+			color: inherit;
+			background-color: inherit;
+			text-align: center;
+			cursor: pointer;
+			white-space: nowrap
+		}
+
+		button + button {
+			border-left: 1px solid $pdb_redo_color_1;
+		}
+	}
+
+	&.perc button.perc,
+	&.raw button.raw {
+		background-color: $pdb_redo_color_2;
+	}
+
+	&.perc button.raw,
+	&.raw button.perc {
 		cursor: pointer;
-		color: #3366cc;
 
 		&:hover {
-			text-decoration: underline;
+			background-color: $pdb_redo_color_1;
 		}
 	}
 
@@ -155,9 +158,9 @@ table {
 }
 
 .warning {
-    position: relative;
-    float: left;
-    border-bottom: 1px dotted black;
+	position: relative;
+	float: left;
+	border-bottom: 1px dotted black;
 
 	.warningtext {
 		visibility: hidden;
@@ -180,10 +183,10 @@ table {
 }
 
 .box {
-    border: 1px solid #ccc;
-    padding: 0;
-    min-width: 2em;
-    margin-bottom: 1em;
+	border: 1px solid #ccc;
+	padding: 0;
+	min-width: 2em;
+	margin-bottom: 1em;
 
 	.titlebar {
 		width: 100%;

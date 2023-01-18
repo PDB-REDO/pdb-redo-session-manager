@@ -322,8 +322,10 @@
 				</tr>
 				<tr>
 					<th colspan="3">Model quality
-						(<span id="raw" class="toggle">raw scores</span> | <span id="perc"
-							class="toggle">percentiles</span>)
+						<div class="button-bar">
+							<button class="toggle raw" data-state="raw">raw scores</button>
+							<button class="toggle perc" data-state="perc">percentiles</button>
+						</div>
 					</th>
 				</tr>
 				<tr z2:if="${entry.data.GOT_PROT == null or entry.data.GOT_PROT}">

@@ -118,11 +118,11 @@ class PDBRedoResult extends HTMLElement {
 		shadow.querySelector('div').innerHTML = r;
 
 		/* Code to manage a the toggle between raw and percentile values */
-		Array.from(shadow.querySelectorAll(".toggle"))
+		Array.from(shadow.querySelectorAll("button.toggle"))
 			.forEach(p => p.addEventListener('click', (e) => {
-				const state = e.target.id;
+				const state = e.target.getAttribute('data-state');
 				const raw = state === "raw";
-				Array.from(shadow.querySelectorAll(".perc-raw-toggle"))
+				Array.from(shadow.querySelectorAll("table.perc-raw-toggle"))
 					.forEach(e => {
 						e.classList.toggle('perc', raw === false);
 						e.classList.toggle('raw', raw === true);
