@@ -46,7 +46,7 @@
 
 					<td z2:text="${#dates.format(run.date, '%F %T')}"></td>
 
-					<td><span z2:text="${run.status}" z2:if="${run.status != 'ended'}"></span></td>
+					<td z2:text="${run.status != 'ended' ?: 'done'}"></td>
 
 					<td>
 						<div class="sliders" z2:if="${run.score}">

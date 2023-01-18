@@ -30,12 +30,16 @@
 		
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav mr-auto">
+
+					<li class="nav-item" z2:classappend="${page == 'job' ? 'active' : ''}">
+						<a class="nav-link" z2:href="@{/job}">Jobs</a>
+					</li>
 	
 					<li class="nav-item" z2:classappend="${page == 'session' ? 'active' : ''}">
 						<a class="nav-link" z2:href="@{/}">Token generator</a>
 					</li>
 
-					<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}">
+					<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}" z2:if="${#security.hasRole('ADMIN')}">
 						<a class="nav-link" z2:href="@{/admin}">Admin</a>
 					</li>
 

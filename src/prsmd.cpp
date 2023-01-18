@@ -850,6 +850,8 @@ class job_html_controller : public zh::html_controller
 
 		zh::scope sub(scope);
 
+		sub.put("page", "job");
+
 		std::error_code ec;
 		json runs;
 
@@ -938,6 +940,8 @@ zh::reply service_html_controller::welcome(const zh::scope &scope)
 void service_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	zh::scope sub(scope);
+
+	sub.put("page", "admin");
 
 	json sessions;
 	auto s = SessionStore::instance().get_all_sessions();
