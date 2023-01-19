@@ -46,10 +46,9 @@
 
 					<td z2:text="${#dates.format(run.date, '%F %T')}"></td>
 
-					<td z2:text="${run.status != 'ended' ?: 'done'}"></td>
-
-					<td>
-						<div class="sliders" z2:if="${run.score}">
+					<td z2:switch="${run.status}">
+						<span z2:case="*" z2:text="${run.status}"></span>
+						<div class="sliders" z2:case="'ended'">
 							<div class="slider" z2:if="${run.score.geometry}">
 								<div class="slider-label">Protein Geometry</div>
 								<div class="slider-background"
