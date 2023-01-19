@@ -139,26 +139,22 @@ Run Run::create(const fs::path &dir, const std::string &username)
 		double range = v.ddatafit.rangeUpper - v.ddatafit.rangeLower;
 		double dDataFit = (v.ddatafit.zdfree - v.ddatafit.rangeLower) / range;
 
-		int b = static_cast<int>(std::ceil(dDataFit * 5) - 1);
-		if (b < 0)
-			b = 0;
-		if (b > 4)
-			b = 4;
-
-		v.ddatafit.position = "left: " + std::to_string(b * 20) + "%;";
+		v.ddatafit.position = static_cast<int>(std::ceil(dDataFit * 5) - 1);
+		if (v.ddatafit.position < 0)
+			v.ddatafit.position = 0;
+		if (v.ddatafit.position > 4)
+			v.ddatafit.position = 4;
 
 		if (v.proteinGeometry.has_value())
 		{
 			double range = v.proteinGeometry->rangeUpper - v.proteinGeometry->rangeLower;
 			double geometry = (v.proteinGeometry->dzscore - v.proteinGeometry->rangeLower) / range;
 
-			int b = static_cast<int>(std::ceil(geometry * 5) - 1);
-			if (b < 0)
-				b = 0;
-			if (b > 4)
-				b = 4;
-
-			v.proteinGeometry->position = "left: " + std::to_string(b * 20) + "%;";
+			v.proteinGeometry->position = static_cast<int>(std::ceil(geometry * 5) - 1);
+			if (v.proteinGeometry->position < 0)
+				v.proteinGeometry->position = 0;
+			if (v.proteinGeometry->position > 4)
+				v.proteinGeometry->position = 4;
 		}
 
 		if (v.nucleicAcidGeometry.has_value())
@@ -166,13 +162,11 @@ Run Run::create(const fs::path &dir, const std::string &username)
 			double range = v.nucleicAcidGeometry->rangeUpper - v.nucleicAcidGeometry->rangeLower;
 			double geometry = (v.nucleicAcidGeometry->drmsz - v.nucleicAcidGeometry->rangeLower) / range;
 
-			int b = static_cast<int>(std::ceil(geometry * 5) - 1);
-			if (b < 0)
-				b = 0;
-			if (b > 4)
-				b = 4;
-
-			v.nucleicAcidGeometry->position = "left: " + std::to_string(b * 20) + "%;";
+			v.nucleicAcidGeometry->position = static_cast<int>(std::ceil(geometry * 5) - 1);
+			if (v.nucleicAcidGeometry->position < 0)
+				v.nucleicAcidGeometry->position = 0;
+			if (v.nucleicAcidGeometry->position > 4)
+				v.nucleicAcidGeometry->position = 4;
 		}
 
 		run.score = v;

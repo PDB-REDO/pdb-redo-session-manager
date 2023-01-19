@@ -54,21 +54,21 @@
 								<div class="slider-background"
 									z2:classappend="${run.score.geometry.position != null} ? 'slider-gradient' : 'slider-no-data'">
 								</div>
-								<div class="slider-position" z2:style="${run.score.geometry.position}"></div>
+								<div class="slider-position" z2:classappend="${|slider-position-${run.score.geometry.position}|}"></div>
 							</div>
 							<div class="slider" z2:if="${run.score.basePairs}">
 								<div class="slider-label">Nucleic acid geometry</div>
 								<div class="slider-background"
 									z2:classappend="${run.score.basePairs.position != null} ? 'slider-gradient' : 'slider-no-data'">
 								</div>
-								<div class="slider-position" z2:style="${run.score.basePairs.position}"></div>
+								<div class="slider-position" z2:classappend="${|slider-position-${run.score.basePairs.position}|}"></div>
 							</div>
 							<div class="slider" z2:if="${run.score.ddatafit}">
 								<div class="slider-label">Fit model/data</div>
 								<div class="slider-background"
 									z2:classappend="${run.score.ddatafit.position != null} ? 'slider-gradient' : 'slider-no-data'">
 								</div>
-								<div class="slider-position" z2:style="${run.score.ddatafit.position}"></div>
+								<div class="slider-position" z2:classappend="${|slider-position-${run.score.ddatafit.position}|}"></div>
 							</div>
 						</div>
 					</td>

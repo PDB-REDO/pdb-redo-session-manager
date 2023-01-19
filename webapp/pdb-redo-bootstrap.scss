@@ -323,4 +323,24 @@ a.action:hover {
     -webkit-box-sizing: content-box;
     -moz-box-sizing: content-box;
     box-sizing: content-box;
+
+	&.slider-position-0 {
+		left: 0%;
+	}
+
+	&.slider-position-1 {
+		left: 20%;
+	}
+
+	&.slider-position-2 {
+		left: 40%;
+	}
+
+	&.slider-position-3 {
+		left: 60%;
+	}
+
+	&.slider-position-4 {
+		left: 80%;
+	}
 }

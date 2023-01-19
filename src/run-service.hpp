@@ -53,7 +53,7 @@ struct DDataFit {
 	double zdfree;
 	double rangeLower;
 	double rangeUpper;
-	std::string position;
+	int position;
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -69,7 +69,7 @@ struct ProteinGeometry {
 	double dzscore;
 	double rangeLower;
 	double rangeUpper;
-	std::string position;
+	int position;
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -85,7 +85,7 @@ struct NucleicAcidGeometry {
 	double drmsz;
 	double rangeLower;
 	double rangeUpper;
-	std::string position;
+	int position;
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
