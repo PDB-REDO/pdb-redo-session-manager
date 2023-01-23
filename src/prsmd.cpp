@@ -24,7 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <zeep/config.hpp>
+#include "data-service.hpp"
+#include "prsm-db-connection.hpp"
+#include "rama-angles.hpp"
+#include "run-service.hpp"
+#include "user-service.hpp"
+
+#include "revision.hpp"
+#include "mrsrc.hpp"
 
 #include <condition_variable>
 #include <functional>
@@ -43,14 +50,6 @@
 #include <pqxx/pqxx>
 
 #include <mcfp.hpp>
-
-#include "data-service.hpp"
-#include "prsm-db-connection.hpp"
-#include "revision.hpp"
-#include "run-service.hpp"
-#include "user-service.hpp"
-
-#include "mrsrc.hpp"
 
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
@@ -933,6 +932,8 @@ class job_html_controller : public zh::html_controller
 			{ "dbEntry", false }
 		};
 
+		add_rama_angles(data, dataJsonFile.parent_path());
+
 		entry["data"] = std::move(data["properties"]);
 		entry["rama-angles"] = std::move(data["rama-angles"]);
 
@@ -1081,6 +1082,8 @@ zh::reply service_html_controller::handle_entry(const zh::scope &scope, const ze
 		{ "dbEntry", false }
 	};
 
+	// add_rama_angles(data, dataJsonFile.parent_path());
+
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);
 
@@ -1113,7 +1116,8 @@ zh::reply service_html_controller::handle_entry(const zh::scope &scope, const ze
 
 zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const std::string &pdbID)
 {
-	std::ifstream dataJson(data_service::instance().get_file(pdbID, "data.json"));
+	auto dataJsonFile = data_service::instance().get_file(pdbID, "data.json");
+	std::ifstream dataJson(dataJsonFile);
 
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
@@ -1122,6 +1126,8 @@ zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const
 		{ "id", pdbID },
 		{ "dbEntry", true }
 	};
+
+	add_rama_angles(data, dataJsonFile.parent_path());
 
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);
@@ -1186,6 +1192,7 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option<std::string>("pdb-redo-tools-dir", "Directory containing PDB-REDO tools (and files)"),
 		mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
 		mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
+		mcfp::make_option<std::string>("ccp4-dir", "CCP4 directory, if not specified the environmental variable CCP4 will be used (and should be available)"),
 		mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
 		mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
 		mcfp::make_option<std::string>("context", "The outside base url for this service"),
@@ -1196,7 +1203,12 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option<std::string>("db-user", "Database user name"),
 		mcfp::make_option<std::string>("db-password", "Database password"),
 		mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
-		mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"));
+		mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"),
+
+		// for rama-angles
+		mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
+		mcfp::make_option<std::string>("final-file-pattern", "${id}_final.cif", "Pattern for the final xyzin file")
+		);
 
 	std::error_code ec;
 	config.parse(argc, argv, ec);
