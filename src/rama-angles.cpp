@@ -128,7 +128,7 @@ std::vector<ChainInfo> CalculateChainInfo(cif::mm::structure &structure)
 			if (not r.get_pdb_ins_code().empty())
 				iCode = r.get_pdb_ins_code();
 
-			std::auth_seq_id = 
+			// std::auth_seq_id = 
 
 			residues.emplace_back(r.get_compound_id(), r.get_seq_id(), r.get_auth_seq_id(), iCode, r.psi(), r.phi(), r.is_cis());
 		}
@@ -254,6 +254,7 @@ json CreateJSONForStructureFiles(const std::string &inOldFile, const std::string
 	// --------------------------------------------------------------------
 
 	json molecules;
+	bool reported = false;
 
 	for (std::string entityID : entities)
 	{
@@ -315,15 +316,15 @@ json CreateJSONForStructureFiles(const std::string &inOldFile, const std::string
 					continue;
 				}
 
-				if (ri_o->auth_seq_id != ri_n->auth_seq_id or
-					ri_o->compound_id != ri_n->compound_id)
+				if (ri_o->auth_seq_id == ri_n->auth_seq_id and
+					ri_o->compound_id == ri_n->compound_id)
 				{
-					throw std::runtime_error("Inconsistent data in old vs. new");
+					auto &res = put_res(*ri_o);
+					put_data(res["orig"], *ri_o);
+					put_data(res["redo"], *ri_n);
 				}
-
-				auto &res = put_res(*ri_o);
-				put_data(res["orig"], *ri_o);
-				put_data(res["redo"], *ri_n);
+				else if (cif::VERBOSE > 0 and std::exchange(reported, true) == false)
+					std::cerr << "Inconsistent data in old vs. new" << std::endl;
 
 				++ri_o;
 				++ri_n;

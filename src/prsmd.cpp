@@ -965,6 +965,8 @@ class job_html_controller : public zh::html_controller
 				link["wo"] = dir / file;
 			else if (zeep::ends_with(file, "wf/pdbout.txt"))
 				link["wf"] = dir / file;
+			else if (file == pdbID + ".log")
+				link["log"] = dir / file;
 		}
 
 		link["alldata"] = dir / "zipped";
@@ -1160,6 +1162,8 @@ zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const
 			link["wo"] = db / file;
 		else if (zeep::ends_with(file, "wf/pdbout.txt"))
 			link["wf"] = db / file;
+		else if (file == pdbID + ".log")
+			link["log"] = db / file;
 	}
 
 	link["alldata"] = db / "zipped";
