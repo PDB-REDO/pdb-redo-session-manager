@@ -126,6 +126,15 @@ Run Run::create(const fs::path &dir, const std::string &username)
 	auto ft = fs::last_write_time(dir);
     run.date = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
+	if (fs::is_directory(dir / "input"))
+	{
+		for (auto d : fs::directory_iterator(dir / "input"))
+		{
+			for (auto f : fs::directory_iterator(d))
+				run.input.emplace_back(f.path().filename().string());
+		}
+	}
+
 	// load the scores
 	std::ifstream scoreFile(dir / "output" / "pdbe.json");
 	if (scoreFile.is_open())

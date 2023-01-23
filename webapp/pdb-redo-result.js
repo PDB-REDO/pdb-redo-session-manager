@@ -36,7 +36,7 @@ class PDBRedoResult extends HTMLElement {
 	connectedCallback() {
 		const url = this.getAttribute('url');
 		if (url != null)
-			this.url = url;
+			this.url = url.replace(/\/+$/, '');	// strip trailing slashes
 
 		this.pdbID = this.getAttribute('pdb-id');
 
@@ -47,6 +47,8 @@ class PDBRedoResult extends HTMLElement {
 		if (this.url != null) {
 			if (this.pdbID != null)
 				this.reloadDBData();
+			else if (this.jobID != null && (this.tokenID == null || this.tokenSecret == null))
+				this.reloadLocalJobData();
 			else if (this.tokenID != null && this.tokenSecret != null && this.jobID != null)
 				this.reloadJobData();
 		}
@@ -81,6 +83,14 @@ class PDBRedoResult extends HTMLElement {
 
 	reloadDBData() {
 		fetch(`${this.url}/db-entry?pdb-id=${this.pdbID}`, { method: "post"})
+			.then(r => {
+				if (r.ok)
+					return r.text();
+			}).then(r => this.putEntry(r));
+	}
+
+	reloadLocalJobData() {
+		fetch(`${this.url}/job/entry/${this.jobID}`, { credentials: 'include' })
 			.then(r => {
 				if (r.ok)
 					return r.text();

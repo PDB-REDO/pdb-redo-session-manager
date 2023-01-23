@@ -20,6 +20,7 @@ module.exports = (env) => {
 
 			admin: SCRIPTS + "admin.js",
 			index: SCRIPTS + "index.js",
+			'job-overview': SCRIPTS + 'job-overview.js',
 			login: SCRIPTS + "login.js",
 			register: SCRIPTS + "register.js",
 			request: SCRIPTS + "request.js",

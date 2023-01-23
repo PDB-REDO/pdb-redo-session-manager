@@ -8,6 +8,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
 	<title>PDB-REDO Job Results for [[${#security.username}]]</title>
+
+	<script z2:src="@{/scripts/job-overview.js}"></script>
 </head>
 
 <body class="site">
@@ -20,7 +22,7 @@
 			These are your stored jobs. Please note that they will be automatically deleted in 21 days.
 		</div>
 
-		<table class="table table-hover">
+		<table class="table table-hover" id="jobs-table">
 			<caption></caption>
 			<tbody>
 				<tr>
@@ -29,11 +31,12 @@
 					<th class="sortable">Date</th>
 					<th class="sortable">Status</th>
 					<th>Input files</th>
-					<th>Action</th>
+					<th>&nbsp;</th>
 				</tr>
 
 				<tr z2:each="run: ${runs}" z2:classappend="${runStat.even}? 'even'"
-					z2:attr="keys=${'i:' + run.id + '|||s:' + run.date + '|s:' + run.status + '||s:' + run.group}">
+					z2:attr="keys=${'i:' + run.id + '|||s:' + run.date + '|s:' + run.status + '||s:' + run.group}"
+					z2:data-job="${run.id}">
 
 					<td z2:text="${run.id}">ID</td>
 
@@ -44,7 +47,7 @@
 						<img z2:if="${run.hasImage}" z2:src="@{|/job/image/${run.id}|}" alt="structure cartoon" />
 					</td>
 
-					<td z2:text="${#dates.format(run.date, '%F %T')}"></td>
+					<td z2:text="${#dates.format(run.date, '%F %H:%M')}"></td>
 
 					<td z2:switch="${run.status}">
 						<span z2:case="*" z2:text="${run.status}"></span>
@@ -75,7 +78,7 @@
 
 					<td>
 						<ul class="no-list">
-							<li z2:each="file: ${run.inputFiles}" z2:text="${file}"></li>
+							<li z2:each="file: ${run.input}" z2:text="${file}"></li>
 						</ul>
 					</td>
 
