@@ -106,43 +106,45 @@ find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 
 add_executable(prsmd
-	${PROJECT_SOURCE_DIR}/src/data-service.cpp
-	${PROJECT_SOURCE_DIR}/src/data-service.hpp
-	${PROJECT_SOURCE_DIR}/src/run-service.cpp
-	${PROJECT_SOURCE_DIR}/src/run-service.hpp
-	${PROJECT_SOURCE_DIR}/src/user-service.cpp
-	${PROJECT_SOURCE_DIR}/src/user-service.hpp
-	${PROJECT_SOURCE_DIR}/src/prsm-db-connection.hpp
-	${PROJECT_SOURCE_DIR}/src/prsm-db-connection.cpp
-	${PROJECT_SOURCE_DIR}/src/zip-support.hpp
-	${PROJECT_SOURCE_DIR}/src/prsmd.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/zip-support.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prsmd.cpp)
 
 # yarn rules for javascripts
 	
 set(webpack_input
-	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
-	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.scss
-	${PROJECT_SOURCE_DIR}/webapp/admin.js
-	${PROJECT_SOURCE_DIR}/webapp/boxplot.js
-	${PROJECT_SOURCE_DIR}/webapp/index.js
-	${PROJECT_SOURCE_DIR}/webapp/login.js
-	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result.js
-	${PROJECT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
-	${PROJECT_SOURCE_DIR}/webapp/ramaplot.js
-	${PROJECT_SOURCE_DIR}/webapp/register.js
-	${PROJECT_SOURCE_DIR}/webapp/request.js
-	${PROJECT_SOURCE_DIR}/webapp/test-api.js
-	${PROJECT_SOURCE_DIR}/webpack.config.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.scss
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/admin.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/boxplot.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/login.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/register.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/request.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/test-api.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
 )
 
-set(webpack_output ${PROJECT_SOURCE_DIR}/docroot/scripts/index.js)
+set(webpack_output ${CMAKE_CURRENT_SOURCE_DIR}/docroot/scripts/index.js)
 
 add_custom_command(
-	OUTPUT ${webpack_output}
+	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/docroot/scripts/index.js
 	BYPRODUCTS 
 	DEPENDS ${webpack_input}
 	COMMAND ${YARN} run $<IF:$<CONFIG:Debug>,build,build-production>
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	VERBATIM)
 
 add_custom_target(webpack DEPENDS ${webpack_output})
 

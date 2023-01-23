@@ -120,6 +120,7 @@ struct Run
 	bool has_image;
 	std::chrono::time_point<std::chrono::system_clock> date;
 	std::optional<Score> score;
+	std::vector<std::string> input;
 
 	static Run create(const std::filesystem::path& dir, const std::string& username);
 
@@ -131,7 +132,8 @@ struct Run
 		   & zeep::make_nvp("status", status)
 		   & zeep::make_nvp("hasImage", has_image)
 		   & zeep::make_nvp("date", date)
-		   & zeep::make_nvp("score", score);
+		   & zeep::make_nvp("score", score)
+		   & zeep::make_nvp("input", input);
 	}
 };
 

@@ -842,6 +842,8 @@ class job_html_controller : public zh::html_controller
 		map_get("", &job_html_controller::get_job_listing);
 		map_get("output/{job-id}/{file}", &job_html_controller::get_output_file, "job-id", "file");
 		map_get("image/{job-id}", &job_html_controller::get_image_file, "job-id");
+		map_get("result/{job-id}", &job_html_controller::get_result, "job-id");
+		map_get("entry/{job-id}", &job_html_controller::get_entry, "job-id");
 	}
 
 	zh::reply get_job_listing(const zh::scope &scope)
@@ -896,6 +898,82 @@ class job_html_controller : public zh::html_controller
 		result.set_content(new std::ifstream(f, std::ios::in | std::ios::binary), "image/png");
 		return result;
 	}
+
+	zh::reply get_result(const zh::scope &scope, unsigned long job_id)
+	{
+		auto credentials = scope.get_credentials();
+
+		auto r = RunService::instance().get_run(credentials["username"].as<std::string>(), job_id);
+
+		zh::scope sub(scope);
+
+		sub.put("job-id", job_id);
+
+		return get_template_processor().create_reply_from_template("job-result", sub);
+	}
+
+	zh::reply get_entry(const zh::scope &scope, unsigned long job_id)
+	{
+		auto credentials = scope.get_credentials();
+		auto r = RunService::instance().get_run(credentials["username"].as<std::string>(), job_id);
+
+		auto dataJsonFile = RunService::instance().get_result_file(credentials["username"].as<std::string>(), job_id, "data.json");
+		std::ifstream dataJson(dataJsonFile);
+
+		if (not dataJson.is_open())
+			throw zeep::http::not_found;
+
+		zeep::json::element data;
+		zeep::json::parse_json(dataJson, data);
+
+		auto pdbID = data["pdbid"].as<std::string>();
+
+		zeep::json::element entry{
+			{ "id", data["pdbid"] },
+			{ "dbEntry", false }
+		};
+
+		entry["data"] = std::move(data["properties"]);
+		entry["rama-angles"] = std::move(data["rama-angles"]);
+
+		auto &link = entry["link"];
+		fs::path dir = "/job/output/" + std::to_string(job_id);
+		for (auto file : RunService::instance().get_result_file_list(credentials["username"].as<std::string>(), job_id))
+		{
+			if (zeep::ends_with(file, "final.pdb"))
+				link["final_pdb"] = dir / file;
+			else if (zeep::ends_with(file, "final.cif"))
+				link["final_cif"] = dir / file;
+			else if (zeep::ends_with(file, "final.mtz"))
+				link["final_mtz"] = dir / file;
+			else if (zeep::ends_with(file, "besttls.pdb.gz"))
+				link["besttls_pdb"] = dir / file;
+			else if (zeep::ends_with(file, "besttls.mtz.gz"))
+				link["besttls_mtz"] = dir / file;
+			else if (zeep::ends_with(file, ".refmac"))
+				link["refmac_settings"] = dir / file;
+			else if (zeep::ends_with(file, "homology.rest"))
+				link["homology_rest"] = dir / file;
+			else if (zeep::ends_with(file, "hbond.rest"))
+				link["hbond_rest"] = dir / file;
+			else if (zeep::ends_with(file, "metal.rest"))
+				link["metal_rest"] = dir / file;
+			else if (zeep::ends_with(file, "nucleic.rest"))
+				link["nucleic_rest"] = dir / file;
+			else if (zeep::ends_with(file, "wo/pdbout.txt"))
+				link["wo"] = dir / file;
+			else if (zeep::ends_with(file, "wf/pdbout.txt"))
+				link["wf"] = dir / file;
+		}
+
+		link["alldata"] = dir / "zipped";
+
+		zh::scope sub(scope);
+		sub.put("entry", entry);
+
+		return get_template_processor().create_reply_from_template("entry::tables", sub);
+	}
+
 };
 
 // --------------------------------------------------------------------
