@@ -53,8 +53,15 @@ header {
 	min-height: 6em;
 	padding-bottom: 1em;
 
+	img {
+		min-height: calc(6em + 30px);
+		margin: -15px 0;
+		width: auto;
+	}
+
 	nav.first {
 		padding: 0.8em !important;
+
 	}
 
 	.col {

@@ -41,6 +41,8 @@ class data_service
 
 	std::tuple<std::istream *, std::string> get_zip_file(const std::string &pdbID);
 
+	std::string version() const;
+
   private:
 	data_service();
 

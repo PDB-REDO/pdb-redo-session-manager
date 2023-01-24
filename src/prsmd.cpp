@@ -728,58 +728,13 @@ struct Stats
 	}
 };
 
-class db_rest_controller : public zeep::http::rest_controller
+class gfx_rest_controller : public zeep::http::rest_controller
 {
   public:
-	db_rest_controller()
+	gfx_rest_controller()
 		: zh::rest_controller("gfx")
 	{
-		map_get_request("statistics-for-box-plot", &db_rest_controller::get_statistics_for_box_plot, "ureso");
-
-		// get a list of the files for db entry
-		map_get_request("{id}", &db_rest_controller::get_file_list, "id");
-
-		// get all files zipped into an archive
-		map_get_request("{id}/zipped", &db_rest_controller::get_zip_file, "id");
-
-		// get a result file
-		map_get_request("{id}/{file}", &db_rest_controller::get_file, "id", "file");
-
-		map_get_request("{id}/wf/pdbout.txt", &db_rest_controller::get_wf_file, "id");
-		map_get_request("{id}/wo/pdbout.txt", &db_rest_controller::get_wo_file, "id");
-
-
-	}
-
-	std::vector<std::string> get_file_list(const std::string &pdbID)
-	{
-		return data_service::instance().get_file_list(pdbID);
-	}
-
-	fs::path get_file(const std::string &pdbID, const std::string &file)
-	{
-		return data_service::instance().get_file(pdbID, file);
-	}
-
-	fs::path get_wf_file(const std::string &pdbID)
-	{
-		return data_service::instance().get_file(pdbID, "wf/pdbout.txt");
-	}
-
-	fs::path get_wo_file(const std::string &pdbID)
-	{
-		return data_service::instance().get_file(pdbID, "wo/pdbout.txt");
-	}
-
-	zh::reply get_zip_file(const std::string &pdbID)
-	{
-		const auto &[is, name] = data_service::instance().get_zip_file(pdbID);
-
-		zh::reply rep{ zh::ok };
-		rep.set_content(is, "application/zip");
-		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
-
-		return rep;
+		map_get_request("statistics-for-box-plot", &gfx_rest_controller::get_statistics_for_box_plot, "ureso");
 	}
 
 	std::vector<Stats> get_statistics_for_box_plot(double ureso)
@@ -829,6 +784,57 @@ class db_rest_controller : public zeep::http::rest_controller
 		return stats;
 	}
 };
+
+// class db_rest_controller : public zh::rest_controller
+// {
+//   public:
+// 	db_rest_controller()
+// 		: zh::rest_controller("db")
+// 	{
+// 		// get a list of the files for db entry
+// 		map_get_request("{id}", &db_rest_controller::get_file_list, "id");
+
+// 		// get all files zipped into an archive
+// 		map_get_request("{id}/zipped", &db_rest_controller::get_zip_file, "id");
+
+// 		// get a result file
+// 		map_get_request("{id}/{file}", &db_rest_controller::get_file, "id", "file");
+
+// 		map_get_request("{id}/wf/pdbout.txt", &db_rest_controller::get_wf_file, "id");
+// 		map_get_request("{id}/wo/pdbout.txt", &db_rest_controller::get_wo_file, "id");
+// 	}
+
+// 	std::vector<std::string> get_file_list(const std::string &pdbID)
+// 	{
+// 		return data_service::instance().get_file_list(pdbID);
+// 	}
+
+// 	fs::path get_file(const std::string &pdbID, const std::string &file)
+// 	{
+// 		return data_service::instance().get_file(pdbID, file);
+// 	}
+
+// 	fs::path get_wf_file(const std::string &pdbID)
+// 	{
+// 		return data_service::instance().get_file(pdbID, "wf/pdbout.txt");
+// 	}
+
+// 	fs::path get_wo_file(const std::string &pdbID)
+// 	{
+// 		return data_service::instance().get_file(pdbID, "wo/pdbout.txt");
+// 	}
+
+// 	zh::reply get_zip_file(const std::string &pdbID)
+// 	{
+// 		const auto &[is, name] = data_service::instance().get_zip_file(pdbID);
+
+// 		zh::reply rep{ zh::ok };
+// 		rep.set_content(is, "application/zip");
+// 		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+
+// 		return rep;
+// 	}
+// };
 
 // --------------------------------------------------------------------
 
@@ -1140,7 +1146,29 @@ zh::reply db_html_controller::handle_get(const zh::scope &scope, const std::stri
 zh::reply db_html_controller::handle_show(const zh::scope &scope, const std::string &pdbID)
 {
 	zh::scope sub(scope);
+
+	const auto pdbRedoVersion = data_service::instance().version();
+
 	sub.put("pdb-id", pdbID);
+	sub.put("version", pdbRedoVersion);
+
+	auto dataJsonFile = data_service::instance().get_file(pdbID, "data.json");
+	std::ifstream dataJson(dataJsonFile);
+
+	zeep::json::element data;
+	zeep::json::parse_json(dataJson, data);
+
+	double version;
+	if (std::from_chars(pdbRedoVersion.data(), pdbRedoVersion.data() + pdbRedoVersion.length(), version).ec != std::errc())
+		version = 0;
+
+	zeep::json::element entry{
+		{ "id", pdbID },
+		{ "dbEntry", true },
+		{ "upToDate", data["properties"]["version"].as<double>() >= version }
+	};
+	sub.put("entry", std::move(entry));
+
 	return get_template_processor().create_reply_from_template("db-entry", sub);
 }
 
@@ -1360,7 +1388,7 @@ Command should be either:
 			s->add_controller(new session_rest_controller());
 			s->add_controller(new api_rest_controller());
 
-			s->add_controller(new db_rest_controller());
+			s->add_controller(new gfx_rest_controller());
 
 			s->add_controller(new job_html_controller());
 

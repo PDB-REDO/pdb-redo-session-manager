@@ -98,3 +98,14 @@ std::tuple<std::istream *, std::string> data_service::get_zip_file(const std::st
 
 	return { zw.finish(), pdbID + ".zip" };
 }
+
+std::string data_service::version() const
+{
+	std::string result = "<unknown>";
+
+	std::ifstream version_file(m_data_dir / "redo-version.txt");
+	if (version_file.is_open())
+		getline(version_file, result);
+	
+	return result;
+}
