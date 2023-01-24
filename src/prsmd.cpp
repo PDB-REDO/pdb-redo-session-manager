@@ -26,7 +26,6 @@
 
 #include "data-service.hpp"
 #include "prsm-db-connection.hpp"
-#include "rama-angles.hpp"
 #include "run-service.hpp"
 #include "user-service.hpp"
 
@@ -933,9 +932,6 @@ class job_html_controller : public zh::html_controller
 			{ "dbEntry", false }
 		};
 
-		if (data["rama-angles"].is_null())
-			add_rama_angles(data, dataJsonFile.parent_path());
-
 		entry["data"] = std::move(data["properties"]);
 		entry["rama-angles"] = std::move(data["rama-angles"]);
 
@@ -1160,9 +1156,6 @@ zh::reply db_html_controller::handle_entry(const zh::scope &scope, const std::st
 		{ "id", pdbID },
 		{ "dbEntry", true }
 	};
-
-	if (data["rama-angles"].is_null())
-		add_rama_angles(data, dataJsonFile.parent_path());
 
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);

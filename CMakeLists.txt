@@ -104,8 +104,6 @@ find_program(YARN yarn REQUIRED)
 find_package(zeep 6 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
-find_package(cifpp 5.0.4 CONFIG REQUIRED)
-find_package(CCP4 REQUIRED ccp4c clipper-core clipper-ccp4 clipper-contrib)
 
 add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.cpp
@@ -116,11 +114,6 @@ add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.cpp
-
-	${CMAKE_CURRENT_SOURCE_DIR}/src/rama-angles.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/rama-angles.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/ramachandran.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/ramachandran.cpp
 
 	${CMAKE_CURRENT_SOURCE_DIR}/src/zip-support.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsmd.cpp)
@@ -163,7 +156,7 @@ if(USE_RSRC)
 endif()
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio cifpp::cifpp ${CCP4_LIBRARIES} PkgConfig::PKG_PQ)
+target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio PkgConfig::PKG_PQ)
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}
