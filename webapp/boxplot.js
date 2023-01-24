@@ -258,7 +258,7 @@ function createBoxPlots(e, s, td) {
 
 export function createBoxPlot(data, td, url) {
 	const ureso = data.URESO;
-	fetch(`${url}/db/statistics-for-box-plot?ureso=${ureso}`)
+	fetch(`${url}/gfx/statistics-for-box-plot?ureso=${ureso}`)
 		.then(r => r.json())
 		.then(s => createBoxPlots(data, s, td))
 		.catch(e => console.log(e));
