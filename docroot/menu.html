@@ -1,59 +1,66 @@
 <!DOCTYPE html SYSTEM "about:legacy-compat">
 
-<html xmlns="http://www.w3.org/1999/xhtml"
-	  xmlns:z2="http://www.hekkelman.com/libzeep/m2"
-	  lang="nl" >
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
 
 <body>
 
-	<header z2:fragment="navbar(page)">
+	<header z2:fragment="navbar(page)" class="row">
 
-		<div class="h-left">
-			<a href="https://pdb-redo.eu/" z2:href="@{/}"><img z2:src="@{/images/PDB_logo_rect_medium.svg}"/></a>
+		<div class="col col-auto">
+			<a href="https://pdb-redo.eu/" z2:href="@{/}"><img z2:src="@{/images/PDB_logo_rect_medium.svg}" /></a>
 		</div>
-		<div class="h-right">
-			<div class="first">
-				<nav>
-					<a href="http://www.nki.nl" target="_BLANK">NKI Research</a> |
-					<a href="http://www.nki.nl/divisions/biochemistry/" title="BioChemistry Homepage" target="_BLANK">Biochemistry</a>
-					|
-					<a href="http://www.nki.nl/divisions/biochemistry/perrakis-a-group/" target="_BLANK">Perrakis group</a>
-				</nav>
-			</div>
+		<div class="col">
+			<nav class="first">
+				<a href="http://www.nki.nl" target="_BLANK">NKI Research</a> |
+				<a href="http://www.nki.nl/divisions/biochemistry/" title="BioChemistry Homepage"
+					target="_BLANK">Biochemistry</a>
+				|
+				<a href="http://www.nki.nl/divisions/biochemistry/perrakis-a-group/" target="_BLANK">Perrakis
+					group</a>
+			</nav>
+			<nav class="navbar navbar-expand-md bg-nav-secondary navbar-light second">
+
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+					data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+					aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+
+				<div class="collapse navbar-collapse" id="navbarSupportedContent">
+					<ul class="navbar-nav mr-auto">
+
+						<li class="nav-item" z2:classappend="${page == 'home' ? 'active' : ''}">
+							<a class="nav-link" z2:href="@{/}">Home</a>
+						</li>
+
+						<li class="nav-item" z2:classappend="${page == 'job' ? 'active' : ''}">
+							<a class="nav-link" z2:href="@{/job}">Jobs</a>
+						</li>
+
+						<li class="nav-item" z2:classappend="${page == 'session' ? 'active' : ''}">
+							<a class="nav-link" z2:href="@{/}">Token generator</a>
+						</li>
+
+						<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}"
+							z2:if="${#security.hasRole('ADMIN')}">
+							<a class="nav-link" z2:href="@{/admin}">Admin</a>
+						</li>
+
+						<li z2:if="${#security.authorized}" class="nav-item">
+							<a class="nav-link" z2:href="@{/logout}">Log out</a>
+						</li>
+
+						<li z2:if="${not #security.authorized}" class="nav-item">
+							<a class="nav-link" z2:href="@{/login}">Log in</a>
+						</li>
+
+
+					</ul>
+				</div>
+			</nav>
 		</div>
-
-		<nav class="navbar navbar-expand-sm bg-nav-secondary navbar-dark">
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-				aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-		
-			<div class="collapse navbar-collapse" id="navbarSupportedContent">
-				<ul class="navbar-nav mr-auto">
-
-					<li class="nav-item" z2:classappend="${page == 'job' ? 'active' : ''}">
-						<a class="nav-link" z2:href="@{/job}">Jobs</a>
-					</li>
-	
-					<li class="nav-item" z2:classappend="${page == 'session' ? 'active' : ''}">
-						<a class="nav-link" z2:href="@{/}">Token generator</a>
-					</li>
-
-					<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}" z2:if="${#security.hasRole('ADMIN')}">
-						<a class="nav-link" z2:href="@{/admin}">Admin</a>
-					</li>
-
-					<li z2:if="${#security.username}" class="nav-item">
-						<a class="nav-link" z2:href="@{/logout}">Logout</a>
-					</li>
-	
-				</ul>
-			</div>
-		</nav>
 	</header>
 
 </body>
 
 </html>
-
-

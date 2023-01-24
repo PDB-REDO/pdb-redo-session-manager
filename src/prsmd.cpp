@@ -476,9 +476,8 @@ class session_rest_controller : public zh::rest_controller
 class api_rest_controller : public zh::rest_controller
 {
   public:
-	api_rest_controller(const std::string &pdbRedoDir)
+	api_rest_controller()
 		: zh::rest_controller("api")
-		, m_pdb_redo_dir(pdbRedoDir)
 	{
 		// get session info
 		map_get_request("session/{id}", &api_rest_controller::get_session, "id");
@@ -734,7 +733,7 @@ class db_rest_controller : public zeep::http::rest_controller
 {
   public:
 	db_rest_controller()
-		: zh::rest_controller("db")
+		: zh::rest_controller("gfx")
 	{
 		map_get_request("statistics-for-box-plot", &db_rest_controller::get_statistics_for_box_plot, "ureso");
 
@@ -749,6 +748,8 @@ class db_rest_controller : public zeep::http::rest_controller
 
 		map_get_request("{id}/wf/pdbout.txt", &db_rest_controller::get_wf_file, "id");
 		map_get_request("{id}/wo/pdbout.txt", &db_rest_controller::get_wo_file, "id");
+
+
 	}
 
 	std::vector<std::string> get_file_list(const std::string &pdbID)
@@ -932,7 +933,8 @@ class job_html_controller : public zh::html_controller
 			{ "dbEntry", false }
 		};
 
-		add_rama_angles(data, dataJsonFile.parent_path());
+		if (data["rama-angles"].is_null())
+			add_rama_angles(data, dataJsonFile.parent_path());
 
 		entry["data"] = std::move(data["properties"]);
 		entry["rama-angles"] = std::move(data["rama-angles"]);
@@ -981,24 +983,22 @@ class job_html_controller : public zh::html_controller
 
 // --------------------------------------------------------------------
 
-class service_html_controller : public zh::html_controller
+class root_html_controller : public zh::html_controller
 {
   public:
-	service_html_controller(const std::string &pdbRedoDir)
-		: m_pdb_redo_dir(pdbRedoDir)
+	root_html_controller()
 	{
-		map_get("", &service_html_controller::welcome);
+		map_get("", &root_html_controller::welcome);
 
-		mount("admin", &service_html_controller::admin);
+		mount("admin", &root_html_controller::admin);
 
-		// mount("register", &service_html_controller::handle_registration);
+		// mount("register", &root_html_controller::handle_registration);
 
-		map_delete("admin/deleteSession", &service_html_controller::handle_delete_session, "sessionid");
-		mount("{css,scripts,fonts,images}/", &service_html_controller::handle_file);
+		map_delete("admin/deleteSession", &root_html_controller::handle_delete_session, "sessionid");
+		mount("{css,scripts,fonts,images}/", &root_html_controller::handle_file);
 
-		// map_post("job-entry", &service_html_controller::handle_entry, "token-id", "token-secret", "job-id");
-		map_post("db-entry", &service_html_controller::handle_db_entry, "pdb-id");
-		map_post("entry", &service_html_controller::handle_entry, "data.json", "link-url");
+		// map_post("job-entry", &root_html_controller::handle_entry, "token-id", "token-secret", "job-id");
+		map_post("entry", &root_html_controller::handle_entry, "data.json", "link-url");
 	}
 
 	zh::reply welcome(const zh::scope &scope);
@@ -1006,19 +1006,17 @@ class service_html_controller : public zh::html_controller
 	// void handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply);
 
 	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
-	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
-	zh::reply handle_db_entry(const zh::scope &scope, const std::string &pdbID);
-	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
 
-	std::string m_pdb_redo_dir;
+	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
+	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
 };
 
-zh::reply service_html_controller::welcome(const zh::scope &scope)
+zh::reply root_html_controller::welcome(const zh::scope &scope)
 {
-	return get_template_processor().create_reply_from_template("token-tests.html", scope);
+	return get_template_processor().create_reply_from_template("index", scope);
 }
 
-void service_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+void root_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	zh::scope sub(scope);
 
@@ -1032,18 +1030,18 @@ void service_html_controller::admin(const zh::request &request, const zh::scope 
 	get_template_processor().create_reply_from_template("admin.html", sub, reply);
 }
 
-zh::reply service_html_controller::handle_delete_session(const zh::scope &scope, unsigned long sessionID)
+zh::reply root_html_controller::handle_delete_session(const zh::scope &scope, unsigned long sessionID)
 {
 	SessionStore::instance().delete_by_id(sessionID);
 	return zh::reply::stock_reply(zh::ok);
 }
 
-// void service_html_controller::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// void root_html_controller::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 // {
 // 	get_template_processor().create_reply_from_template("register.html", scope, reply);
 // }
 
-// void service_html_controller::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// void root_html_controller::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 // {
 // 	auto token_id = request.get_parameter("token-id");
 // 	auto token_secret = request.get_parameter("token-secret");
@@ -1063,7 +1061,7 @@ zh::reply service_html_controller::handle_delete_session(const zh::scope &scope,
 // 	get_template_processor().create_reply_from_template("pdb-redo-result.html", sub, reply);
 // }
 
-// zh::reply service_html_controller::handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID)
+// zh::reply root_html_controller::handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID)
 // {
 // 	zeep::json::element entry;
 
@@ -1075,7 +1073,7 @@ zh::reply service_html_controller::handle_delete_session(const zh::scope &scope,
 // 	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
 // }
 
-zh::reply service_html_controller::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
+zh::reply root_html_controller::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
 {
 	auto pdbID = data["pdbid"].as<std::string>();
 
@@ -1083,8 +1081,6 @@ zh::reply service_html_controller::handle_entry(const zh::scope &scope, const ze
 		{ "id", data["pdbid"] },
 		{ "dbEntry", false }
 	};
-
-	// add_rama_angles(data, dataJsonFile.parent_path());
 
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);
@@ -1116,7 +1112,43 @@ zh::reply service_html_controller::handle_entry(const zh::scope &scope, const ze
 	return get_template_processor().create_reply_from_template("entry::tables", sub);
 }
 
-zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const std::string &pdbID)
+// --------------------------------------------------------------------
+
+class db_html_controller : public zh::html_controller
+{
+  public:
+	db_html_controller()
+		: zh::html_controller("db")
+	{
+		map_post("get", &db_html_controller::handle_get, "pdb-id");
+
+		map_get("entry", &db_html_controller::handle_entry, "pdb-id");
+		map_post("entry", &db_html_controller::handle_entry, "pdb-id");
+
+		map_get("{id}", &db_html_controller::handle_show, "id");
+	}
+
+	zh::reply handle_get(const zh::scope &scope, const std::string &pdbID);
+	zh::reply handle_entry(const zh::scope &scope, const std::string &pdbID);
+	zh::reply handle_show(const zh::scope &scope, const std::string &pdbID);
+};
+
+zh::reply db_html_controller::handle_get(const zh::scope &scope, const std::string &pdbID)
+{
+	if (pdbID.empty())
+		throw std::runtime_error("Please specify a valid PDB ID");
+	
+	return zh::reply::redirect(pdbID);
+}
+
+zh::reply db_html_controller::handle_show(const zh::scope &scope, const std::string &pdbID)
+{
+	zh::scope sub(scope);
+	sub.put("pdb-id", pdbID);
+	return get_template_processor().create_reply_from_template("db-entry", sub);
+}
+
+zh::reply db_html_controller::handle_entry(const zh::scope &scope, const std::string &pdbID)
 {
 	auto dataJsonFile = data_service::instance().get_file(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
@@ -1129,7 +1161,8 @@ zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const
 		{ "dbEntry", true }
 	};
 
-	add_rama_angles(data, dataJsonFile.parent_path());
+	if (data["rama-angles"].is_null())
+		add_rama_angles(data, dataJsonFile.parent_path());
 
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);
@@ -1173,6 +1206,7 @@ zh::reply service_html_controller::handle_db_entry(const zh::scope &scope, const
 
 	return get_template_processor().create_reply_from_template("entry::tables", sub);
 }
+
 
 // --------------------------------------------------------------------
 
@@ -1296,7 +1330,7 @@ Command should be either:
 		if (config.has("context"))
 			context = config.get<std::string>("context");
 
-		zh::daemon server([secret, pdbRedoServicesDir, context]()
+		zh::daemon server([secret, context]()
 			{
 			auto sc = new zh::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
@@ -1327,9 +1361,11 @@ Command should be either:
 
 			s->add_controller(new zh::login_controller());
 
-			s->add_controller(new service_html_controller(pdbRedoServicesDir));
+			
+			s->add_controller(new root_html_controller());
+			s->add_controller(new db_html_controller());
 			s->add_controller(new session_rest_controller());
-			s->add_controller(new api_rest_controller(pdbRedoServicesDir));
+			s->add_controller(new api_rest_controller());
 
 			s->add_controller(new db_rest_controller());
 

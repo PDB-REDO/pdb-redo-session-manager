@@ -31,11 +31,6 @@ $pdb-redo-colors: (
 	"nav-secondary": $nav-secondary,
 );
 
-$navbar-dark-color: $nav-link;
-$navbar-dark-hover-color: $nav-link;
-$navbar-dark-active-color: $nav-link;
-$navbar-dark-disabled-color: rgba($nav-link, .5);
-
 $navbar-padding-y: 0;
 $nav-link-padding-y: math.div($spacer, 2);
 
@@ -52,126 +47,91 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 	}
 }
 
-.navbar-dark {
-	.navbar-nav {
-		.nav-link {
-			@include hover-focus() {
-				background-color: $nav-primary-hover;
-			}
-		}
-
-		.nav-link.active {
-			background-color: lighten($nav-link, 5%);
-			color: white;
-		}
-	}
-
-	&>div {
-		background-color: $nav-secondary;
-	}
-}
-
 // for the pdb-redo header
 
 header {
 	min-height: 6em;
 	padding-bottom: 1em;
-}
 
-.h-left {
-	float: left;
-	min-height: 6em;
-	width: 10em;
-}
+	nav.first {
+		padding: 0.8em !important;
+	}
 
-.h-right {
-	padding-left: 10em;
-	width: 100%;
-}
+	.col {
+		overflow: hidden;
+		white-space: nowrap;
+	}
 
-.h-left img {
-	min-height: calc(6em + 30px);
-	margin: -15px 0;
-	width: auto;
-}
+	.navbar {
+		.navbar-nav {
+			.nav-link {
+				color: $nav-link;
 
-header div.first,
-header div.second {
-	/*padding: 0.5em;*/
-	/*font-size: small;*/
-	/*margin-left: 6em;*/
-	padding: 1em !important;
-	min-height: 3em;
-}
+				@include hover-focus() {
+					background-color: $nav-primary-hover;
+				}
+			}
 
-header a {
-	text-decoration: none;
-}
+			.nav-link.active {
+				background-color: lighten($nav-link, 5%);
+				color: white;
+			}
+		}
 
-header a:hover {
-	text-decoration: underline;
-}
+		.navbar-toggler {
+			border-color: rgba($black, .1);
+		}
 
-header div.first {
-	background-color: $nav-primary;
-	color: white;
-}
+		.navbar-toggler-icon {
+			background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke='#{$navbar-light-color}' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg>");
+		}
+	}
 
-header div.second {
-	background-color: $nav-secondary;
-}
+	.first {
+		background-color: $nav-primary;
+		color: white;
 
-header div.second nav {
-	color: $nav-link;
-}
+		a {
+			color: white;
+			text-decoration: none;
+		}
+	}
 
-header div.first a {
-	color: white;
-	text-decoration: none;
-}
+	.second {
+		background-color: $nav-secondary;
+	}
 
-header div.second a,
-.login-links a {
-	color: $nav-link;
-}
+	a {
+		text-decoration: none;
 
-header div.second nav {
-	float: left;
-	clear: none;
-}
-
-header div.second span.user-panel {
-	float: right;
-}
-
-header div.second div.clear {
-	clear: both;
+		&:hover {
+			text-decoration: underline;
+		}
+	}
 }
 
 @media all and (max-width: 1024px) {
 
 	header {
 		min-height: 4em;
-	}
 
-	.h-left {
-		height: 4em;
-		width: 8em;
-	}
+		img {
+			min-height: calc(4em + 30px);
+		}
 
-	.h-right {
-		padding-left: 8em;
-	}
+		.first {
+			padding: 0;
+		}
 
-	header img {
-		min-height: calc(4em + 30px);
+		.second {
+			padding: 0.2em;
+		}
 	}
+}
 
-	header div.first,
-	header div.second {
-		padding: 0;
-		height: 2em;
-	}
+article h2 {
+	margin-top: 1em;
+	color: $primary;
 }
 
 // copied over from old website
@@ -181,24 +141,26 @@ header div.second div.clear {
 	min-height: 100vh;
 	height: 100%;
 	flex-direction: column;
-}
 
-.site header, .site footer {
-	flex: none;
+	header,
+	footer {
+		flex: none;
+	}
 }
 
 .site-content {
 	flex: 1 0 auto;
 	padding: var(--space) var(--space) 0;
 	width: 100%;
-}
 
-.site-content::after {
-	content: '\00a0'; /* &nbsp; */
-	display: block;
-	margin-top: var(--space);
-	height: 0px;
-	visibility: hidden;
+	&::after {
+		content: '\00a0';
+		/* &nbsp; */
+		display: block;
+		margin-top: var(--space);
+		height: 0px;
+		visibility: hidden;
+	}
 }
 
 a {
@@ -251,9 +213,9 @@ footer {
 	border-top: 1px solid #888;
 	padding: 0.5em;
 	margin-top: 2em;
-	font-size:  small;
+	font-size: small;
 	color: #555;
-    white-space: pre;
+	white-space: pre;
 }
 
 ul.error-info {
@@ -277,52 +239,52 @@ a.action:hover {
 }
 
 .slider {
-    position: relative;
-    width: 100%;
+	position: relative;
+	width: 100%;
 }
 
 .slider-label {
-    clear: both;
-    overflow: hidden;
-    white-space: nowrap;
-    font-size: x-small;
-    text-overflow: ellipsis;
+	clear: both;
+	overflow: hidden;
+	white-space: nowrap;
+	font-size: x-small;
+	text-overflow: ellipsis;
 }
 
 .slider-background {
-    margin: 1px;
-    border: 1px solid rgb(204, 204, 204);
-    padding: 0;
-    height: 11px;
-    width: 100%;
-    background-clip: border-box;
-    background-origin: padding-box;
-    background-position-x: 0;
-    background-position-y: 0;
-    background: transparent repeat scroll 0 0;
-    background-size: auto auto;
-    box-sizing: content-box;
-    float: left;
+	margin: 1px;
+	border: 1px solid rgb(204, 204, 204);
+	padding: 0;
+	height: 11px;
+	width: 100%;
+	background-clip: border-box;
+	background-origin: padding-box;
+	background-position-x: 0;
+	background-position-y: 0;
+	background: transparent repeat scroll 0 0;
+	background-size: auto auto;
+	box-sizing: content-box;
+	float: left;
 }
 
 .slider-gradient {
-    background-image:
-        linear-gradient(to right, rgb(255, 0, 0) 0, rgb(255, 255, 255) 50%, rgb(255, 255, 255) 51%, rgb(102, 153, 102) 100%);
+	background-image:
+		linear-gradient(to right, rgb(255, 0, 0) 0, rgb(255, 255, 255) 50%, rgb(255, 255, 255) 51%, rgb(102, 153, 102) 100%);
 }
 
 .slider-no-data {
-    background: lightgray;
+	background: lightgray;
 }
 
 .slider-position {
-    position: absolute;
-    height: 11px;
-    width: 20%;
-    border: 2px solid black;
-    background-color: rgba(255, 255, 255, 0.7);
-    -webkit-box-sizing: content-box;
-    -moz-box-sizing: content-box;
-    box-sizing: content-box;
+	position: absolute;
+	height: 11px;
+	width: 20%;
+	border: 2px solid black;
+	background-color: rgba(255, 255, 255, 0.7);
+	-webkit-box-sizing: content-box;
+	-moz-box-sizing: content-box;
+	box-sizing: content-box;
 
 	&.slider-position-0 {
 		left: 0%;
@@ -346,7 +308,7 @@ a.action:hover {
 }
 
 .no-list {
-    list-style: none;
-    margin: 0;
-    padding: 1px;
+	list-style: none;
+	margin: 0;
+	padding: 1px;
 }

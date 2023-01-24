@@ -1,0 +1,34 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<body>
+
+	<div z2:fragment="submit-form">
+		<form id="submit-job-form" action="#" enctype="multipart/form-data">
+			<div class="input-group input-group-sm mb-3">
+				<label class="input-group-text" for="input-group-mtz-file">MTZ file</label>
+				<input type="file" class="form-control" id="input-group-mtz-file" />
+			</div>
+
+			<div class="input-group input-group-sm mb-3">
+				<label class="input-group-text" for="input-group-pdb-file">Coordinates</label>
+				<input type="file" class="form-control" id="input-group-pdb-file" />
+			</div>
+
+			<div class="input-group input-group-sm mb-3">
+				<label class="input-group-text" for="input-group-restraints-file">Restraints</label>
+				<input type="file" class="form-control" id="input-group-restraints-file" />
+			</div>
+
+			<div class="input-group input-group-sm mb-3">
+				<label class="input-group-text" for="input-group-sequence-file">Sequence</label>
+				<input type="file" class="form-control" id="input-group-sequence-file" />
+			</div>
+
+			<button type="submit" form="submit-job-form" class="btn btn-sm btn-primary mt-3">Submit</button>
+		</form>
+	</div>
+</body>
+
+</html>

@@ -1,6 +1,6 @@
 import { PDBRedoApiRequest } from './request';
 import pdb_redo_style from './pdb-redo-result.scss';
-import {createBoxPlot} from "./boxplot";
+import { createBoxPlot } from "./boxplot";
 import { RamachandranPlot } from './ramaplot';
 
 // Extend the LitElement base class
@@ -54,6 +54,31 @@ class PDBRedoResult extends HTMLElement {
 		}
 	}
 
+	displayError(err) {
+		const msg = `${err}`;
+
+		const shadow = this.shadowRoot;
+		const div = shadow.querySelector('div');
+		shadow.removeChild(div);
+
+		const alert = document.createElement('div');
+		alert.classList.add('alert', 'alert-warning');
+		alert.setAttribute('role', 'alert');
+
+		const h3 = document.createElement('h3');
+		h3.innerText = 'Something went wrong rendering the requested data';
+		alert.appendChild(h3);
+
+		const mdiv = document.createElement('div');
+		mdiv.innerText = `The error message was: ${msg}`;
+		alert.appendChild(mdiv);
+
+		shadow.appendChild(alert);
+
+		const style = shadow.querySelector('style');
+		style.innerHTML = pdb_redo_style;
+	}
+
 	attributeChangedCallback(name, oldValue, newValue) {
 
 		let needReload = false;
@@ -82,11 +107,16 @@ class PDBRedoResult extends HTMLElement {
 	}
 
 	reloadDBData() {
-		fetch(`${this.url}/db-entry?pdb-id=${this.pdbID}`, { method: "post"})
+		fetch(`${this.url}/db/entry?pdb-id=${this.pdbID}`, { method: "post" })
 			.then(r => {
 				if (r.ok)
 					return r.text();
-			}).then(r => this.putEntry(r));
+				else
+					throw `Error fetching data, status code was ${r.status}`;
+			}).then(r => this.putEntry(r))
+			.catch(err => {
+				this.displayError(err);
+			});
 	}
 
 	reloadLocalJobData() {
@@ -94,12 +124,15 @@ class PDBRedoResult extends HTMLElement {
 			.then(r => {
 				if (r.ok)
 					return r.text();
-			}).then(r => this.putEntry(r));
+				else
+					throw `Error fetching data, status code was ${r.status}`;
+			}).then(r => this.putEntry(r))
+			.catch(err => {
+				this.displayError(err);
+			});
 	}
 
 	reloadJobData() {
-		const shadow = this.shadowRoot;
-
 		fetch(new PDBRedoApiRequest(`${this.url}/api/session/${this.tokenID}/run/${this.jobID}/output/data.json`, {
 			token: {
 				id: this.tokenID,
@@ -108,6 +141,8 @@ class PDBRedoResult extends HTMLElement {
 		})).then(r => {
 			if (r.ok)
 				return r.json();
+			else
+				throw `Error fetching data, status code was ${r.status}`;
 		}).then(data => {
 			const fd = new FormData();
 			fd.append('data.json', JSON.stringify(data));
@@ -119,8 +154,13 @@ class PDBRedoResult extends HTMLElement {
 			}).then(r => {
 				if (r.ok)
 					return r.text();
+				else
+					throw `Error fetching data, status code was ${r.status}`;
 			}).then(r => this.putEntry(r));
-		});
+		})
+			.catch(err => {
+				this.displayError(err);
+			});
 	}
 
 	putEntry(r) {
@@ -140,14 +180,13 @@ class PDBRedoResult extends HTMLElement {
 					});
 			})
 			);
-		
+
 		const entryDataJSON = shadow.querySelector("#entry-data").innerHTML;
 
 		const entryData = JSON.parse(entryDataJSON);
-		
+
 		const boxPlotTD = shadow.querySelector("#boxPlotTD");
-		if (boxPlotTD != null && entryData != null)
-		{
+		if (boxPlotTD != null && entryData != null) {
 			const data = entryData.data;
 
 			if (data.RFREE == null || data.ZCALERR === true || data.TSTCNT !== data.NTSTCNT)
@@ -160,8 +199,7 @@ class PDBRedoResult extends HTMLElement {
 		const ramaPlot = shadow.querySelector('ramachandran-plot');
 		if (typeof entryData['rama-angles'] === "object" && entryData['rama-angles'] != null)
 			ramaPlot.setData(entryData.data, entryData['rama-angles']);
-		else
-		{
+		else {
 			const ramaPlotDiv = shadow.querySelector('#rama-plot-div');
 			ramaPlotDiv.classList.add('hide');
 		}
