@@ -136,38 +136,14 @@ header {
 	}
 }
 
-article h2 {
+article {
 	margin-top: 1em;
-	color: $primary;
+	margin-bottom: 2em;
 }
 
-// copied over from old website
-
-.site {
-	display: flex;
-	min-height: 100vh;
-	height: 100%;
-	flex-direction: column;
-
-	header,
-	footer {
-		flex: none;
-	}
-}
-
-.site-content {
-	flex: 1 0 auto;
-	padding: var(--space) var(--space) 0;
-	width: 100%;
-
-	&::after {
-		content: '\00a0';
-		/* &nbsp; */
-		display: block;
-		margin-top: var(--space);
-		height: 0px;
-		visibility: hidden;
-	}
+article h2 {
+	margin-bottom: 0.5em;
+	font-size: x-large;
 }
 
 a {
@@ -179,21 +155,88 @@ a {
 	}
 }
 
-aside {
-	font-size: small;
-	width: 10em;
-	float: right;
+$nr-of-slides: 13;
+$slide-width: 200px;
+$ticker-tape-width: $nr-of-slides * $slide-width;
 
-	span {
-		display: block;
-		font-weight: bold;
-		text-align: center;
-		padding-bottom: 2em;
+.ticker-container {
+	.ticker-tape {
+		height: auto;
+		margin: auto;
+		overflow: hidden;
+		position: relative;
+		width: 100%;
+
+		--tape-width: calc(100%);
 	}
 
-	img {
-		max-width: 100%;
-		padding-bottom: 1em;
+	.ticker-tape:before,
+	.ticker-tape:after {
+		background: linear-gradient(to right, white 0%, rgba(255, 255, 255, 0) 100%);
+		content: "";
+		height: 80px;
+		position: absolute;
+		width: 160px;
+		z-index: 2;
+	}
+
+	.ticker-tape:after {
+		right: 0;
+		top: 0;
+		transform: rotateZ(180deg);
+	}
+
+	.ticker-tape:before {
+		left: 0;
+		top: 0;
+	}
+
+	.slide-track {
+		-webkit-animation: scroll 40s linear infinite;
+		animation: scroll 40s linear infinite;
+		display: flex;
+		width: $ticker-tape-width;
+	}
+
+	div.slide {
+		padding: 0 12px;
+		display: flex;
+		width: 200px;
+		flex-direction: column;
+		justify-content: center;
+
+		span {
+			width: 100%;
+			font-size: small;
+			display: block;
+			font-weight: bold;
+			text-align: center;
+		}
+		
+		img {
+			max-width: 100%;
+		}
+	}
+}
+
+/* Animation */
+@-webkit-keyframes scroll {
+	0% {
+		transform: translateX(var(--tape-width));
+	}
+
+	100% {
+		transform: translateX(-$ticker-tape-width);
+	}
+}
+
+@keyframes scroll {
+	0% {
+		transform: translateX(var(--tape-width));
+	}
+
+	100% {
+		transform: translateX(-$ticker-tape-width);
 	}
 }
 

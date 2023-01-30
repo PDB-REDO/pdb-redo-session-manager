@@ -33,6 +33,7 @@
 #include "mrsrc.hpp"
 
 #include <condition_variable>
+#include <charconv>
 #include <functional>
 #include <iostream>
 #include <thread>
@@ -1159,7 +1160,7 @@ zh::reply db_html_controller::handle_show(const zh::scope &scope, const std::str
 	zeep::json::parse_json(dataJson, data);
 
 	double version;
-	if (std::from_chars(pdbRedoVersion.data(), pdbRedoVersion.data() + pdbRedoVersion.length(), version).ec != std::errc())
+	if (mcfp::charconv<double>::from_chars(pdbRedoVersion.data(), pdbRedoVersion.data() + pdbRedoVersion.length(), version).ec != std::errc())
 		version = 0;
 
 	zeep::json::element entry{

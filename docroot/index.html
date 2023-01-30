@@ -9,224 +9,192 @@
 	<title>PDB-REDO Session Manager</title>
 </head>
 
-<body class="site">
+<body>
 	<nav z2:replace="~{menu :: navbar('session')}" />
 
-	<div class="d-flex flex-row">
+	<div class="container">
 
-		<div class="container site-content">
+		<article>
+			<h2>PDB-REDO: updated and optimised crystallographic structures</h2>
 
-			<article>
-				<h2>PDB-REDO: updated and optimised crystallographic structures</h2>
+			<p>PDB-REDO is a procedure to optimise crystallographic structure models, providing
+				algorithms that make a fully automated decision making system for refinement,
+				rebuilding and validation. It combines popular crystallographic software from
+				<a href="http://www.ccp4.ac.uk/">CCP4</a>, e.g.
+				<a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/">REFMAC</a> and
+				<a href="https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/">COOT</a>,
+				with with our specially developed rebuilding tools
+				<a href="https://pdb-redo.eu/publications/bioinformatics.pdf">Centrifuge, Pepflip &amp; SideAide</a>
+				and structure analysis tools like
+				<a href="http://swift.cmbi.ru.nl/whatif/">WHAT IF</a> and
+				<a href="http://www.glycosciences.de/tools/pdbcare/">PDB-care</a>.
+				PDB-REDO optimises refinement settings (e.g. geometric and B-factor restraint weights,
+				B-factor model, TLS groups, NCS and homology restraints), refines with REFMAC, partially
+				rebuilds the structure (rejects waters, refines side chains, checks peptide planes),
+				refines some more, and then validates the results.
+			</p>
 
-				<p>PDB-REDO is a procedure to optimise crystallographic structure models, providing
-					algorithms that make a fully automated decision making system for refinement,
-					rebuilding and validation. It combines popular crystallographic software from
-					<a href="http://www.ccp4.ac.uk/">CCP4</a>, e.g.
-					<a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/">REFMAC</a> and
-					<a href="https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/">COOT</a>,
-					with with our specially developed rebuilding tools
-					<a href="https://pdb-redo.eu/publications/bioinformatics.pdf">Centrifuge, Pepflip &amp; SideAide</a>
-					and structure analysis tools like
-					<a href="http://swift.cmbi.ru.nl/whatif/">WHAT IF</a> and
-					<a href="http://www.glycosciences.de/tools/pdbcare/">PDB-care</a>.
-					PDB-REDO optimises refinement settings (e.g. geometric and B-factor restraint weights,
-					B-factor model, TLS groups, NCS and homology restraints), refines with REFMAC, partially
-					rebuilds the structure (rejects waters, refines side chains, checks peptide planes),
-					refines some more, and then validates the results.
-				</p>
+			<p>With PDB-REDO you can obtain updated and optimised versions of existing entries of the
+				<a href="http://www.wwpdb.org/">PDB</a> from our DataBank, or you can optimise your own
+				structure model using our Server. If you want to know more or install PDB-REDO on your
+				own computers, please check <a href="#MORE">below</a>.
+			</p>
+		</article>
 
-				<p>With PDB-REDO you can obtain updated and optimised versions of existing entries of the
-					<a href="http://www.wwpdb.org/">PDB</a> from our DataBank, or you can optimise your own
-					structure model using our Server. If you want to know more or install PDB-REDO on your
-					own computers, please check <a href="#MORE">below</a>.
-				</p>
+
+		<article>
+			<h2>PDB-REDO Databank</h2>
+
+			<p>The PDB-REDO databank contains optimised versions of existing PDB entries with electron
+				density maps, a description of model changes, and a wealth of model validation data. It is a
+				good starting point for any structural biology project.</p>
+			<p>All the entries are treated with a consistent protocol that reduces the effects of
+				differences in age, software, and depositors. This makes PDB-REDO a great datatset for large
+				scale structure analysis studies.</p>
+
+			<form method="post" z2:action="@{/db/get}" style="max-width: 20em;" name="redo">
+				<div class="input-group input-group-sm mb-3">
+					<span class="input-group-text" id="form-redo">PDB-ID</span>
+					<input type="text" class="form-control" placeholder="1cbs" aria-label="PDB ID"
+						aria-describedby="form-redo" name="pdb-id" size="5" maxlength="4" />
+					<button class="btn btn-secondary btn" type="submit" id="button-addon2">Show</button>
+				</div>
+			</form>
+
+			<p><a href="download-info.html" z2:href="@{/download-info.html}">Here</a> you can find more information
+				about downloading PDB-REDO databank entries. And <a href="license.txt"
+					z2:href="@{/license.txt}">here</a> you can find the data usage license.</p>
+		</article>
+
+		<div class="row">
+
+			<article class="col">
+				<h2>PDB-REDO server</h2>
+
+				<p>The PDB-REDO server helps you to get a publication quality structure. It takes your current
+					model (PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
+					model, new maps, validation reports, and many tools to continue working on your model,
+					including COOT menus customised for inspecting your structure.</p>
+
+				<p z2:if="${not #security.authorized}">You have to <a z2:href="@{/login}">log in</a> in order to be
+					able to submit new PDB-REDO jobs.</p>
 			</article>
 
+			<article z2:if="${#security.authorized}" class="col">
+				<h2>Submit new PDB-REDO run</h2>
 
-			<article>
-				<h2>PDB-REDO Databank</h2>
-
-				<p>The PDB-REDO databank contains optimised versions of existing PDB entries with electron
-					density maps, a description of model changes, and a wealth of model validation data. It is a
-					good starting point for any structural biology project.</p>
-				<p>All the entries are treated with a consistent protocol that reduces the effects of
-					differences in age, software, and depositors. This makes PDB-REDO a great datatset for large
-					scale structure analysis studies.</p>
-
-				<form method="post" z2:action="@{/db/get}" style="max-width: 20em;" name="redo">
-					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="form-redo">PDB-ID</span>
-						<input type="text" class="form-control" placeholder="1cbs" aria-label="PDB ID"
-							aria-describedby="form-redo" name="pdb-id" size="5" maxlength="4" />
-						<button class="btn btn-secondary btn" type="submit" id="button-addon2">Show</button>
-					</div>
-				</form>
-
-				<p><a href="download-info.html" z2:href="@{/download-info.html}">Here</a> you can find more information
-					about downloading PDB-REDO databank entries. And <a href="license.txt"
-						z2:href="@{/license.txt}">here</a> you can find the data usage license.</p>
-			</article>
-
-			<div class="row">
-
-				<article class="col">
-					<h2>PDB-REDO server</h2>
-	
-					<p>The PDB-REDO server helps you to get a publication quality structure. It takes your current
-						model (PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
-						model, new maps, validation reports, and many tools to continue working on your model,
-						including COOT menus customised for inspecting your structure.</p>
-					
-					<p z2:if="${not #security.authorized}">You have to <a z2:href="@{/login}">log in</a> in order to be able to submit new PDB-REDO jobs.</p>
-				</article>
-	
-				<article z2:if="${#security.authorized}" class="col">
-					<h2>Submit new PDB-REDO run</h2>
-	
-					<div z2:replace="~{submit :: submit-form}"></div>
-				</article>
-			</div>
-
-			<article>
-				<h2>More PDB-REDO</h2>
-				<a name="MORE"></a>
-
-				<p>Click on the links below to download the software, access the PDB-REDO databank, etc</p>
-
-				<div class="programListTable">
-					<table style="margin-left: 0;">
-						<tr>
-							<td>
-								<!--a href="http://pdb-redo.eu/software/downloads.html"-->
-								PDB-REDO software
-								<!--/a-->
-							</td>
-							<td><em>Download the scripts and programs</em> (<a
-									href="https://pdb-redo.eu/software/pdb-redo.tar.bz2">Linux and Bash on Windows
-									10</a>)
-							</td>
-						</tr>
-						<tr>
-							<td><a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/" target="_BLANK">REFMAC</a>
-							</td>
-							<td><em>The PDB-REDO refinement engine from the G. Murshudov group</em></td>
-						</tr>
-					</table>
-				</div>
-
-				<h3>The Science behind PDB-REDO</h3>
-				<p>Click on the links below to get a reprint of PDB-REDO publications</p>
-
-				<div class="programListTable">
-					<table style="margin-left: 0;">
-						<tr>
-							<td><a z2:href="@{/publications/webserver.pdf}" target="_BLANK">Web server </a></td>
-							<td>Joosten RP, Long F, Murshudov GN, Perrakis A. The PDB_REDO server for macromolecular
-								structure model optimization. IUCrJ. 2014 May 30;1(Pt 4):213-20.
-							</td>
-						</tr>
-						<tr>
-							<td><a z2:href="@{/publications/CCP42011.pdf}" target="_BLANK">Decision making </a></td>
-							<td>Joosten RP, Joosten K, Murshudov GN, Perrakis A. PDB_REDO: constructive validation,
-								more
-								than just looking for errors. Acta Cryst. 2012; D68:484-496.
-							</td>
-						</tr>
-						<tr>
-							<td><a z2:href="@{/publications/bioinformatics.pdf}" target="_BLANK">Model rebuilding
-								</a>
-							</td>
-							<td>Joosten RP, Joosten K, Cohen SX, Vriend G, Perrakis A. Automatic rebuilding and
-								optimization of crystallographic structures in the Protein Data Bank. Bioinformatics
-								2011; 27:3392-3398.
-							</td>
-						</tr>
-						<tr>
-							<td><a z2:href="@{/publications/nar.pdf}" target="_BLANK">Database stuff</a></td>
-							<td>Joosten RP, Te Beek TAH, Krieger E, Hekkelman ML, Hooft RWW, Schneider R, Sander C,
-								Vriend G. A series of PDB related databases for everyday needs. Nucl. Acids Res.
-								2011;
-								39:D411-D419.
-							</td>
-						</tr>
-						<tr>
-							<td><a z2:href="@{/publications/science.pdf}" target="_BLANK">No data, no
-									re&#8209;refinement</a></td>
-							<td>Joosten RP, Vriend G. PDB improvement starts with data deposition. Science 2007;
-								317:195-196.
-							</td>
-						</tr>
-						<tr>
-							<td><a z2:href="@{/publications/actacrystd.pdf}" target="_BLANK">The value of
-									re&#8209;refinement </a>
-							</td>
-							<td>Joosten RP, Womack T, Vriend G, Bricogne G. Re-refinement from deposited X&#8209;ray
-								data can deliver improved models for most PDB entries. Acta Cryst. 2009;
-								D65:176-185.
-							</td>
-						</tr>
-						<tr>
-							<td><a z2:href="@{/publications/japplcryst.pdf}" target="_BLANK">PDB-REDO idea </a></td>
-							<td>Joosten RP, et al and Vriend G. PDB_REDO: automated re&#8209;refinement of
-								X&#8209;ray
-								structure models in the PDB. J. Appl. Cryst. 2009; 42:376-384.
-							</td>
-						</tr>
-
-						<tr>
-							<td><a z2:href="@{/publications/Beusekom_et_al-2018-Protein_Science.pdf}"
-									target="_blank">Homology restraints</a></td>
-							<td>van
-								Beusekom B, Touw WG, Tatineni M, Somani S, Rajagopal G, Luo J, Gilliland GL,
-								Perrakis A, Joosten RP Homology-based hydrogen bond information improves
-								crystallographic structures in the PDB. Protein Science. 2018;27:798-808.
-							</td>
-						</tr>
-
-					</table>
-				</div>
+				<div z2:replace="~{submit :: submit-form}"></div>
 			</article>
 		</div>
+
+		<article>
+			<h2>More PDB-REDO</h2>
+			<a name="MORE"></a>
+
+			<p>Click on the links below to download the software, access the PDB-REDO databank, etc</p>
+
+			<div class="programListTable">
+				<table style="margin-left: 0;">
+					<tr>
+						<td>
+							<!--a href="http://pdb-redo.eu/software/downloads.html"-->
+							PDB-REDO software
+							<!--/a-->
+						</td>
+						<td><em>Download the scripts and programs</em> (<a
+								href="https://pdb-redo.eu/software/pdb-redo.tar.bz2">Linux and Bash on Windows
+								10</a>)
+						</td>
+					</tr>
+					<tr>
+						<td><a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/" target="_BLANK">REFMAC</a>
+						</td>
+						<td><em>The PDB-REDO refinement engine from the G. Murshudov group</em></td>
+					</tr>
+				</table>
+			</div>
+
+		</article>
+
+		<article>
+
+			<h2>The Science behind PDB-REDO</h2>
+			<p>Click on the links below to get a reprint of PDB-REDO publications</p>
+
+			<div class="programListTable">
+				<table style="margin-left: 0;">
+					<tr>
+						<td><a z2:href="@{/publications/webserver.pdf}" target="_BLANK">Web server </a></td>
+						<td>Joosten RP, Long F, Murshudov GN, Perrakis A. The PDB_REDO server for macromolecular
+							structure model optimization. IUCrJ. 2014 May 30;1(Pt 4):213-20.
+						</td>
+					</tr>
+					<tr>
+						<td><a z2:href="@{/publications/CCP42011.pdf}" target="_BLANK">Decision making </a></td>
+						<td>Joosten RP, Joosten K, Murshudov GN, Perrakis A. PDB_REDO: constructive validation,
+							more
+							than just looking for errors. Acta Cryst. 2012; D68:484-496.
+						</td>
+					</tr>
+					<tr>
+						<td><a z2:href="@{/publications/bioinformatics.pdf}" target="_BLANK">Model rebuilding
+							</a>
+						</td>
+						<td>Joosten RP, Joosten K, Cohen SX, Vriend G, Perrakis A. Automatic rebuilding and
+							optimization of crystallographic structures in the Protein Data Bank. Bioinformatics
+							2011; 27:3392-3398.
+						</td>
+					</tr>
+					<tr>
+						<td><a z2:href="@{/publications/nar.pdf}" target="_BLANK">Database stuff</a></td>
+						<td>Joosten RP, Te Beek TAH, Krieger E, Hekkelman ML, Hooft RWW, Schneider R, Sander C,
+							Vriend G. A series of PDB related databases for everyday needs. Nucl. Acids Res.
+							2011;
+							39:D411-D419.
+						</td>
+					</tr>
+					<tr>
+						<td><a z2:href="@{/publications/science.pdf}" target="_BLANK">No data, no
+								re&#8209;refinement</a></td>
+						<td>Joosten RP, Vriend G. PDB improvement starts with data deposition. Science 2007;
+							317:195-196.
+						</td>
+					</tr>
+					<tr>
+						<td><a z2:href="@{/publications/actacrystd.pdf}" target="_BLANK">The value of
+								re&#8209;refinement </a>
+						</td>
+						<td>Joosten RP, Womack T, Vriend G, Bricogne G. Re-refinement from deposited X&#8209;ray
+							data can deliver improved models for most PDB entries. Acta Cryst. 2009;
+							D65:176-185.
+						</td>
+					</tr>
+					<tr>
+						<td><a z2:href="@{/publications/japplcryst.pdf}" target="_BLANK">PDB-REDO idea </a></td>
+						<td>Joosten RP, et al and Vriend G. PDB_REDO: automated re&#8209;refinement of
+							X&#8209;ray
+							structure models in the PDB. J. Appl. Cryst. 2009; 42:376-384.
+						</td>
+					</tr>
+
+					<tr>
+						<td><a z2:href="@{/publications/Beusekom_et_al-2018-Protein_Science.pdf}"
+								target="_blank">Homology restraints</a></td>
+						<td>van
+							Beusekom B, Touw WG, Tatineni M, Somani S, Rajagopal G, Luo J, Gilliland GL,
+							Perrakis A, Joosten RP Homology-based hydrogen bond information improves
+							crystallographic structures in the PDB. Protein Science. 2018;27:798-808.
+						</td>
+					</tr>
+
+				</table>
+			</div>
+		</article>
 	</div>
 
-	<aside class="m-3">
-		<span>Hosting</span>
+	<aside z2:replace="~{sponsors::sponsors}"></aside>
 
-		<a href="http://www.nki.nl" target="_BLANK"><img width="125" z2:src="@{/images/nki-logo.png}"
-				alt="The Netherlands Cancer Institute" /></a>
-
-		<span>Funding</span>
-
-		<a href="http://www.nwo.nl/cw" target="_BLANK" class="noHover"><img z2:src="@{/images/nwo-logo.png}"
-				alt="NWO logo" /></a>
-
-
-		<a href="https://jnj.com" target="_BLANK" class="noHover">
-			<img z2:src="@{/images/johnson-johnson-logo.jpg}" alt="Johnson and Johnson logo" /></a>
-
-		<a href="http://portal.west-life.eu" target="_BLANK" class="noHover"><img z2:src="@{/images/logo_westlife.png}"
-				width="125" alt="West-Life logo" /></a>
-		<a href="https://inext-discovery.eu/" target="_BLANK" class="noHover">
-			<img z2:src="@{/images/inext.jpg}" alt="iNEXT logo" /></a>
-
-		<span>Powered by</span>
-		<a href="http://ccp4.ac.uk/" target="_BLANK" class="noHover"><img z2:src="@{/images/ccp4-logo.gif}"
-				alt="CCP4 logo" /></a>
-
-		<a href="http://swift.cmbi.umcn.nl/whatif/" target="_BLANK" class="noHover"><img
-				z2:src="@{/images/whatif_200_powered.png}" width="125" alt="WHAT-IF logo" /></a>
-		<a href="http://www.sdsc.edu/" target="_BLANK" class="noHover">
-			<img z2:src="@{/images/SDSC_logo.png}" alt="SDSC logo" /></a>
-
-		<a href="http://www.yasara.org" target="_BLANK" class="noHover"><img z2:src="@{/images/yasara_powered.png}"
-				width="125" alt="YASARA logo" /></a>
-		<a href="http://innovation.columbia.edu/technologies/CU20391" target="_BLANK" class="noHover"><img
-				z2:src="@{/images/x3dna-dssr-logo.png}" alt="3DNA logo" /></a>
-	</aside>
-
-
-	<footer z2:replace="~{footer::content}" />
+	<footer z2:replace="~{footer::content}"></footer>
 </body>
 
 </html>
