@@ -39,7 +39,7 @@
 						</div>
 
 						<div class="form-group">
-							<label for="id_username" class="col-md-4 control-label text-truncate">User name</label>
+							<label for="username" class="col-md-4 control-label text-truncate">User name</label>
 							<div class="col-md-8">
 								<input class="form-control" id="username" maxlength="254" name="username"
 									placeholder="User name" type="text" required="required" />
@@ -47,7 +47,7 @@
 						</div>
 
 						<div class="form-group">
-							<label for="id_password" class="col-md-4 control-label">Password</label>
+							<label for="password" class="col-md-4 control-label">Password</label>
 							<div class="col-md-8">
 								<input class="form-control" id="password" name="password" placeholder="Password"
 									type="password" required="required" />
@@ -61,8 +61,13 @@
 				</div>
 
 				<div class="modal-footer">
+					<div class="col-md-8">
+						<a z2:href="@{/register}">register</a> /
+						<a z2:href="@{/reset-password}">reset password</a>
+					</div>
+
 					<!--<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
-					<button type="submit" form="local-login-form" class="btn btn-primary">Log in</button>
+					<button type="submit" form="local-login-form" class="btn btn-primary col-md-2 ms-auto">Log in</button>
 				</div>
 			</div>
 		</div>

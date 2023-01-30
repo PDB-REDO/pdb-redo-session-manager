@@ -85,6 +85,9 @@ class UserService : public zeep::http::user_service
 	// create a password hash
 	static std::string create_password_hash(const std::string& password);
 
+	// To reset a password
+	void sendNewPassword(const std::string &username, const std::string &email);
+
 	User get_user(unsigned long id) const;
 	User get_user(const std::string& name) const;
 
@@ -93,6 +96,9 @@ class UserService : public zeep::http::user_service
   private:
 
 	UserService(const std::string& admins);
+
+	bool isValidEmail(const std::string &email) const;
+	std::string generatePassword() const;
 
 	static std::unique_ptr<UserService> sInstance;
 	std::vector<std::string> m_admins;

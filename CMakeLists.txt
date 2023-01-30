@@ -76,17 +76,12 @@ write_version_header(${PROJECT_SOURCE_DIR}/src)
 # Optionally use mrc to create resources
 find_package(Mrc QUIET)
 
-if(MRC_FOUND)
-	option(USE_RSRC "Use mrc to create resources" ON)
-else()
-	message(STATUS "Not using resources since mrc was not found")
+if(NOT MRC_FOUND)
+	message(FATAL_ERROR "Cannot use resources since mrc was not found")
 endif()
 
-if(USE_RSRC)
-	set(USE_RSRC 1)
-	add_compile_definitions(WEBAPP_USES_RESOURCES)
-	mrc_write_header(${PROJECT_SOURCE_DIR}/src/mrsrc.hpp)
-endif()
+add_compile_definitions(WEBAPP_USES_RESOURCES)
+mrc_write_header(${PROJECT_SOURCE_DIR}/src/mrsrc.hpp)
 
 # libraries
 
@@ -104,6 +99,8 @@ find_program(YARN yarn REQUIRED)
 find_package(zeep 6 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
+
+add_subdirectory(mailio EXCLUDE_FROM_ALL)
 
 add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.cpp
@@ -128,6 +125,8 @@ set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/login.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/reset-pw.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/register.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js
@@ -151,12 +150,12 @@ add_custom_target(webpack DEPENDS ${webpack_output})
 
 add_dependencies(prsmd webpack)
 
-if(USE_RSRC)
-	mrc_target_resources(prsmd ${PROJECT_SOURCE_DIR}/docroot/)
-endif()
+mrc_target_resources(prsmd
+	${PROJECT_SOURCE_DIR}/docroot/
+	${PROJECT_SOURCE_DIR}/rsrc/reset-password-mail.txt)
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio PkgConfig::PKG_PQ)
+target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio PkgConfig::PKG_PQ mailio::mailio)
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}

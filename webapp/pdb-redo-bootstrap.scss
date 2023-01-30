@@ -107,6 +107,10 @@ header {
 					background-color: lighten($nav-link, 5%);
 					color: white;
 				}
+
+				&.disabled {
+					color: mix($nav-link, $nav-secondary, 50%);
+				}
 			}
 		}
 

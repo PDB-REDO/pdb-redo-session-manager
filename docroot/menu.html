@@ -33,7 +33,7 @@
 						</li>
 
 						<li class="nav-item">
-							<a class="nav-link" z2:classappend="${page == 'job' ? 'active' : ''}" z2:href="@{/job}">Jobs</a>
+							<a class="nav-link" z2:classappend="|${page == 'job' ? 'active' : ''} ${#security.authorized ?: 'disabled'}|" z2:href="@{/job}">Jobs</a>
 						</li>
 
 						<li class="nav-item">

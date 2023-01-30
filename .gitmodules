@@ -1,0 +1,3 @@
+[submodule "mailio"]
+	path = mailio
+	url = https://github.com/mhekkel/mailio.git

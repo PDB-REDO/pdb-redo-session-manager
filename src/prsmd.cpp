@@ -997,7 +997,11 @@ class root_html_controller : public zh::html_controller
 		map_get("about", &root_html_controller::about);
 		map_get("download", &root_html_controller::download);
 
-		// mount("register", &root_html_controller::handle_registration);
+		map_get("register", &root_html_controller::get_register);
+		map_post("register", &root_html_controller::post_register, "username", "institution", "email", "password");
+
+		map_get("reset-password", &root_html_controller::get_reset_pw);
+		map_post("reset-password", &root_html_controller::post_reset_pw, "username", "email");
 
 		map_delete("admin/deleteSession", &root_html_controller::handle_delete_session, "sessionid");
 		mount("{css,scripts,fonts,images}/", &root_html_controller::handle_file);
@@ -1008,7 +1012,13 @@ class root_html_controller : public zh::html_controller
 
 	zh::reply welcome(const zh::scope &scope);
 	void admin(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-	// void handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply);
+
+	zh::reply get_register(const zh::scope &scope);
+	zh::reply post_register(const zh::scope &scope, const std::string &username, const std::string &institution,
+		const std::string &email, const std::string &password);
+
+	zh::reply get_reset_pw(const zh::scope &scope);
+	zh::reply post_reset_pw(const zh::scope &scope, const std::string &username, const std::string &email);
 
 	zh::reply about(const zh::scope &scope);
 	zh::reply download(const zh::scope &scope);
@@ -1028,6 +1038,31 @@ zh::reply root_html_controller::welcome(const zh::scope &scope)
 zh::reply root_html_controller::about(const zh::scope &scope)
 {
 	return get_template_processor().create_reply_from_template("about", scope);
+}
+
+zh::reply root_html_controller::get_register(const zh::scope &scope)
+{
+	return get_template_processor().create_reply_from_template("register", scope);
+}
+
+zh::reply root_html_controller::post_register(const zh::scope &scope, const std::string &username, const std::string &institution,
+		const std::string &email, const std::string &password)
+{
+	// UserService::instance().sendNewPassword(username, email);
+
+	return zh::reply::redirect("/");
+}
+
+zh::reply root_html_controller::get_reset_pw(const zh::scope &scope)
+{
+	return get_template_processor().create_reply_from_template("reset-password", scope);
+}
+
+zh::reply root_html_controller::post_reset_pw(const zh::scope &scope, const std::string &username, const std::string &email)
+{
+	UserService::instance().sendNewPassword(username, email);
+
+	return zh::reply::redirect("/");
 }
 
 zh::reply root_html_controller::download(const zh::scope &scope)
@@ -1281,6 +1316,11 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
 		mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"),
 
+		mcfp::make_option<std::string>("smtp-user", "user name of SMTP server used for resetting password"),
+		mcfp::make_option<std::string>("smtp-password", "password of SMTP server used for resetting password"),
+		mcfp::make_option<std::string>("smtp-host", "host of SMTP server used for resetting password"),
+		mcfp::make_option<uint16_t>("smtp-port", "port of SMTP server used for resetting password"),
+
 		// for rama-angles
 		mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
 		mcfp::make_option<std::string>("final-file-pattern", "${id}_final.cif", "Pattern for the final xyzin file")
@@ -1398,7 +1438,6 @@ Command should be either:
 #endif
 
 			s->add_controller(new zh::login_controller());
-
 			
 			s->add_controller(new root_html_controller());
 			s->add_controller(new db_html_controller());
