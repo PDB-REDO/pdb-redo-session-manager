@@ -47,6 +47,31 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 	}
 }
 
+.site {
+	display: flex;
+	min-height: 100vh;
+	height: 100%;
+	flex-direction: column;
+	
+	header, footer {
+		flex: none;
+	}
+	
+	.site-content {
+		flex: 1 0 auto;
+		padding: var(--space) var(--space) 0;
+		width: 100%;
+
+		&::after {
+			content: '\00a0'; /* &nbsp; */
+			display: block;
+			margin-top: var(--space);
+			height: 0px;
+			visibility: hidden;
+		}
+	}
+}
+
 // for the pdb-redo header
 
 header {
@@ -77,11 +102,11 @@ header {
 				@include hover-focus() {
 					background-color: $nav-primary-hover;
 				}
-			}
 
-			.nav-link.active {
-				background-color: lighten($nav-link, 5%);
-				color: white;
+				&.active {
+					background-color: lighten($nav-link, 5%);
+					color: white;
+				}
 			}
 		}
 
@@ -155,7 +180,7 @@ a {
 	}
 }
 
-$nr-of-slides: 13;
+$nr-of-slides: 12;
 $slide-width: 200px;
 $ticker-tape-width: $nr-of-slides * $slide-width;
 

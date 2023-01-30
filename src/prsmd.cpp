@@ -994,6 +994,8 @@ class root_html_controller : public zh::html_controller
 		map_get("", &root_html_controller::welcome);
 
 		mount("admin", &root_html_controller::admin);
+		map_get("about", &root_html_controller::about);
+		map_get("download", &root_html_controller::download);
 
 		// mount("register", &root_html_controller::handle_registration);
 
@@ -1008,6 +1010,10 @@ class root_html_controller : public zh::html_controller
 	void admin(const zh::request &request, const zh::scope &scope, zh::reply &reply);
 	// void handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply);
 
+	zh::reply about(const zh::scope &scope);
+	zh::reply download(const zh::scope &scope);
+
+
 	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
 
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
@@ -1017,6 +1023,16 @@ class root_html_controller : public zh::html_controller
 zh::reply root_html_controller::welcome(const zh::scope &scope)
 {
 	return get_template_processor().create_reply_from_template("index", scope);
+}
+
+zh::reply root_html_controller::about(const zh::scope &scope)
+{
+	return get_template_processor().create_reply_from_template("about", scope);
+}
+
+zh::reply root_html_controller::download(const zh::scope &scope)
+{
+	return get_template_processor().create_reply_from_template("download", scope);
 }
 
 void root_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)

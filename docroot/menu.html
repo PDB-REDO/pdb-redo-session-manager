@@ -5,7 +5,6 @@
 <body>
 
 	<header z2:fragment="navbar(page)" class="row">
-
 		<div class="col col-auto">
 			<a href="https://pdb-redo.eu/" z2:href="@{/}"><img z2:src="@{/images/PDB_logo_rect_medium.svg}" /></a>
 		</div>
@@ -29,21 +28,28 @@
 				<div class="collapse navbar-collapse" id="navbarSupportedContent">
 					<ul class="navbar-nav mr-auto">
 
-						<li class="nav-item" z2:classappend="${page == 'home' ? 'active' : ''}">
-							<a class="nav-link" z2:href="@{/}">Home</a>
+						<li class="nav-item">
+							<a class="nav-link" z2:classappend="${page == 'home' ? 'active' : ''}" z2:href="@{/}">Home</a>
 						</li>
 
-						<li class="nav-item" z2:classappend="${page == 'job' ? 'active' : ''}">
-							<a class="nav-link" z2:href="@{/job}">Jobs</a>
+						<li class="nav-item">
+							<a class="nav-link" z2:classappend="${page == 'job' ? 'active' : ''}" z2:href="@{/job}">Jobs</a>
 						</li>
 
-						<li class="nav-item" z2:classappend="${page == 'session' ? 'active' : ''}">
-							<a class="nav-link" z2:href="@{/}">Token generator</a>
+						<li class="nav-item">
+							<a class="nav-link" z2:classappend="${page == 'session' ? 'active' : ''}" z2:href="@{/tokens}">Token generator</a>
 						</li>
 
-						<li class="nav-item" z2:classappend="${page == 'admin' ? 'active' : ''}"
-							z2:if="${#security.hasRole('ADMIN')}">
-							<a class="nav-link" z2:href="@{/admin}">Admin</a>
+						<li class="nav-item">
+							<a class="nav-link" z2:classappend="${page == 'about' ? 'active' : ''}" z2:href="@{/about}">About</a>
+						</li>
+						
+						<li class="nav-item">
+							<a class="nav-link" z2:classappend="${page == 'download' ? 'active' : ''}" z2:href="@{/download}">Download</a>
+						</li>
+						
+						<li class="nav-item" z2:if="${#security.hasRole('ADMIN')}">
+							<a class="nav-link" z2:classappend="${page == 'admin' ? 'active' : ''}" z2:href="@{/admin}">Admin</a>
 						</li>
 
 						<li z2:if="${#security.authorized}" class="nav-item">
