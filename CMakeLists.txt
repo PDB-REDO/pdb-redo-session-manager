@@ -152,7 +152,7 @@ mrc_target_resources(prsmd
 	${PROJECT_SOURCE_DIR}/rsrc/reset-password-mail.txt)
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio PkgConfig::PKG_PQ mailio::mailio)
+target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio PkgConfig::PKG_PQ mailio)
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}

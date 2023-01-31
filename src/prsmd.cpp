@@ -451,7 +451,7 @@ class SessionRESTController : public zh::rest_controller
 		User u = UserService::instance().get_user(user);
 		std::string pw = u.password;
 
-		prsm_pw_encoder pwenc;
+		PasswordEncoder pwenc;
 
 		if (not pwenc.matches(password, u.password))
 			throw std::runtime_error("Invalid username/password");
@@ -997,12 +997,6 @@ class RootHTMLController : public zh::html_controller
 		map_get("about", &RootHTMLController::about);
 		map_get("download", &RootHTMLController::download);
 
-		map_get("register", &RootHTMLController::get_register);
-		map_post("register", &RootHTMLController::post_register, "username", "institution", "email", "password");
-
-		map_get("reset-password", &RootHTMLController::get_reset_pw);
-		map_post("reset-password", &RootHTMLController::post_reset_pw, "username", "email");
-
 		map_delete("admin/deleteSession", &RootHTMLController::handle_delete_session, "sessionid");
 		mount("{css,scripts,fonts,images}/", &RootHTMLController::handle_file);
 
@@ -1012,13 +1006,6 @@ class RootHTMLController : public zh::html_controller
 
 	zh::reply welcome(const zh::scope &scope);
 	void admin(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-
-	zh::reply get_register(const zh::scope &scope);
-	zh::reply post_register(const zh::scope &scope, const std::string &username, const std::string &institution,
-		const std::string &email, const std::string &password);
-
-	zh::reply get_reset_pw(const zh::scope &scope);
-	zh::reply post_reset_pw(const zh::scope &scope, const std::string &username, const std::string &email);
 
 	zh::reply about(const zh::scope &scope);
 	zh::reply download(const zh::scope &scope);
@@ -1038,35 +1025,6 @@ zh::reply RootHTMLController::welcome(const zh::scope &scope)
 zh::reply RootHTMLController::about(const zh::scope &scope)
 {
 	return get_template_processor().create_reply_from_template("about", scope);
-}
-
-zh::reply RootHTMLController::get_register(const zh::scope &scope)
-{
-	zh::scope sub(scope);
-	sub.put("dialog", "register");
-	return get_template_processor().create_reply_from_template("index", sub);
-}
-
-zh::reply RootHTMLController::post_register(const zh::scope &scope, const std::string &username, const std::string &institution,
-		const std::string &email, const std::string &password)
-{
-	// UserService::instance().sendNewPassword(username, email);
-
-	return zh::reply::redirect("/");
-}
-
-zh::reply RootHTMLController::get_reset_pw(const zh::scope &scope)
-{
-	zh::scope sub(scope);
-	sub.put("dialog", "reset");
-	return get_template_processor().create_reply_from_template("index", sub);
-}
-
-zh::reply RootHTMLController::post_reset_pw(const zh::scope &scope, const std::string &username, const std::string &email)
-{
-	UserService::instance().sendNewPassword(username, email);
-
-	return zh::reply::redirect("/");
 }
 
 zh::reply RootHTMLController::download(const zh::scope &scope)
@@ -1421,7 +1379,7 @@ Command should be either:
 			sc->add_rule("/job/**", { "USER" });
 			sc->add_rule("/**", {});
 
-			sc->register_password_encoder<prsm_pw_encoder>();
+			sc->register_password_encoder<PasswordEncoder>();
 			sc->set_validate_csrf(true);
 
 			auto s = new zeep::http::server(sc);

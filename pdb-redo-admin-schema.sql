@@ -1,42 +1,40 @@
--- 
+-- New DB Schema for pdb-redo
 
-DROP TABLE IF EXISTS public.run;
 DROP TABLE IF EXISTS public.session;
+DROP TABLE IF EXISTS public.user;
+
+CREATE TABLE public.user (
+	id serial primary key,
+	name varchar NOT NULL UNIQUE,
+	institution varchar NOT NULL,
+	email varchar NOT NULL,
+	password varchar NOT NULL,
+	created timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
+	updated timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
+	last_job_nr int default 0,
+	last_job_date timestamp with time zone
+);
 
 CREATE TABLE public.session (
 	id serial primary key,
-	user_id bigint references public.auth_user on delete cascade deferrable initially deferred,
+	user_id bigint references public.user on delete cascade deferrable initially deferred,
     name varchar NOT NULL,
 	token varchar NOT NULL,
     created timestamp with time zone default CURRENT_TIMESTAMP not null,
 	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
 );
 
-ALTER TABLE public.session OWNER TO "pdbRedoAdmin";
-
--- CREATE TYPE run_status AS ENUM('undefined', 'registered', 'starting', 'queued', 'running', 'stopping', 'stopped', 'ended', 'deleting');
-
--- CREATE TABLE public.run (
+-- CREATE TABLE public.job {
 -- 	id serial primary key,
--- 	user_id bigint references public.auth_user on delete cascade deferrable initially deferred,
--- 	created timestamp with time zone default CURRENT_TIMESTAMP not null,
--- 	session_id integer references public.session on delete cascade deferrable initially deferred,
--- 	status run_status
--- );
+-- 	user_id bigint references public.user on delete cascade deferrable initially deferred,
+-- 	job_nr int not null,
+--     created timestamp with time zone default CURRENT_TIMESTAMP not null,
+-- 	exit_status int
+-- }
 
--- ALTER TABLE public.run OWNER TO "pdbRedoAdmin";
+ALTER TABLE public.user OWNER TO "pdbAdmin";
+ALTER TABLE public.session OWNER TO "pdbAdmin";
 
--- INSERT INTO public.run(id, user_id, created, status)
--- 	SELECT last_submitted_job_id, id, last_submitted_job_date,
--- 		CASE WHEN last_submitted_job_status = 0 THEN 'undefined'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'registered'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'starting'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'queued'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'running'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'stopping'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'stopped'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'ended'::run_status
--- 			 WHEN last_submitted_job_status = 0 THEN 'deleting'::run_status
--- 		END
--- 	  FROM auth_user
--- 	 WHERE last_submitted_job_id NOT NULL;
+insert into public.user (name, institution, email, password, created) values (
+	'maarten', 'NKI', 'maarten@hekkelman.net', '!NMqfP62tAQY/HNZYSAJZNBEFVJ3Uo/eY0AeI4Z9SudYh3jz5WUxvMPGYBV55Pb1F', '2018-11-06 21:06:31.673'
+)

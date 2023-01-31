@@ -40,9 +40,17 @@ struct User
 {
 	unsigned long id;
 	std::string name;
-	std::string email;
 	std::string institution;
+	std::string email;
 	std::string password;
+
+	User(const std::string &name, const std::string &institution, const std::string &email, const std::string &password)
+		: name(name)
+		, institution(institution)
+		, email(email)
+		, password(password)
+	{
+	}
 
 	User(const pqxx::row &row);
 	User &operator=(const pqxx::row &row);
@@ -50,13 +58,17 @@ struct User
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long version)
 	{
-		ar &zeep::make_nvp("id", id) & zeep::make_nvp("name", name) & zeep::make_nvp("email", email) & zeep::make_nvp("institution", institution) & zeep::make_nvp("password", password);
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("name", name)
+		   & zeep::make_nvp("institution", institution)
+		   & zeep::make_nvp("email", email)
+		   & zeep::make_nvp("password", password);
 	}
 };
 
 // --------------------------------------------------------------------
 
-class prsm_pw_encoder : public zeep::http::password_encoder
+class PasswordEncoder : public zeep::http::password_encoder
 {
   public:
 	static constexpr const char *name() { return ""; };
@@ -77,10 +89,13 @@ class UserService : public zeep::http::user_service
 	static UserService &instance();
 
 	/// Validate the authorization, returns the validated user. Throws unauthorized_exception in case of failure
-	virtual zeep::http::user_details load_user(const std::string &username) const;
+	zeep::http::user_details load_user(const std::string &username) const override;
 
 	// create a password hash
 	static std::string create_password_hash(const std::string &password);
+
+	// create a new user
+	uint32_t storeUser(const User &user);
 
 	// To reset a password
 	void sendNewPassword(const std::string &username, const std::string &email);
@@ -90,10 +105,20 @@ class UserService : public zeep::http::user_service
 
 	uint32_t create_run_id(const std::string &username);
 
+	struct UserValidation
+	{
+		bool validName, validEmail, validInstitution, validPassword;
+
+		explicit operator bool() { return validName and validEmail and validInstitution and validPassword; }
+	};
+
+	UserValidation isValidUser(const User &user) const;
+	UserValidation isValidNewUser(const User &user) const;
+	bool isValidPassword(const std::string &password) const;
+
   private:
 	UserService(const std::string &admins);
 
-	bool isValidEmail(const std::string &email) const;
 	std::string generatePassword() const;
 
 	static std::unique_ptr<UserService> sInstance;
@@ -107,5 +132,12 @@ class UserHTMLController : public zeep::http::login_controller
   public:
 	UserHTMLController();
 
-	bool handle_request(zeep::http::request &req, zeep::http::reply &rep);
+	zeep::xml::document load_login_form(const zeep::http::request &req) const override;
+
+	zeep::http::reply get_register(const zeep::http::scope &scope);
+	zeep::http::reply post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
+		const std::string &email, const std::string &password);
+
+	zeep::http::reply get_reset_pw(const zeep::http::scope &scope);
+	zeep::http::reply post_reset_pw(const zeep::http::scope &scope, const std::string &username, const std::string &email);
 };

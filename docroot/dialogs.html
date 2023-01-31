@@ -25,7 +25,7 @@
 				<div class="modal-body">
 
 					<form z2:action="@{/login}" method="post" class="form-group" id="login-form">
-					<input type="hidden" name="uri" z2:value="${uri ?: '/'}" />
+						<input type="hidden" name="uri" z2:value="${uri ?: '/'}" />
 
 						<div z2:if="${param.error}" class="alert alert-warning" role="alert">
 							Invalid username and password.
@@ -47,6 +47,9 @@
 							<div class="col-md-8">
 								<input class="form-control" id="password" name="password" placeholder="Password"
 									type="password" required="required" />
+								<div class="invalid-feedback">
+									Invalid username/password
+								</div>
 							</div>
 						</div>
 
@@ -78,7 +81,8 @@
 
 				<div class="modal-body">
 
-					<p>Please enter your username and email address below. A new password will then be sent to the email address stored on our system.</p>
+					<p>Please enter your username and email address below. A new password will then be sent to the email
+						address stored on our system.</p>
 
 					<form id="reset-form" z2:action="@{/reset-password}" method="post" class="form-group">
 						<div class="form-group">
@@ -116,7 +120,8 @@
 
 				<div class="modal-body">
 
-					<p>Please enter your username and email address below. A new password will then be sent to the email address stored on our system.</p>
+					<p>Please enter your username and email address below. A new password will then be sent to the email
+						address stored on our system.</p>
 
 					<form id="register-form" z2:action="@{/register}" method="post" class="form-group">
 						<div class="form-group">
@@ -124,6 +129,9 @@
 							<div class="col-md-8">
 								<input class="form-control" id="username" maxlength="254" name="username"
 									placeholder="User name" type="text" required="required" />
+								<div class="invalid-feedback">
+									Invalid or existing username
+								</div>
 							</div>
 						</div>
 
@@ -132,14 +140,20 @@
 							<div class="col-md-8">
 								<input class="form-control" id="institution" maxlength="254" name="institution"
 									placeholder="Institution Name" type="text" required="required" />
+								<div class="invalid-feedback">
+									Invalid Institution name
+								</div>
 							</div>
 						</div>
-						
+
 						<div class="form-group">
 							<label for="email" class="col-md-4 control-label">E-mail</label>
 							<div class="col-md-8">
 								<input class="form-control" id="email" name="email" placeholder="john.doe@example.com"
 									type="email" required="required" />
+								<div class="invalid-feedback">
+									Invalid or existing e-mail address
+								</div>
 							</div>
 						</div>
 
@@ -148,11 +162,15 @@
 							<div class="col-md-8">
 								<input class="form-control" id="password" maxlength="254" name="password"
 									type="password" required="required" />
+								<div class="invalid-feedback">
+									Invalid password or password too weak
+								</div>
 							</div>
 						</div>
 
 						<div class="form-group">
-							<label for="password2" class="col-md-4 control-label text-truncate">Re-enter Password</label>
+							<label for="password2" class="col-md-4 control-label text-truncate">Re-enter
+								Password</label>
 							<div class="col-md-8">
 								<input class="form-control" id="password2" maxlength="254" name="password2"
 									type="password" required="required" />
