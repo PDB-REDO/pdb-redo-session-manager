@@ -118,20 +118,16 @@ add_executable(prsmd
 # yarn rules for javascripts
 	
 set(webpack_input
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-bootstrap.scss
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-style.scss
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.scss
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/admin.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/boxplot.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/dialog.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/login.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/reset-pw.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/register.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/register.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/request.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/test-api.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js

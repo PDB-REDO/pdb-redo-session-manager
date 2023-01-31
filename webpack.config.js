@@ -15,16 +15,10 @@ module.exports = (env) => {
 
 	const webpackConf = {
 		entry: {
-			// 'pdb-redo-bootstrap': SCSS + "pdb-redo-bootstrap.scss",
-			// 'pdb-redo-result': SCSS + "pdb-redo-result.scss",
-
 			admin: SCRIPTS + "admin.js",
 			index: SCRIPTS + "index.js",
 			'job-overview': SCRIPTS + 'job-overview.js',
 			dialog: SCRIPTS + "dialog.js",
-			login: SCRIPTS + "login.js",
-			'reset-pw': SCRIPTS + "reset-pw.js",
-			register: SCRIPTS + "register.js",
 			request: SCRIPTS + "request.js",
 			"test-api": SCRIPTS + "test-api.js",
 
@@ -59,7 +53,7 @@ module.exports = (env) => {
 					]
 				},
 				{
-					test: /pdb-redo-bootstrap\.scss$/,
+					test: /pdb-redo-style\.scss$/,
 					use: [
 						// PRODUCTION ? MiniCssExtractPlugin.loader : "style-loader",
 						"style-loader",
