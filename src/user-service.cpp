@@ -370,3 +370,41 @@ std::string UserService::generatePassword() const
 
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+UserHTMLController::UserHTMLController()
+	: zeep::http::login_controller()
+{
+}
+
+bool UserHTMLController::handle_request(zeep::http::request &req, zeep::http::reply &rep)
+{
+	bool result = false;
+
+	std::string uri = get_prefixless_path(req);
+
+	if (uri == "login" and req.get_method() == "GET")
+	{
+		auto csrf_cookie = req.get_cookie("csrf-token");
+		if (csrf_cookie.empty())
+		{
+			csrf_cookie = zeep::encode_base64url(zeep::random_hash());
+			req.set_cookie("csrf-token", csrf_cookie);
+			rep.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+		}
+
+		zeep::http::scope scope(m_server, req);
+
+		scope.put("baseuri", uri);
+		scope.put("dialog", "login");
+
+		rep = m_server->get_template_processor().create_reply_from_template("index", scope);
+
+		result = true;
+	}
+	else
+		result = zeep::http::login_controller::handle_request(req, rep);
+
+	return result;
+}

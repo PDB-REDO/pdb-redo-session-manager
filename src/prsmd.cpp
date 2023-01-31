@@ -435,14 +435,14 @@ std::vector<Session> SessionStore::get_all_sessions()
 
 // --------------------------------------------------------------------
 
-class session_rest_controller : public zh::rest_controller
+class SessionRESTController : public zh::rest_controller
 {
   public:
-	session_rest_controller()
+	SessionRESTController()
 		: zh::rest_controller("api")
 	{
 		// create a new session, user should provide username, password and session name
-		map_post_request("session", &session_rest_controller::post_session, "user", "password", "name");
+		map_post_request("session", &SessionRESTController::post_session, "user", "password", "name");
 	}
 
 	// CRUD routines
@@ -473,39 +473,39 @@ class session_rest_controller : public zh::rest_controller
 	}
 };
 
-class api_rest_controller : public zh::rest_controller
+class APIRESTController : public zh::rest_controller
 {
   public:
-	api_rest_controller()
+	APIRESTController()
 		: zh::rest_controller("api")
 	{
 		// get session info
-		map_get_request("session/{id}", &api_rest_controller::get_session, "id");
+		map_get_request("session/{id}", &APIRESTController::get_session, "id");
 
 		// delete a session
-		map_delete_request("session/{id}", &api_rest_controller::delete_session, "id");
+		map_delete_request("session/{id}", &APIRESTController::delete_session, "id");
 
 		// return a list of runs
-		map_get_request("session/{id}/run", &api_rest_controller::get_all_runs, "id");
+		map_get_request("session/{id}/run", &APIRESTController::get_all_runs, "id");
 
 		// Submit a run (job)
-		map_post_request("session/{id}/run", &api_rest_controller::create_job, "id",
+		map_post_request("session/{id}/run", &APIRESTController::create_job, "id",
 			"mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters");
 
 		// return info for a run
-		map_get_request("session/{id}/run/{run}", &api_rest_controller::get_run, "id", "run");
+		map_get_request("session/{id}/run/{run}", &APIRESTController::get_run, "id", "run");
 
 		// get a list of the files in output
-		map_get_request("session/{id}/run/{run}/output", &api_rest_controller::get_result_file_list, "id", "run");
+		map_get_request("session/{id}/run/{run}/output", &APIRESTController::get_result_file_list, "id", "run");
 
 		// get all results file zipped into an archive
-		map_get_request("session/{id}/run/{run}/output/zipped", &api_rest_controller::get_zipped_result_file, "id", "run");
+		map_get_request("session/{id}/run/{run}/output/zipped", &APIRESTController::get_zipped_result_file, "id", "run");
 
 		// get a result file
-		map_get_request("session/{id}/run/{run}/output/{file}", &api_rest_controller::get_result_file, "id", "run", "file");
+		map_get_request("session/{id}/run/{run}/output/{file}", &APIRESTController::get_result_file, "id", "run", "file");
 
 		// delete a run
-		map_delete_request("session/{id}/run/{run}", &api_rest_controller::delete_run, "id", "run");
+		map_delete_request("session/{id}/run/{run}", &APIRESTController::delete_run, "id", "run");
 	}
 
 	virtual bool handle_request(zh::request &req, zh::reply &rep)
@@ -729,13 +729,13 @@ struct Stats
 	}
 };
 
-class gfx_rest_controller : public zeep::http::rest_controller
+class GFXRESTController : public zeep::http::rest_controller
 {
   public:
-	gfx_rest_controller()
+	GFXRESTController()
 		: zh::rest_controller("gfx")
 	{
-		map_get_request("statistics-for-box-plot", &gfx_rest_controller::get_statistics_for_box_plot, "ureso");
+		map_get_request("statistics-for-box-plot", &GFXRESTController::get_statistics_for_box_plot, "ureso");
 	}
 
 	std::vector<Stats> get_statistics_for_box_plot(double ureso)
@@ -839,17 +839,17 @@ class gfx_rest_controller : public zeep::http::rest_controller
 
 // --------------------------------------------------------------------
 
-class job_html_controller : public zh::html_controller
+class JobHTMLController : public zh::html_controller
 {
   public:
-	job_html_controller()
+	JobHTMLController()
 		: zh::html_controller("job")
 	{
-		map_get("", &job_html_controller::get_job_listing);
-		map_get("output/{job-id}/{file}", &job_html_controller::get_output_file, "job-id", "file");
-		map_get("image/{job-id}", &job_html_controller::get_image_file, "job-id");
-		map_get("result/{job-id}", &job_html_controller::get_result, "job-id");
-		map_get("entry/{job-id}", &job_html_controller::get_entry, "job-id");
+		map_get("", &JobHTMLController::get_job_listing);
+		map_get("output/{job-id}/{file}", &JobHTMLController::get_output_file, "job-id", "file");
+		map_get("image/{job-id}", &JobHTMLController::get_image_file, "job-id");
+		map_get("result/{job-id}", &JobHTMLController::get_result, "job-id");
+		map_get("entry/{job-id}", &JobHTMLController::get_entry, "job-id");
 	}
 
 	zh::reply get_job_listing(const zh::scope &scope)
@@ -986,28 +986,28 @@ class job_html_controller : public zh::html_controller
 
 // --------------------------------------------------------------------
 
-class root_html_controller : public zh::html_controller
+class RootHTMLController : public zh::html_controller
 {
   public:
-	root_html_controller()
+	RootHTMLController()
 	{
-		map_get("", &root_html_controller::welcome);
+		map_get("", &RootHTMLController::welcome);
 
-		mount("admin", &root_html_controller::admin);
-		map_get("about", &root_html_controller::about);
-		map_get("download", &root_html_controller::download);
+		mount("admin", &RootHTMLController::admin);
+		map_get("about", &RootHTMLController::about);
+		map_get("download", &RootHTMLController::download);
 
-		map_get("register", &root_html_controller::get_register);
-		map_post("register", &root_html_controller::post_register, "username", "institution", "email", "password");
+		map_get("register", &RootHTMLController::get_register);
+		map_post("register", &RootHTMLController::post_register, "username", "institution", "email", "password");
 
-		map_get("reset-password", &root_html_controller::get_reset_pw);
-		map_post("reset-password", &root_html_controller::post_reset_pw, "username", "email");
+		map_get("reset-password", &RootHTMLController::get_reset_pw);
+		map_post("reset-password", &RootHTMLController::post_reset_pw, "username", "email");
 
-		map_delete("admin/deleteSession", &root_html_controller::handle_delete_session, "sessionid");
-		mount("{css,scripts,fonts,images}/", &root_html_controller::handle_file);
+		map_delete("admin/deleteSession", &RootHTMLController::handle_delete_session, "sessionid");
+		mount("{css,scripts,fonts,images}/", &RootHTMLController::handle_file);
 
-		// map_post("job-entry", &root_html_controller::handle_entry, "token-id", "token-secret", "job-id");
-		map_post("entry", &root_html_controller::handle_entry, "data.json", "link-url");
+		// map_post("job-entry", &RootHTMLController::handle_entry, "token-id", "token-secret", "job-id");
+		map_post("entry", &RootHTMLController::handle_entry, "data.json", "link-url");
 	}
 
 	zh::reply welcome(const zh::scope &scope);
@@ -1030,22 +1030,24 @@ class root_html_controller : public zh::html_controller
 	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
 };
 
-zh::reply root_html_controller::welcome(const zh::scope &scope)
+zh::reply RootHTMLController::welcome(const zh::scope &scope)
 {
 	return get_template_processor().create_reply_from_template("index", scope);
 }
 
-zh::reply root_html_controller::about(const zh::scope &scope)
+zh::reply RootHTMLController::about(const zh::scope &scope)
 {
 	return get_template_processor().create_reply_from_template("about", scope);
 }
 
-zh::reply root_html_controller::get_register(const zh::scope &scope)
+zh::reply RootHTMLController::get_register(const zh::scope &scope)
 {
-	return get_template_processor().create_reply_from_template("register", scope);
+	zh::scope sub(scope);
+	sub.put("dialog", "register");
+	return get_template_processor().create_reply_from_template("index", sub);
 }
 
-zh::reply root_html_controller::post_register(const zh::scope &scope, const std::string &username, const std::string &institution,
+zh::reply RootHTMLController::post_register(const zh::scope &scope, const std::string &username, const std::string &institution,
 		const std::string &email, const std::string &password)
 {
 	// UserService::instance().sendNewPassword(username, email);
@@ -1053,24 +1055,26 @@ zh::reply root_html_controller::post_register(const zh::scope &scope, const std:
 	return zh::reply::redirect("/");
 }
 
-zh::reply root_html_controller::get_reset_pw(const zh::scope &scope)
+zh::reply RootHTMLController::get_reset_pw(const zh::scope &scope)
 {
-	return get_template_processor().create_reply_from_template("reset-password", scope);
+	zh::scope sub(scope);
+	sub.put("dialog", "reset");
+	return get_template_processor().create_reply_from_template("index", sub);
 }
 
-zh::reply root_html_controller::post_reset_pw(const zh::scope &scope, const std::string &username, const std::string &email)
+zh::reply RootHTMLController::post_reset_pw(const zh::scope &scope, const std::string &username, const std::string &email)
 {
 	UserService::instance().sendNewPassword(username, email);
 
 	return zh::reply::redirect("/");
 }
 
-zh::reply root_html_controller::download(const zh::scope &scope)
+zh::reply RootHTMLController::download(const zh::scope &scope)
 {
 	return get_template_processor().create_reply_from_template("download", scope);
 }
 
-void root_html_controller::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+void RootHTMLController::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {
 	zh::scope sub(scope);
 
@@ -1084,18 +1088,18 @@ void root_html_controller::admin(const zh::request &request, const zh::scope &sc
 	get_template_processor().create_reply_from_template("admin.html", sub, reply);
 }
 
-zh::reply root_html_controller::handle_delete_session(const zh::scope &scope, unsigned long sessionID)
+zh::reply RootHTMLController::handle_delete_session(const zh::scope &scope, unsigned long sessionID)
 {
 	SessionStore::instance().delete_by_id(sessionID);
 	return zh::reply::stock_reply(zh::ok);
 }
 
-// void root_html_controller::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// void RootHTMLController::handle_registration(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 // {
 // 	get_template_processor().create_reply_from_template("register.html", scope, reply);
 // }
 
-// void root_html_controller::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
+// void RootHTMLController::handle_result(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 // {
 // 	auto token_id = request.get_parameter("token-id");
 // 	auto token_secret = request.get_parameter("token-secret");
@@ -1115,7 +1119,7 @@ zh::reply root_html_controller::handle_delete_session(const zh::scope &scope, un
 // 	get_template_processor().create_reply_from_template("pdb-redo-result.html", sub, reply);
 // }
 
-// zh::reply root_html_controller::handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID)
+// zh::reply RootHTMLController::handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID)
 // {
 // 	zeep::json::element entry;
 
@@ -1127,7 +1131,7 @@ zh::reply root_html_controller::handle_delete_session(const zh::scope &scope, un
 // 	get_template_processor().create_reply_from_template("entry::tables", sub, reply);
 // }
 
-zh::reply root_html_controller::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
+zh::reply RootHTMLController::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
 {
 	auto pdbID = data["pdbid"].as<std::string>();
 
@@ -1168,18 +1172,18 @@ zh::reply root_html_controller::handle_entry(const zh::scope &scope, const zeep:
 
 // --------------------------------------------------------------------
 
-class db_html_controller : public zh::html_controller
+class DBHTMLController : public zh::html_controller
 {
   public:
-	db_html_controller()
+	DBHTMLController()
 		: zh::html_controller("db")
 	{
-		map_post("get", &db_html_controller::handle_get, "pdb-id");
+		map_post("get", &DBHTMLController::handle_get, "pdb-id");
 
-		map_get("entry", &db_html_controller::handle_entry, "pdb-id");
-		map_post("entry", &db_html_controller::handle_entry, "pdb-id");
+		map_get("entry", &DBHTMLController::handle_entry, "pdb-id");
+		map_post("entry", &DBHTMLController::handle_entry, "pdb-id");
 
-		map_get("{id}", &db_html_controller::handle_show, "id");
+		map_get("{id}", &DBHTMLController::handle_show, "id");
 	}
 
 	zh::reply handle_get(const zh::scope &scope, const std::string &pdbID);
@@ -1187,7 +1191,7 @@ class db_html_controller : public zh::html_controller
 	zh::reply handle_show(const zh::scope &scope, const std::string &pdbID);
 };
 
-zh::reply db_html_controller::handle_get(const zh::scope &scope, const std::string &pdbID)
+zh::reply DBHTMLController::handle_get(const zh::scope &scope, const std::string &pdbID)
 {
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
@@ -1195,7 +1199,7 @@ zh::reply db_html_controller::handle_get(const zh::scope &scope, const std::stri
 	return zh::reply::redirect(pdbID);
 }
 
-zh::reply db_html_controller::handle_show(const zh::scope &scope, const std::string &pdbID)
+zh::reply DBHTMLController::handle_show(const zh::scope &scope, const std::string &pdbID)
 {
 	zh::scope sub(scope);
 
@@ -1224,7 +1228,7 @@ zh::reply db_html_controller::handle_show(const zh::scope &scope, const std::str
 	return get_template_processor().create_reply_from_template("db-entry", sub);
 }
 
-zh::reply db_html_controller::handle_entry(const zh::scope &scope, const std::string &pdbID)
+zh::reply DBHTMLController::handle_entry(const zh::scope &scope, const std::string &pdbID)
 {
 	auto dataJsonFile = data_service::instance().get_file(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
@@ -1418,6 +1422,7 @@ Command should be either:
 			sc->add_rule("/**", {});
 
 			sc->register_password_encoder<prsm_pw_encoder>();
+			sc->set_validate_csrf(true);
 
 			auto s = new zeep::http::server(sc);
 
@@ -1437,16 +1442,16 @@ Command should be either:
 			s->set_template_processor(new zeep::http::rsrc_based_html_template_processor());
 #endif
 
-			s->add_controller(new zh::login_controller());
+			s->add_controller(new UserHTMLController());
 			
-			s->add_controller(new root_html_controller());
-			s->add_controller(new db_html_controller());
-			s->add_controller(new session_rest_controller());
-			s->add_controller(new api_rest_controller());
+			s->add_controller(new RootHTMLController());
+			s->add_controller(new DBHTMLController());
+			s->add_controller(new SessionRESTController());
+			s->add_controller(new APIRESTController());
 
-			s->add_controller(new gfx_rest_controller());
+			s->add_controller(new GFXRESTController());
 
-			s->add_controller(new job_html_controller());
+			s->add_controller(new JobHTMLController());
 
 			return s; },
 			kProjectName);

@@ -124,6 +124,7 @@ set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/boxplot.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/dialog.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/login.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/reset-pw.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/register.js

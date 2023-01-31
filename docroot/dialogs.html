@@ -1,0 +1,174 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO Session Manager</title>
+</head>
+
+<body>
+
+	<script type="text/javascript">
+		const nonce = /*[[${nonce}]]*/ null, username = /*[[${username}]]*/ null;
+	</script>
+
+	<div class="modal" z2:fragment="login" tabindex="-1" data-name="login">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">Use a local account to log in.</h5>
+				</div>
+
+				<div class="modal-body">
+
+					<form z2:action="@{/login}" method="post" class="form-group" id="login-form">
+					<input type="hidden" name="uri" z2:value="${uri ?: '/'}" />
+
+						<div z2:if="${param.error}" class="alert alert-warning" role="alert">
+							Invalid username and password.
+						</div>
+						<div z2:if="${param.logout}" class="alert alert-success" role="alert">
+							You have been logged out.
+						</div>
+
+						<div class="form-group">
+							<label for="username" class="col-md-4 control-label text-truncate">User name</label>
+							<div class="col-md-8">
+								<input class="form-control" id="username" maxlength="254" name="username"
+									placeholder="User name" type="text" required="required" />
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="password" class="col-md-4 control-label">Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="password" name="password" placeholder="Password"
+									type="password" required="required" />
+							</div>
+						</div>
+
+					</form>
+
+					<span class="error" id="failedToLoginMsg" style="display: none">Login failed</span>
+
+				</div>
+
+				<div class="modal-footer">
+					<div class="col-md-8">
+						<a z2:href="@{/register}">register</a> /
+						<a z2:href="@{/reset-password}">reset password</a>
+					</div>
+
+					<!--<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+					<button type="submit" form="login-form" class="btn btn-primary col-md-2 ms-auto">Log in</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div data-name="reset" class="modal" z2:fragment="reset-password" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">Reset password</h5>
+				</div>
+
+				<div class="modal-body">
+
+					<p>Please enter your username and email address below. A new password will then be sent to the email address stored on our system.</p>
+
+					<form id="reset-form" z2:action="@{/reset-password}" method="post" class="form-group">
+						<div class="form-group">
+							<label for="username" class="col-md-4 control-label text-truncate">User name</label>
+							<div class="col-md-8">
+								<input class="form-control" id="username" maxlength="254" name="username"
+									placeholder="User name" type="text" required="required" />
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="email" class="col-md-4 control-label">E-mail</label>
+							<div class="col-md-8">
+								<input class="form-control" id="email" name="email" placeholder="john.doe@example.com"
+									type="email" required="required" />
+							</div>
+						</div>
+
+					</form>
+				</div>
+
+				<div class="modal-footer">
+					<button type="submit" form="reset-form" class="btn btn-primary col-md-2 ms-auto">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div data-name="register" class="modal" z2:fragment="register" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">Register</h5>
+				</div>
+
+				<div class="modal-body">
+
+					<p>Please enter your username and email address below. A new password will then be sent to the email address stored on our system.</p>
+
+					<form id="register-form" z2:action="@{/register}" method="post" class="form-group">
+						<div class="form-group">
+							<label for="username" class="col-md-4 control-label text-truncate">User name</label>
+							<div class="col-md-8">
+								<input class="form-control" id="username" maxlength="254" name="username"
+									placeholder="User name" type="text" required="required" />
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="institution" class="col-md-4 control-label text-truncate">Institution</label>
+							<div class="col-md-8">
+								<input class="form-control" id="institution" maxlength="254" name="institution"
+									placeholder="Institution Name" type="text" required="required" />
+							</div>
+						</div>
+						
+						<div class="form-group">
+							<label for="email" class="col-md-4 control-label">E-mail</label>
+							<div class="col-md-8">
+								<input class="form-control" id="email" name="email" placeholder="john.doe@example.com"
+									type="email" required="required" />
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="password" class="col-md-4 control-label text-truncate">Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="password" maxlength="254" name="password"
+									type="password" required="required" />
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="password2" class="col-md-4 control-label text-truncate">Re-enter Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="password2" maxlength="254" name="password2"
+									type="password" required="required" />
+							</div>
+						</div>
+
+					</form>
+				</div>
+
+				<div class="modal-footer">
+					<button type="submit" form="register-form" class="btn btn-primary col-md-2 ms-auto">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</body>
+
+</html>
