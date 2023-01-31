@@ -13,7 +13,7 @@
 		const dialog_name = /*[[${dialog}]]*/ null;
 	</script>
 
-	<script src="scripts/dialog.js" type="text/javascript"></script>
+	<script z2:if="${dialog}" src="scripts/dialog.js" type="text/javascript"></script>
 </head>
 
 <body class="site">
@@ -100,6 +100,8 @@
 		<div z2:case="login" z2:replace="~{dialogs::login}"></div>
 		<div z2:case="register" z2:replace="~{dialogs::register}"></div>
 		<div z2:case="reset" z2:replace="~{dialogs::reset}"></div>
+		<div z2:case="change" z2:replace="~{dialogs::change}"></div>
+		<div z2:case="update" z2:replace="~{dialogs::update}"></div>
 	</div>
 
 	<aside z2:replace="~{sponsors::sponsors}"></aside>

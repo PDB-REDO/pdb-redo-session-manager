@@ -168,15 +168,6 @@
 							</div>
 						</div>
 
-						<div class="form-group">
-							<label for="password2" class="col-md-4 control-label text-truncate">Re-enter
-								Password</label>
-							<div class="col-md-8">
-								<input class="form-control" id="password2" maxlength="254" name="password2"
-									type="password" required="required" />
-							</div>
-						</div>
-
 					</form>
 				</div>
 
@@ -186,6 +177,51 @@
 			</div>
 		</div>
 	</div>
+
+	<div data-name="change" class="modal" z2:fragment="change-password" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">Change password</h5>
+				</div>
+
+				<div class="modal-body">
+
+					<form id="change-form" z2:action="@{/change-password}" method="post" class="form-group">
+
+						<div class="form-group">
+							<label for="old-password" class="col-md-4 control-label text-truncate">Old Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="old-password" maxlength="254" name="old-password"
+									type="password" required="required" />
+								<div class="invalid-feedback">
+									Invalid password
+								</div>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="new-password" class="col-md-4 control-label text-truncate">New Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="new-password" maxlength="254" name="new-password"
+									type="password" required="required" />
+								<div class="invalid-feedback">
+									Invalid password or password too weak
+								</div>
+							</div>
+						</div>
+
+					</form>
+				</div>
+
+				<div class="modal-footer">
+					<button type="submit" form="change-form" class="btn btn-primary col-md-2 ms-auto">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
 
 </body>
 

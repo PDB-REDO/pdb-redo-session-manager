@@ -363,7 +363,7 @@ Session SessionStore::get_by_id(unsigned long id)
 				  a.token,
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
-		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
+		   FROM session a LEFT JOIN public.user b ON a.user_id = b.id
 		   WHERE a.id = )" +
 		std::to_string(id));
 
@@ -386,7 +386,7 @@ Session SessionStore::get_by_token(const std::string &token)
 				  a.token,
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
-		   FROM session a LEFT JOIN auth_user b ON a.user_id = b.id
+		   FROM session a LEFT JOIN public.user b ON a.user_id = b.id
 		   WHERE a.token = )" +
 		tx.quote(token));
 
@@ -419,7 +419,7 @@ std::vector<Session> SessionStore::get_all_sessions()
 				  a.name AS name,
 				  b.name AS user,
 				  a.token AS token
-			 FROM session a, auth_user b
+			 FROM session a, public.user b
 			WHERE a.user_id = b.id
 			ORDER BY a.created ASC)");
 
@@ -1377,6 +1377,9 @@ Command should be either:
 			sc->add_rule("/admin/**", { "ADMIN" });
 			sc->add_rule("/job", { "USER" });
 			sc->add_rule("/job/**", { "USER" });
+
+			sc->add_rule("/{change-password,update-info,token}", { "USER" });
+
 			sc->add_rule("/**", {});
 
 			sc->register_password_encoder<PasswordEncoder>();

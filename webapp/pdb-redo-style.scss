@@ -13,7 +13,6 @@
 
 @import "bootstrap/scss/_alert";
 
-
 $font-family-sans-serif: "Verdana", "Arial", "Helvetica", "sans-serif";
 
 $primary: rgb(100, 100, 100);
@@ -25,6 +24,11 @@ $nav-link: #3366cc;
 
 $nav-primary-hover: #d8c7a5;
 
+$dropdown-bg: $nav-secondary;
+$dropdown-link-color: $nav-link;
+$dropdown-link-hover-color: $nav-link;
+$dropdown-link-hover-bg: $nav-primary-hover;
+
 $pdb-redo-colors: (
 	"primary": $primary,
 	"nav-primary": $nav-primary,
@@ -33,6 +37,7 @@ $pdb-redo-colors: (
 
 $navbar-padding-y: 0;
 $nav-link-padding-y: math.div($spacer, 2);
+
 
 // (Required) Import Bootstrap
 @import "bootstrap/scss/bootstrap";
@@ -52,18 +57,20 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 	min-height: 100vh;
 	height: 100%;
 	flex-direction: column;
-	
-	header, footer {
+
+	header,
+	footer {
 		flex: none;
 	}
-	
+
 	.site-content {
 		flex: 1 0 auto;
 		padding: var(--space) var(--space) 0;
 		width: 100%;
 
 		&::after {
-			content: '\00a0'; /* &nbsp; */
+			content: '\00a0';
+			/* &nbsp; */
 			display: block;
 			margin-top: var(--space);
 			height: 0px;
@@ -84,14 +91,17 @@ header {
 		width: auto;
 	}
 
-	nav.first {
-		padding: 0.8em !important;
-
+	div {
+		flex: 1 0 0%;
 	}
 
-	.col {
+	div.my-overflow {
 		overflow: hidden;
 		white-space: nowrap;
+	}
+
+	nav.first {
+		padding: 0.8em !important;
 	}
 
 	.navbar {
@@ -155,8 +165,8 @@ header {
 			min-height: calc(4em + 30px);
 		}
 
-		.first {
-			padding: 0;
+		nav.first {
+			padding: 0.4em !important;
 		}
 
 		.second {
@@ -241,7 +251,7 @@ $ticker-tape-width: $nr-of-slides * $slide-width;
 			font-weight: bold;
 			text-align: center;
 		}
-		
+
 		img {
 			max-width: 100%;
 		}
