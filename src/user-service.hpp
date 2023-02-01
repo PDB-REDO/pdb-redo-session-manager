@@ -95,7 +95,9 @@ class UserService : public zeep::http::user_service
 	static std::string create_password_hash(const std::string &password);
 
 	// create a new user
-	uint32_t storeUser(const User &user);
+	uint32_t createUser(const User &user);
+
+	void updateUser(const User &user);
 
 	// To reset a password
 	void sendNewPassword(const std::string &username, const std::string &email);
@@ -114,7 +116,8 @@ class UserService : public zeep::http::user_service
 
 	UserValidation isValidUser(const User &user) const;
 	UserValidation isValidNewUser(const User &user) const;
-	bool isValidPassword(const std::string &password) const;
+
+	bool isValidEmailForUser(const User &user, const std::string &email);
 
   private:
 	UserService(const std::string &admins);
@@ -136,8 +139,14 @@ class UserHTMLController : public zeep::http::login_controller
 
 	zeep::http::reply get_register(const zeep::http::scope &scope);
 	zeep::http::reply post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
-		const std::string &email, const std::string &password);
+		const std::string &email, const std::string &password, const std::string &password2);
 
 	zeep::http::reply get_reset_pw(const zeep::http::scope &scope);
 	zeep::http::reply post_reset_pw(const zeep::http::scope &scope, const std::string &username, const std::string &email);
+
+	zeep::http::reply get_change_pw(const zeep::http::scope &scope);
+	zeep::http::reply post_change_pw(const zeep::http::scope &scope, const std::string &oldPassword, const std::string &newPassword, const std::string &newPassword2);
+
+	zeep::http::reply get_update_info(const zeep::http::scope &scope);
+	zeep::http::reply post_update_info(const zeep::http::scope &scope, const std::string &institution, const std::string &email);
 };

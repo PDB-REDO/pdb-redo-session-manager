@@ -48,6 +48,8 @@ const std::set<std::string> kAmbiguous{ "B", "8", "G", "6", "I", "1", "l", "0", 
 const std::vector<std::string> kVowels{ "a", "ae", "ah", "ai", "e", "ee", "ei", "i", "ie", "o", "oh", "oo", "u" };
 const std::vector<std::string> kConsonants{ "b", "c", "ch", "d", "f", "g", "gh", "h", "j", "k", "l", "m", "n", "ng", "p", "ph", "qu", "r", "s", "sh", "t", "th", "v", "w", "x", "y", "z" };
 const std::vector<char> kSymbols{ '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
+
+std::regex kEmailRX(R"((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\]))", std::regex::icase);
 } // namespace
 
 // --------------------------------------------------------------------
@@ -99,6 +101,45 @@ bool PasswordEncoder::matches(const std::string &raw_password, const std::string
 		result = zeep::encode_base64(zeep::md5(raw_password)) == stored_password;
 
 	return result;
+}
+
+// --------------------------------------------------------------------
+
+bool isValidPassword(const std::string &password)
+{
+	// calculate the password entropy, should be 50 or more
+
+	bool lowerSeen = false, upperSeen = false, digitSeen = false, symbolSeen = false;
+
+	for (auto ch : password)
+	{
+		if (std::islower(ch))
+			lowerSeen = true;
+		else if (std::isupper(ch))
+			upperSeen = true;
+		else if (std::isdigit(ch))
+			digitSeen = true;
+		else if (find(kSymbols.begin(), kSymbols.end(), ch) != kSymbols.end())
+			symbolSeen = true;
+		else if (std::isspace(ch))
+			return false;
+	}
+
+	size_t poolSize = 0;
+	if (lowerSeen)
+		poolSize += 26;
+	if (upperSeen)
+		poolSize += 26;
+	if (digitSeen)
+		poolSize += 10;
+	if (symbolSeen)
+		poolSize += kSymbols.size();
+
+	double entropy = std::log2(poolSize) * password.length();
+
+	std::cerr << "entropy: " << entropy << std::endl;
+
+	return entropy > kMinimalPasswordEntropy;
 }
 
 // --------------------------------------------------------------------
@@ -182,7 +223,7 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 	return result;
 }
 
-uint32_t UserService::storeUser(const User &user)
+uint32_t UserService::createUser(const User &user)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec1(
@@ -201,12 +242,36 @@ uint32_t UserService::storeUser(const User &user)
 	return r[0].as<uint32_t>();
 }
 
+void UserService::updateUser(const User &user)
+{
+	pqxx::transaction tx(prsm_db_connection::instance());
+
+	std::vector<std::string> set;
+
+	if (not user.name.empty())
+		set.push_back("name = " + tx.quote(user.name));
+
+	if (not user.institution.empty())
+		set.push_back("institution = " + tx.quote(user.institution));
+
+	if (not user.email.empty())
+		set.push_back("email = " + tx.quote(user.email));
+
+	if (not user.password.empty())
+		set.push_back("password = " + tx.quote(user.password));
+
+	if (not set.empty())
+	{
+		tx.exec0("UPDATE public.user SET " + zeep::join(set, ", ") + " WHERE id = " + tx.quote(user.id));
+		tx.commit();
+	}
+}
+
 auto UserService::isValidUser(const User &user) const -> UserService::UserValidation
 {
 	UserValidation valid{};
 
-	std::regex rxEmail(R"((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\]))", std::regex::icase);
-	valid.validEmail = std::regex_match(user.email, rxEmail);
+	valid.validEmail = std::regex_match(user.email, kEmailRX);
 
 	std::regex rxName(R"(^[a-z0-9][-a-z0-9._]*$)", std::regex::icase);
 	valid.validName = std::regex_match(user.name, rxName);
@@ -249,41 +314,27 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 	return valid;
 }
 
-bool UserService::isValidPassword(const std::string &password) const
+bool UserService::isValidEmailForUser(const User &user, const std::string &email)
 {
-	// calculate the password entropy, should be 50 or more
+	bool result = user.email == email;
 
-	bool lowerSeen = false, upperSeen = false, digitSeen = false, symbolSeen = false;
-
-	for (auto ch : password)
+	if (not result)
 	{
-		if (std::islower(ch))
-			lowerSeen = true;
-		else if (std::isupper(ch))
-			upperSeen = true;
-		else if (std::isdigit(ch))
-			digitSeen = true;
-		else if (find(kSymbols.begin(), kSymbols.end(), ch) != kSymbols.end())
-			symbolSeen = true;
-		else if (std::isspace(ch))
-			return false;
+		result = std::regex_match(email, kEmailRX);
+
+		if (result)
+		{
+			pqxx::transaction tx(prsm_db_connection::instance());
+			auto r = tx.exec1(
+				R"(SELECT COUNT(*) FROM public.user WHERE email = )" + tx.quote(email) + " AND id <> " + tx.quote(user.id));
+
+			tx.commit();
+
+			result = r[0].as<uint32_t>() == 0;
+		}
 	}
 
-	size_t poolSize = 0;
-	if (lowerSeen)
-		poolSize += 26;
-	if (upperSeen)
-		poolSize += 26;
-	if (digitSeen)
-		poolSize += 10;
-	if (symbolSeen)
-		poolSize += kSymbols.size();
-
-	double entropy = std::log2(poolSize) * password.length();
-
-	std::cerr << "entropy: " << entropy << std::endl;
-
-	return entropy > kMinimalPasswordEntropy;
+	return result;
 }
 
 void UserService::sendNewPassword(const std::string &username, const std::string &email)
@@ -481,10 +532,16 @@ UserHTMLController::UserHTMLController()
 	: zeep::http::login_controller()
 {
 	map_get("register", &UserHTMLController::get_register);
-	map_post("register", &UserHTMLController::post_register, "username", "institution", "email", "password");
+	map_post("register", &UserHTMLController::post_register, "username", "institution", "email", "password", "password-2");
 
 	map_get("reset-password", &UserHTMLController::get_reset_pw);
 	map_post("reset-password", &UserHTMLController::post_reset_pw, "username", "email");
+
+	map_get("change-password", &UserHTMLController::get_change_pw);
+	map_post("change-password", &UserHTMLController::post_change_pw, "old-password", "new-password", "new-password-2");
+
+	map_get("update-info", &UserHTMLController::get_update_info);
+	map_post("update-info", &UserHTMLController::post_update_info, "institution", "email");
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -515,7 +572,7 @@ zeep::http::reply UserHTMLController::get_register(const zeep::http::scope &scop
 }
 
 zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
-	const std::string &email, const std::string &password)
+	const std::string &email, const std::string &password, const std::string &password2)
 {
 	UserService &userService = UserService::instance();
 
@@ -523,7 +580,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 
 	auto valid = userService.isValidNewUser(user);
 
-	if (not valid)
+	if (not valid or (password != password2))
 	{
 		auto &req = scope.get_request();
 		zeep::http::scope sub(scope);
@@ -565,6 +622,11 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		if (not valid.validPassword)
 			password_field->set_attribute("class", password_field->get_attribute("class") + " is-invalid");
 
+		auto password_2_field = doc.find_first("//input[@name='password-2']");
+		// password->set_attribute("value", user.password);
+		if (password != password2)
+			password_2_field->set_attribute("class", password_2_field->get_attribute("class") + " is-invalid");
+
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri);
 
@@ -576,7 +638,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 	zeep::http::pbkdf2_sha256_password_encoder enc(kIterations, kKeyLength / 8);
 	user.password = enc.encode(password);
 
-	UserService::instance().storeUser(user);
+	UserService::instance().createUser(user);
 
 	return create_redirect_for_request(scope.get_request());
 }
@@ -594,3 +656,140 @@ zeep::http::reply UserHTMLController::post_reset_pw(const zeep::http::scope &sco
 
 	return create_redirect_for_request(scope.get_request());
 }
+
+zeep::http::reply UserHTMLController::get_change_pw(const zeep::http::scope &scope)
+{
+	zeep::http::scope sub(scope);
+	sub.put("dialog", "change");
+	return get_template_processor().create_reply_from_template("index", sub);
+}
+
+zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &scope,
+	const std::string &oldPassword, const std::string &newPassword, const std::string &newPassword2)
+{
+	UserService &userService = UserService::instance();
+
+	bool oldPWValid = false, newPWValid = isValidPassword(newPassword), newPW2Valid = newPassword == newPassword2;
+
+	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+	oldPWValid = m_server->get_security_context().verify_username_password(user.name, oldPassword);
+
+	if (oldPWValid and newPWValid and newPW2Valid)
+	{
+		zeep::http::pbkdf2_sha256_password_encoder enc(kIterations, kKeyLength / 8);
+
+		user.name.clear();
+		user.institution.clear();
+		user.email.clear();
+		user.password = enc.encode(newPassword);
+
+		userService.updateUser(user);
+
+		return create_redirect_for_request(scope.get_request());	
+	}
+
+	auto &req = scope.get_request();
+	zeep::http::scope sub(scope);
+	std::string uri = get_prefixless_path(req);
+
+	sub.put("baseuri", uri);
+	sub.put("dialog", "change");
+
+	auto &tp = m_server->get_template_processor();
+
+	zeep::xml::document doc;
+	doc.set_preserve_cdata(true);
+
+	tp.load_template("index", doc);
+	tp.process_tags(doc.child(), sub);
+
+	for (auto csrf_attr : doc.find("//input[@name='_csrf']"))
+		csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
+
+	auto old_pw_field = doc.find_first("//input[@name='old-password']");
+	if (not oldPWValid)
+		old_pw_field->set_attribute("class", old_pw_field->get_attribute("class") + " is-invalid");
+
+	auto new_pw_field = doc.find_first("//input[@name='new-password']");
+	if (not newPWValid)
+		new_pw_field->set_attribute("class", new_pw_field->get_attribute("class") + " is-invalid");
+
+	auto new_pw_2_field = doc.find_first("//input[@name='new-password-2']");
+	if (not newPW2Valid)
+		new_pw_2_field->set_attribute("class", new_pw_2_field->get_attribute("class") + " is-invalid");
+
+	for (auto i_uri : doc.find("//input[@name='uri']"))
+		i_uri->set_attribute("value", uri);
+
+	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	rep.set_content(doc);
+	return rep;
+}
+
+zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &scope)
+{
+	UserService &userService = UserService::instance();
+	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+
+	zeep::http::scope sub(scope);
+	sub.put("dialog", "update");
+	sub.put("institution", user.institution);
+	sub.put("email", user.email);
+	return get_template_processor().create_reply_from_template("index", sub);
+}
+
+zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &scope, const std::string &institution, const std::string &email)
+{
+	UserService &userService = UserService::instance();
+	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+
+	bool institutionValid = not institution.empty(), emailValid = userService.isValidEmailForUser(user, email);
+
+	if (institutionValid and emailValid)
+	{
+		user.name.clear();
+		user.institution = institution;
+		user.email = email;
+		user.password.clear();
+
+		userService.updateUser(user);
+
+		return create_redirect_for_request(scope.get_request());	
+	}
+
+	auto &req = scope.get_request();
+	zeep::http::scope sub(scope);
+	std::string uri = get_prefixless_path(req);
+
+	sub.put("baseuri", uri);
+	sub.put("dialog", "update");
+
+	auto &tp = m_server->get_template_processor();
+
+	zeep::xml::document doc;
+	doc.set_preserve_cdata(true);
+
+	tp.load_template("index", doc);
+	tp.process_tags(doc.child(), sub);
+
+	for (auto csrf_attr : doc.find("//input[@name='_csrf']"))
+		csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
+
+	auto instFld = doc.find_first("//input[@name='institution']");
+	instFld->set_attribute("value", institution);
+	if (not institutionValid)
+		instFld->set_attribute("class", instFld->get_attribute("class") + " is-invalid");
+
+	auto emailFld = doc.find_first("//input[@name='email']");
+	emailFld->set_attribute("value", email);
+	if (not emailValid)
+		emailFld->set_attribute("class", emailFld->get_attribute("class") + " is-invalid");
+
+	for (auto i_uri : doc.find("//input[@name='uri']"))
+		i_uri->set_attribute("value", uri);
+
+	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	rep.set_content(doc);
+	return rep;
+}
+

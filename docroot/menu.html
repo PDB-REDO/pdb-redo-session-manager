@@ -40,10 +40,10 @@
 								z2:href="@{/job}">Jobs</a>
 						</li>
 
-						<li class="nav-item">
+						<!-- <li class="nav-item">
 							<a class="nav-link" z2:classappend="${page == 'session' ? 'active' : ''}"
 								z2:href="@{/tokens}">Token generator</a>
-						</li>
+						</li> -->
 
 						<li class="nav-item">
 							<a class="nav-link" z2:classappend="${page == 'about' ? 'active' : ''}"
@@ -66,17 +66,11 @@
 								Dropdown
 							</a>
 							<ul class="dropdown-menu m-0" aria-labelledby="navbarDropdown">
+								<li><a class="dropdown-item" z2:href="@{/change-password}">Change Password</a></li>
+								<li><a class="dropdown-item" z2:href="@{/update-info}">Update User Information</a></li>
+								<li><a class="dropdown-item" z2:href="@{/token}">Generate API Token</a></li>
+								<li><hr class="dropdown-divider"/></li>
 								<li><a class="dropdown-item" z2:href="@{/logout}">Log out</a></li>
-								<li><a class="dropdown-item" z2:href="@{/logout}">Log out</a></li>
-								<li><a class="dropdown-item" z2:href="@{/logout}">Log out</a></li>
-								<!-- 
-		
-										<li><a class="dropdown-item" href="#">Action</a></li>
-										<li><a class="dropdown-item" href="#">Another action</a></li>
-										<li>
-											<hr class="dropdown-divider"/>
-										</li>
-										<li><a class="dropdown-item" href="#">Something else here</a></li> -->
 							</ul>
 						</li>
 

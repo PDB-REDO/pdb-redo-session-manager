@@ -119,10 +119,6 @@
 				</div>
 
 				<div class="modal-body">
-
-					<p>Please enter your username and email address below. A new password will then be sent to the email
-						address stored on our system.</p>
-
 					<form id="register-form" z2:action="@{/register}" method="post" class="form-group">
 						<div class="form-group">
 							<label for="username" class="col-md-4 control-label text-truncate">User name</label>
@@ -164,6 +160,17 @@
 									type="password" required="required" />
 								<div class="invalid-feedback">
 									Invalid password or password too weak
+								</div>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="password-2" class="col-md-4 control-label">Re-enter Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="password-2" name="password-2" placeholder="Password"
+									type="password" required="required" />
+								<div class="invalid-feedback">
+									Passwords are not the same
 								</div>
 							</div>
 						</div>
@@ -211,6 +218,17 @@
 							</div>
 						</div>
 
+						<div class="form-group">
+							<label for="new-password-2" class="col-md-4 control-label text-truncate">Re-enter Password</label>
+							<div class="col-md-8">
+								<input class="form-control" id="new-password-2" maxlength="254" name="new-password-2"
+									type="password" required="required" />
+								<div class="invalid-feedback">
+									Passwords are not the same
+								</div>
+							</div>
+						</div>
+
 					</form>
 				</div>
 
@@ -221,7 +239,47 @@
 		</div>
 	</div>
 
+	<div data-name="update" class="modal" z2:fragment="update" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">Update information</h5>
+				</div>
 
+				<div class="modal-body">
+
+					<form id="update-form" z2:action="@{/update-info}" method="post" class="form-group">
+
+						<div class="form-group">
+							<label for="institution" class="col-md-4 control-label text-truncate">Institution</label>
+							<div class="col-md-8">
+								<input class="form-control" id="institution" maxlength="254" name="institution"
+									placeholder="Institution Name" type="text" required="required" z2:value="${institution}" />
+								<div class="invalid-feedback">
+									Invalid Institution name
+								</div>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="email" class="col-md-4 control-label">E-mail</label>
+							<div class="col-md-8">
+								<input class="form-control" id="email" name="email" placeholder="john.doe@example.com"
+									type="email" required="required" z2:value="${email}" />
+								<div class="invalid-feedback">
+									Invalid or e-mail address, or already in use by other user
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+
+				<div class="modal-footer">
+					<button type="submit" form="update-form" class="btn btn-primary col-md-2 ms-auto">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
 </body>
 

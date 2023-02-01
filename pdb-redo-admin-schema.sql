@@ -12,7 +12,8 @@ CREATE TABLE public.user (
 	created timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
 	updated timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
 	last_job_nr int default 0,
-	last_job_date timestamp with time zone
+	last_job_date timestamp with time zone,
+	UNIQUE(name, email)
 );
 
 CREATE TABLE public.session (
