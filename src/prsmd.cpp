@@ -1380,7 +1380,7 @@ Command should be either:
 			sc->add_rule("/job", { "USER" });
 			sc->add_rule("/job/**", { "USER" });
 
-			sc->add_rule("/{change-password,update-info,token}", { "USER" });
+			sc->add_rule("/{change-password,update-info,token,delete}", { "USER" });
 
 			sc->add_rule("/**", {});
 

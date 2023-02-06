@@ -90,6 +90,7 @@ class UserService : public zeep::http::user_service
 
 	/// Validate the authorization, returns the validated user. Throws unauthorized_exception in case of failure
 	zeep::http::user_details load_user(const std::string &username) const override;
+	bool user_is_valid(const std::string &username) const override;
 
 	// create a password hash
 	static std::string create_password_hash(const std::string &password);
@@ -98,6 +99,7 @@ class UserService : public zeep::http::user_service
 	uint32_t createUser(const User &user);
 
 	void updateUser(const User &user);
+	void deleteUser(const User &user);
 
 	// To reset a password
 	void sendNewPassword(const std::string &username, const std::string &email);
@@ -149,4 +151,7 @@ class UserHTMLController : public zeep::http::login_controller
 
 	zeep::http::reply get_update_info(const zeep::http::scope &scope);
 	zeep::http::reply post_update_info(const zeep::http::scope &scope, const std::string &institution, const std::string &email);
+
+	zeep::http::reply get_delete(const zeep::http::scope &scope);
+	zeep::http::reply post_delete(const zeep::http::scope &scope);
 };

@@ -20,6 +20,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="id_dialog_label">Use a local account to log in.</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 
 				<div class="modal-body">
@@ -77,6 +78,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="id_dialog_label">Reset password</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 
 				<div class="modal-body">
@@ -116,6 +118,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="id_dialog_label">Register</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 
 				<div class="modal-body">
@@ -200,6 +203,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="id_dialog_label">Change password</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 
 				<div class="modal-body">
@@ -255,6 +259,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="id_dialog_label">Update information</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 
 				<div class="modal-body">
@@ -288,6 +293,29 @@
 
 				<div class="modal-footer">
 					<button type="submit" form="update-form" class="btn btn-primary col-md-2 ms-auto">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div data-name="delete" class="modal" z2:fragment="delete" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">Deleting account</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+
+				<div class="modal-body">
+
+					<form id="update-form" z2:action="@{/delete}" method="post" class="form-group">
+
+						<p>Are you sure you want to delete your account at pdb-redo.eu?</p>
+					</form>
+				</div>
+
+				<div class="modal-footer">
+					<button type="submit" form="update-form" class="btn btn-primary col-md-2 ms-auto">Delete</button>
 				</div>
 			</div>
 		</div>

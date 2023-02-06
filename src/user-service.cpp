@@ -223,6 +223,16 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 	return result;
 }
 
+bool UserService::user_is_valid(const std::string &username) const
+{
+	pqxx::transaction tx(prsm_db_connection::instance());
+	auto r = tx.exec1(R"(SELECT COUNT(*) FROM public.user WHERE name = )" + tx.quote(username));
+
+	tx.commit();
+
+	return r[0].as<int>() == 1;
+}
+
 uint32_t UserService::createUser(const User &user)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
@@ -265,6 +275,14 @@ void UserService::updateUser(const User &user)
 		tx.exec0("UPDATE public.user SET " + zeep::join(set, ", ") + " WHERE id = " + tx.quote(user.id));
 		tx.commit();
 	}
+}
+
+void UserService::deleteUser(const User &user)
+{
+	pqxx::transaction tx(prsm_db_connection::instance());
+
+	tx.exec0("DELETE FROM public.user WHERE id = " + tx.quote(user.id));
+	tx.commit();
 }
 
 auto UserService::isValidUser(const User &user) const -> UserService::UserValidation
@@ -542,6 +560,9 @@ UserHTMLController::UserHTMLController()
 
 	map_get("update-info", &UserHTMLController::get_update_info);
 	map_post("update-info", &UserHTMLController::post_update_info, "institution", "email");
+
+	map_get("delete", &UserHTMLController::get_delete);
+	map_post("delete", &UserHTMLController::post_delete);
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -646,7 +667,11 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 
 	UserService::instance().createUser(user);
 
-	return create_redirect_for_request(scope.get_request());
+	auto reply = create_redirect_for_request(scope.get_request());
+
+	m_server->get_security_context().add_authorization_headers(reply, userService.load_user(user.name));
+
+	return reply;
 }
 
 zeep::http::reply UserHTMLController::get_reset_pw(const zeep::http::scope &scope)
@@ -799,3 +824,21 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 	return rep;
 }
 
+zeep::http::reply UserHTMLController::get_delete(const zeep::http::scope &scope)
+{
+	zeep::http::scope sub(scope);
+	sub.put("dialog", "delete");
+	return get_template_processor().create_reply_from_template("index", sub);
+}
+
+zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope)
+{
+	UserService &userService = UserService::instance();
+	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+
+	userService.deleteUser(user);
+
+	auto reply = create_redirect_for_request(scope.get_request());
+	reply.set_delete_cookie("access_token");
+	return reply;
+}
