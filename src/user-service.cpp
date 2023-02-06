@@ -532,7 +532,7 @@ UserHTMLController::UserHTMLController()
 	: zeep::http::login_controller()
 {
 	map_get("register", &UserHTMLController::get_register);
-	map_post("register", &UserHTMLController::post_register, "username", "institution", "email", "password", "password-2");
+	map_post("register", &UserHTMLController::post_register, "username", "institution", "email", "password", "password-2", "accept-gdpr");
 
 	map_get("reset-password", &UserHTMLController::get_reset_pw);
 	map_post("reset-password", &UserHTMLController::post_reset_pw, "username", "email");
@@ -572,7 +572,7 @@ zeep::http::reply UserHTMLController::get_register(const zeep::http::scope &scop
 }
 
 zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
-	const std::string &email, const std::string &password, const std::string &password2)
+	const std::string &email, const std::string &password, const std::string &password2, std::optional<std::string> accept_gdpr)
 {
 	UserService &userService = UserService::instance();
 
@@ -580,7 +580,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 
 	auto valid = userService.isValidNewUser(user);
 
-	if (not valid or (password != password2))
+	if (not valid or (password != password2) or not accept_gdpr.has_value())
 	{
 		auto &req = scope.get_request();
 		zeep::http::scope sub(scope);
@@ -626,6 +626,12 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		// password->set_attribute("value", user.password);
 		if (password != password2)
 			password_2_field->set_attribute("class", password_2_field->get_attribute("class") + " is-invalid");
+
+		auto gdpr_field = doc.find_first("//input[@name='accept-gdpr']");
+		if (not accept_gdpr.has_value())
+			gdpr_field->set_attribute("class", gdpr_field->get_attribute("class") + " is-invalid");
+		else
+			gdpr_field->set_attribute("checked", "checked");
 
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri);

@@ -995,6 +995,7 @@ class RootHTMLController : public zh::html_controller
 
 		mount("admin", &RootHTMLController::admin);
 		map_get("about", &RootHTMLController::about);
+		map_get("privacy-policy", &RootHTMLController::gdpr);
 		map_get("download", &RootHTMLController::download);
 
 		map_delete("admin/deleteSession", &RootHTMLController::handle_delete_session, "sessionid");
@@ -1004,12 +1005,27 @@ class RootHTMLController : public zh::html_controller
 		map_post("entry", &RootHTMLController::handle_entry, "data.json", "link-url");
 	}
 
-	zh::reply welcome(const zh::scope &scope);
+	zh::reply welcome(const zh::scope &scope)
+	{
+		return get_template_processor().create_reply_from_template("index", scope);
+	}
+
+	zh::reply about(const zh::scope &scope)
+	{
+		return get_template_processor().create_reply_from_template("about", scope);
+	}
+
+	zh::reply gdpr(const zh::scope &scope)
+	{
+		return get_template_processor().create_reply_from_template("gdpr", scope);
+	}
+
+	zh::reply download(const zh::scope &scope)
+	{
+		return get_template_processor().create_reply_from_template("download", scope);
+	}
+
 	void admin(const zh::request &request, const zh::scope &scope, zh::reply &reply);
-
-	zh::reply about(const zh::scope &scope);
-	zh::reply download(const zh::scope &scope);
-
 
 	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
 
@@ -1017,20 +1033,6 @@ class RootHTMLController : public zh::html_controller
 	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
 };
 
-zh::reply RootHTMLController::welcome(const zh::scope &scope)
-{
-	return get_template_processor().create_reply_from_template("index", scope);
-}
-
-zh::reply RootHTMLController::about(const zh::scope &scope)
-{
-	return get_template_processor().create_reply_from_template("about", scope);
-}
-
-zh::reply RootHTMLController::download(const zh::scope &scope)
-{
-	return get_template_processor().create_reply_from_template("download", scope);
-}
 
 void RootHTMLController::admin(const zh::request &request, const zh::scope &scope, zh::reply &reply)
 {

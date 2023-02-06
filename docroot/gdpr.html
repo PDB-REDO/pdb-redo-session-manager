@@ -1,0 +1,53 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO Session Manager</title>
+</head>
+
+<body class="site">
+	<nav z2:replace="~{menu :: navbar('gdpr')}" />
+
+	<div class="container site-content">
+
+		<article>
+
+			<h2>Privacy statement</h2>
+
+			<h3>For all users of this website</h3>
+
+			<pre class="gdpr">Your IP address is stored in the webserver logs as part of normal website
+operations. It is used to evaluate the performance and impact of
+pdb-redo.eu. It is not shared with third parties. The server logs with your
+IP-address are deleted as part of regular server maintenance.</pre>
+
+			<h3>For users that log in to this website</h3>
+
+			<pre class="gdpr">PDB-REDO stores your user name, e-mail address and host institute.
+
+This small amount of personal data is necessary to have your
+own private account, but also helps us to get to know our
+user base a bit.
+
+In addition, the web server also stores your IP address in
+the standard logs.
+
+We do not share your data with third parties so only
+PDB-REDO developers can see them. If you want us to remove
+your data, you can <a href="#" z2:href="@{/delete}">delete your account</a>. This deletes
+your e-mail address, host institute, and any input and output
+data from your PDB-REDO jobs still stored. For administrative
+purposes in grants, we do retain your user name and some
+metadata of your jobs (when they were run and with which
+status they ended) after your account is deleted.</pre>
+		</article>
+	</div>
+
+	<footer z2:replace="~{footer::content}"></footer>
+</body>
+
+</html>

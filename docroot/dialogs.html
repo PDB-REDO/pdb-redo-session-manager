@@ -175,6 +175,16 @@
 							</div>
 						</div>
 
+						<div class="form-check mt-2">
+							<input class="form-check-input" type="checkbox" name="accept-gdpr" value="accept" id="accept-gdpr" />
+							<label class="form-check-label" for="accept-gdpr">
+								I accept the <a z2:href="@{/privacy-policy}" target="_blank">privacy policy</a>
+							</label>
+							<div class="invalid-feedback">
+								In order to register an account you will have to accept the privacy policy
+							</div>
+						</div>
+
 					</form>
 				</div>
 
@@ -219,7 +229,8 @@
 						</div>
 
 						<div class="form-group">
-							<label for="new-password-2" class="col-md-4 control-label text-truncate">Re-enter Password</label>
+							<label for="new-password-2" class="col-md-4 control-label text-truncate">Re-enter
+								Password</label>
 							<div class="col-md-8">
 								<input class="form-control" id="new-password-2" maxlength="254" name="new-password-2"
 									type="password" required="required" />
@@ -254,7 +265,8 @@
 							<label for="institution" class="col-md-4 control-label text-truncate">Institution</label>
 							<div class="col-md-8">
 								<input class="form-control" id="institution" maxlength="254" name="institution"
-									placeholder="Institution Name" type="text" required="required" z2:value="${institution}" />
+									placeholder="Institution Name" type="text" required="required"
+									z2:value="${institution}" />
 								<div class="invalid-feedback">
 									Invalid Institution name
 								</div>
