@@ -27,6 +27,8 @@
 #include "user-service.hpp"
 #include "prsm-db-connection.hpp"
 
+#include <zeep/http/uri.hpp>
+
 #include <mailio/message.hpp>
 #include <mailio/smtp.hpp>
 
@@ -563,6 +565,9 @@ UserHTMLController::UserHTMLController()
 
 	map_get("delete", &UserHTMLController::get_delete);
 	map_post("delete", &UserHTMLController::post_delete);
+
+	map_get("ccp4-token-request", &UserHTMLController::get_token_for_ccp4, "reqid", "cburl");
+	map_post("ccp4-token-request", &UserHTMLController::post_token_for_ccp4, "reqid", "cburl");
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -841,4 +846,25 @@ zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope
 	auto reply = create_redirect_for_request(scope.get_request());
 	reply.set_delete_cookie("access_token");
 	return reply;
+}
+
+zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope &scope, const std::string &reqid, const std::string &cburl)
+{
+	if (not zeep::http::is_fully_qualified_uri(cburl))
+		throw std::runtime_error("The callback is not a valid URI");
+
+	zeep::http::scope sub(scope);
+	sub.put("dialog", "ccp4-token-request");
+	sub.put("reqid", reqid);
+	sub.put("cburl", cburl);
+	return get_template_processor().create_reply_from_template("index", sub);
+}
+
+zeep::http::reply UserHTMLController::post_token_for_ccp4(const zeep::http::scope &scope, const std::string &reqid, const std::string &cburl)
+{
+	zeep::http::uri uri(cburl);
+
+	// uri.
+
+	return zeep::http::reply::redirect(cburl);
 }

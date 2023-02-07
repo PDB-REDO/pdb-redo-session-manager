@@ -109,6 +109,8 @@ add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/session.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/session.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.cpp
 

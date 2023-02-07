@@ -25,7 +25,10 @@
 
 				<div class="modal-body">
 
+					<p>You will have to log in before you can access the requested page.</p>
+
 					<form z2:action="@{/login}" method="post" class="form-group" id="login-form">
+						<input type="hidden" name="_csrf" value="" />
 						<input type="hidden" name="uri" z2:value="${uri ?: '/'}" />
 
 						<div z2:if="${param.error}" class="alert alert-warning" role="alert">
@@ -320,6 +323,32 @@
 			</div>
 		</div>
 	</div>
+
+	<div data-name="ccp4-token-request" class="modal" z2:fragment="ccp4-token-request" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="id_dialog_label">CCP4 Token Request</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+
+				<div class="modal-body">
+
+					<form id="update-form" z2:action="@{/ccp4-token-request}" method="post" class="form-group">
+						<input type="hidden" name="reqid" z2:value="${reqid}"/>
+						<input type="hidden" name="cburl" z2:value="${cburl}"/>
+
+						<p>A request was made from CCP4 to provide an access token. Are you sure you want to give CCP4 access to your job results?</p>
+					</form>
+				</div>
+
+				<div class="modal-footer">
+					<button type="submit" form="update-form" class="btn btn-primary col-md-2 ms-auto">Accept</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 
 </body>
 

@@ -64,6 +64,16 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 		flex: none;
 	}
 
+	footer {
+		clear: both;
+		border-top: 1px solid #888;
+		padding: 0.5em;
+		margin-top: 2em;
+		font-size: small;
+		color: #555;
+		white-space: pre;
+	}
+	
 	.site-content {
 		flex: 1 0 auto;
 		padding: var(--space) var(--space) 0;
@@ -296,16 +306,6 @@ $ticker-tape-width: $nr-of-slides * $slide-width;
 	margin: -15px 0;
 	height: 2em;
 	background-color: white;
-}
-
-footer {
-	clear: both;
-	border-top: 1px solid #888;
-	padding: 0.5em;
-	margin-top: 2em;
-	font-size: small;
-	color: #555;
-	white-space: pre;
 }
 
 ul.error-info {
