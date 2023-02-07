@@ -567,7 +567,6 @@ UserHTMLController::UserHTMLController()
 	map_post("delete", &UserHTMLController::post_delete);
 
 	map_get("ccp4-token-request", &UserHTMLController::get_token_for_ccp4, "reqid", "cburl");
-	map_post("ccp4-token-request", &UserHTMLController::post_token_for_ccp4, "reqid", "cburl");
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -858,13 +857,4 @@ zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope
 	sub.put("reqid", reqid);
 	sub.put("cburl", cburl);
 	return get_template_processor().create_reply_from_template("index", sub);
-}
-
-zeep::http::reply UserHTMLController::post_token_for_ccp4(const zeep::http::scope &scope, const std::string &reqid, const std::string &cburl)
-{
-	zeep::http::uri uri(cburl);
-
-	// uri.
-
-	return zeep::http::reply::redirect(cburl);
 }
