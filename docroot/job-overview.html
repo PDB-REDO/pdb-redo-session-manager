@@ -85,15 +85,13 @@
 					<td>
 						<a class="btn btn-sm btn-outline-secondary bi bi-trash"
 							z2:if="${run.status == 'stopped' or run.status == 'ended' or run.status == 'running'}"
-							z2:href="@{|/delete/${run.id}|}"></a>
+							z2:href="@{|/job/delete/${run.id}|}"></a>
 					</td>
 
 				</tr>
 			</tbody>
 		</table>
 	</main>
-
-
 
 	<footer z2:replace="~{footer::content}" />
 </body>

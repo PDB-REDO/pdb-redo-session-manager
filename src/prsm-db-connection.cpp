@@ -30,40 +30,36 @@
 
 // --------------------------------------------------------------------
 
-std::chrono::time_point<std::chrono::system_clock> parse_timestamp(const std::string &timestamp)
+std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string timestamp)
 {
 	using namespace date;
 	using namespace std::chrono;
 
+	if (timestamp[10] == 'T')
+		timestamp[10] = ' ';
+
+	std::regex kRX(R"(^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[-+]\d{2}(?::\d{2})?)?)");
+	std::smatch m;
+
+	if (not std::regex_match(timestamp, m, kRX))
+		throw std::runtime_error("Invalid date format");
+
+	std::istringstream is(timestamp);
+
 	time_point<system_clock> result;
-	
-	try
+
+	if (m[1].matched)
 	{
-		result = zeep::value_serializer<time_point<system_clock>>::from_string(timestamp);
-	}
-	catch (...)
-	{
-		std::regex kRX(R"(^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[-+]\d{2}(?::\d{2})?)?)");
-		std::smatch m;
-
-		if (not std::regex_match(timestamp, m, kRX))
-			throw std::runtime_error("Invalid date format");
-
-		std::istringstream is(timestamp);
-
-		if (m[1].matched)
-		{
-			if (m[1] == "Z")
-				is >> parse("%F %TZ", result);
-			else
-				is >> parse("%F %T%0z", result);
-		}
+		if (m[1] == "Z")
+			is >> parse("%F %TZ", result);
 		else
-			is >> parse("%F %T", result);
-
-		if (is.bad() or is.fail())
-			throw std::runtime_error("invalid formatted date");
+			is >> parse("%F %T%0z", result);
 	}
+	else
+		is >> parse("%F %T", result);
+
+	if (is.bad() or is.fail())
+		throw std::runtime_error("invalid formatted date");
 
 	return result;
 }

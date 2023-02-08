@@ -5,7 +5,7 @@ function deleteSession(sessionID) {
 	const fd = new FormData();
 	fd.append("sessionid", sessionID);
 
-	fetch('/admin/deleteSession', {
+	fetch('admin/deleteSession', {
 		method: "DELETE",
 		body: fd
 	}).then(r => {

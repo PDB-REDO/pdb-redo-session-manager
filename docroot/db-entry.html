@@ -38,7 +38,7 @@
 
 		<script z2:src="@{/scripts/pdb-redo-result-loader.js}" type="text/javascript"></script>
 
-		<div z2:if="${not entry.upToDate and not (entry.data.NOPDB or entry.data.NOSF) }"
+		<div z2:if="${not entry.status.ok and not (entry.data.NOPDB or entry.data.NOSF) }"
 				class="alert alert-secondary" role="alert">
 			<p>This entry is not up to date with the most recent version of PDB-REDO.</p>
 			<span z2:switch="${entry.updatePending}">

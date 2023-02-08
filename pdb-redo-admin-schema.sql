@@ -1,5 +1,6 @@
 -- New DB Schema for pdb-redo
 DROP TABLE IF EXISTS public.session;
+DROP TABLE IF EXISTS public.update_request;
 DROP TABLE IF EXISTS public.user;
 
 CREATE TABLE public.user (
@@ -37,11 +38,23 @@ CREATE TABLE public.session (
 	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
 );
 
+CREATE TABLE public.update_request (
+	id serial primary key,
+	pdb_id varchar(8) not null,
+	created timestamp with time zone default CURRENT_TIMESTAMP not null,
+	version double precision not null,
+	user_id bigint references public.user on delete cascade deferrable initially deferred,
+	UNIQUE(pdb_id, user_id)
+);
+
 ALTER TABLE
 	public.user OWNER TO "pdbAdmin";
 
 ALTER TABLE
 	public.session OWNER TO "pdbAdmin";
+
+ALTER TABLE
+	public.update_request OWNER TO "pdbAdmin";
 
 insert into
 	public.user (name, institution, email, password, created)

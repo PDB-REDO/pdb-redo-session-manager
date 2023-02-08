@@ -90,7 +90,7 @@ Session SessionStore::create(const std::string &name, const std::string &user)
 			   trim(both '"' from to_json(expires)::text) AS expires)");
 
 	unsigned long tokenid = r[0].as<unsigned long>();
-	std::string created{ r[1].as<std::string>() };
+	std::string created{ r["created"].as<std::string>() };
 
 	tx.commit();
 
@@ -233,8 +233,6 @@ CreateSessionResult &CreateSessionResult::operator=(const pqxx::row &row)
 
 	return *this;
 }
-
-
 
 SessionRESTController::SessionRESTController()
 	: zeep::http::rest_controller("api")

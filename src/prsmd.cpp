@@ -542,6 +542,7 @@ class JobController : public zh::html_controller
 		map_get("image/{job-id}", &JobController::get_image_file, "job-id");
 		map_get("result/{job-id}", &JobController::get_result, "job-id");
 		map_get("entry/{job-id}", &JobController::get_entry, "job-id");
+		map_get("delete/{job-id}", &JobController::delete_entry, "job-id");
 	}
 
 	zh::reply get_job_listing(const zh::scope &scope)
@@ -621,6 +622,14 @@ class JobController : public zh::html_controller
 		sub.put("entry", entry);
 
 		return get_template_processor().create_reply_from_template("entry::tables", sub);
+	}
+
+	zh::reply delete_entry(const zh::scope &scope, unsigned long job_id)
+	{
+		auto credentials = scope.get_credentials();
+		RunService::instance().delete_run(credentials["username"].as<std::string>(), job_id);
+
+		return zh::reply::redirect("/job");
 	}
 };
 
@@ -702,34 +711,51 @@ class AdminController : public zh::html_controller
 	AdminController()
 		: zh::html_controller("admin")
 	{
-		map_get("", &AdminController::admin);
+		map_get("", &AdminController::admin, "tab");
 		map_get("job/{user}/{id}", &AdminController::job, "user", "id");
 	}
 
-	zh::reply admin(const zh::scope &scope);
+	zh::reply admin(const zh::scope &scope, std::optional<std::string> tab);
 	zh::reply job(const zh::scope &scope, const std::string &user, int id);
 };
 
-zh::reply AdminController::admin(const zh::scope &scope)
+zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::string> tab)
 {
 	zh::scope sub(scope);
 
 	sub.put("page", "admin");
 
-	json sessions;
-	auto s = SessionStore::instance().get_all_sessions();
-	to_element(sessions, s);
-	sub.put("sessions", sessions);
+	std::string active = tab.value_or("users");
+	sub.put("tab", active);
 
-	json users;
-	auto u = UserService::instance().get_all_users();
-	to_element(users, u);
-	sub.put("users", users);
-
-	json runs;
-	auto r = RunService::instance().get_all_runs();
-	to_element(runs, r);
-	sub.put("runs", runs);
+	if (active == "sessions")
+	{
+		json sessions;
+		auto s = SessionStore::instance().get_all_sessions();
+		to_element(sessions, s);
+		sub.put("sessions", sessions);
+	}
+	else if (active == "users")
+	{
+		json users;
+		auto u = UserService::instance().get_all_users();
+		to_element(users, u);
+		sub.put("users", users);
+	}
+	else if (active == "jobs")
+	{
+		json runs;
+		auto r = RunService::instance().get_all_runs();
+		to_element(runs, r);
+		sub.put("runs", runs);
+	}
+	else if (active == "updates")
+	{
+		json updates;
+		auto ur = DataService::instance().get_all_update_requests();
+		to_element(updates, ur);
+		sub.put("updates", updates);
+	}
 
 	return get_template_processor().create_reply_from_template("admin", sub);
 }
@@ -749,29 +775,50 @@ zh::reply AdminController::job(const zh::scope &scope, const std::string &user, 
 
 // --------------------------------------------------------------------
 
-class DBHTMLController : public zh::html_controller
+class DbController : public zh::html_controller
 {
   public:
-	DBHTMLController()
+	DbController()
 		: zh::html_controller("db")
 	{
-		map_post("get", &DBHTMLController::handle_get, "pdb-id");
+		map_post("get", &DbController::handle_get, "pdb-id");
 
-		map_get("entry", &DBHTMLController::handle_entry, "pdb-id");
-		map_post("entry", &DBHTMLController::handle_entry, "pdb-id");
+		map_get("entry", &DbController::handle_entry, "pdb-id");
+		map_post("entry", &DbController::handle_entry, "pdb-id");
 
-		map_get("{id}/zipped", &DBHTMLController::handle_zipped, "id");
-		map_get("{id}/{file}", &DBHTMLController::handle_file, "id", "file");
-		map_get("{id}", &DBHTMLController::handle_show, "id");
+		map_get("update/{id}", &DbController::handle_update, "id");
+
+		map_get("{id}/zipped", &DbController::handle_zipped, "id");
+		map_get("{id}/{file}", &DbController::handle_file, "id", "file");
+		map_get("{id}", &DbController::handle_show, "id");
 	}
 
 	zh::reply handle_get(const zh::scope &scope, const std::string &pdbID);
 	zh::reply handle_entry(const zh::scope &scope, const std::string &pdbID);
 	zh::reply handle_show(const zh::scope &scope, const std::string &pdbID);
 
+	zh::reply handle_update(const zh::scope &scope, const std::string &pdbID)
+	{
+		try
+		{
+			auto credentials = scope.get_credentials();
+			if (not credentials)
+				throw std::runtime_error("You cannot request an update for this PDB-REDO entry since you are not logged in");
+			
+			User user = UserService::instance().get_user(credentials["username"].as<std::string>());
+			DataService::instance().request_update(pdbID, user);
+
+			return zh::reply::redirect("/db/" + pdbID);
+		}
+		catch (...)
+		{
+			std::throw_with_nested(std::runtime_error("The request for updating failed, did you already request an update before for this entry?"));
+		}
+	}
+
 	zh::reply handle_zipped(const zh::scope &scope, const std::string &pdbID)
 	{
-		const auto &[is, name] = data_service::instance().get_zip_file(pdbID);
+		const auto &[is, name] = DataService::instance().get_zip_file(pdbID);
 
 		zh::reply rep{ zh::ok };
 		rep.set_content(is, "application/zip");
@@ -782,7 +829,7 @@ class DBHTMLController : public zh::html_controller
 
 	zh::reply handle_file(const zh::scope &scope, const std::string &pdbID, const std::string &file)
 	{
-		auto f = data_service::instance().get_file(pdbID, file);
+		auto f = DataService::instance().get_file(pdbID, file);
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
@@ -795,7 +842,7 @@ class DBHTMLController : public zh::html_controller
 	}
 };
 
-zh::reply DBHTMLController::handle_get(const zh::scope &scope, const std::string &pdbID)
+zh::reply DbController::handle_get(const zh::scope &scope, const std::string &pdbID)
 {
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
@@ -803,45 +850,43 @@ zh::reply DBHTMLController::handle_get(const zh::scope &scope, const std::string
 	return zh::reply::redirect(pdbID);
 }
 
-zh::reply DBHTMLController::handle_show(const zh::scope &scope, const std::string &pdbID)
+zh::reply DbController::handle_show(const zh::scope &scope, const std::string &pdbID)
 {
 	zh::scope sub(scope);
 
-	const auto pdbRedoVersion = data_service::instance().version();
+	auto pdbRedoVersion = DataService::instance().version();
 
 	sub.put("pdb-id", pdbID);
 	sub.put("version", pdbRedoVersion);
 
-	auto dataJsonFile = data_service::instance().get_file(pdbID, "data.json");
+	auto dataJsonFile = DataService::instance().get_file(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
 
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
 
-	auto entry = create_entry_data(data, "db/" + pdbID, data_service::instance().get_file_list(pdbID));
-
-	double version;
-	if (mcfp::charconv<double>::from_chars(pdbRedoVersion.data(), pdbRedoVersion.data() + pdbRedoVersion.length(), version).ec != std::errc())
-		version = 0;
+	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().get_file_list(pdbID));
 
 	entry["id"] = pdbID;
 	entry["dbEntry"] = true;
-	entry["upToDate"] = data["properties"]["version"].as<double>() >= version;
+
+	auto status = DataService::instance().updateStatus(pdbID);
+	to_element(entry["status"], status);
 
 	sub.put("entry", entry);
 
 	return get_template_processor().create_reply_from_template("db-entry", sub);
 }
 
-zh::reply DBHTMLController::handle_entry(const zh::scope &scope, const std::string &pdbID)
+zh::reply DbController::handle_entry(const zh::scope &scope, const std::string &pdbID)
 {
-	auto dataJsonFile = data_service::instance().get_file(pdbID, "data.json");
+	auto dataJsonFile = DataService::instance().get_file(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
 
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
 
-	auto entry = create_entry_data(data, "db/" + pdbID, data_service::instance().get_file_list(pdbID));
+	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().get_file_list(pdbID));
 
 	zh::scope sub(scope);
 	sub.put("entry", entry);
@@ -1012,7 +1057,7 @@ Command should be either:
 			s->add_controller(new RootController());
 			s->add_controller(new UserHTMLController());
 			s->add_controller(new AdminController());
-			s->add_controller(new DBHTMLController());
+			s->add_controller(new DbController());
 			s->add_controller(new SessionRESTController());
 			s->add_controller(new APIRESTController());
 

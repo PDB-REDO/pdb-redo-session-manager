@@ -35,7 +35,7 @@
 
 // --------------------------------------------------------------------
 
-std::chrono::time_point<std::chrono::system_clock> parse_timestamp(const std::string &timestamp);
+std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string timestamp);
 
 // --------------------------------------------------------------------
 

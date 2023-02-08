@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2023 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,28 +26,77 @@
 
 #pragma once
 
-#include <string>
+#include "user-service.hpp"
+
+#include <zeep/json/element.hpp>
+
 #include <filesystem>
+#include <string>
 #include <vector>
 
+struct UpdateRequest
+{
+	unsigned long id;
+	std::string user;
+	std::string pdb_id;
+	std::chrono::time_point<std::chrono::system_clock> created;
+	double version;
 
-class data_service
+	UpdateRequest(const pqxx::row &row);
+	// UpdateRequest &operator=(const pqxx::row &row);
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long v)
+	{
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("user", user)
+		   & zeep::make_nvp("pdb_id", pdb_id)
+		   & zeep::make_nvp("created", created)
+		   & zeep::make_nvp("version", version);
+	}	
+};
+
+struct UpdateStatus
+{
+	bool ok;
+	std::optional<float> pendingVersion;
+
+	explicit operator bool() { return ok; }
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("ok", ok)
+		   & zeep::make_nvp("version", pendingVersion);
+	}
+};
+
+class DataService
 {
   public:
-	static data_service &instance();
+	static DataService &instance();
 
 	std::vector<std::string> get_file_list(const std::string &pdbID);
-	std::filesystem::path get_file(const std::string &pdbID, const std::string& file);
+	std::filesystem::path get_file(const std::string &pdbID, const std::string &file);
 
 	std::tuple<std::istream *, std::string> get_zip_file(const std::string &pdbID);
+	zeep::json::element get_data(const std::string &pdbID);
 
-	std::string version() const;
+	UpdateStatus updateStatus(const std::string &pdbID);
+	void request_update(const std::string &pdbID, const User &user);
+
+	float version() const;
+
+	std::vector<UpdateRequest> get_all_update_requests();
 
   private:
-	data_service();
+	DataService();
 
-	data_service(const data_service &) = delete;
-	data_service &operator=(const data_service &) = delete;
+	DataService(const DataService &) = delete;
+	DataService &operator=(const DataService &) = delete;
+
+	void checkUpdateRequests();
 
 	std::filesystem::path m_data_dir;
+	std::mutex m_mutex;
 };
