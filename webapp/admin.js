@@ -27,6 +27,16 @@ window.addEventListener('load', () => {
 				const sessionID = a.dataset["sessionid"];
 				deleteSession(sessionID);
 			});
-		})
+		});
+	
+	[...document.querySelectorAll('tr.run-row')]
+		.forEach(tr => {
+			tr.addEventListener('click', (e) => {
+				e.preventDefault();
+
+				const [_, user, id] = tr.dataset.runId.match(/^(.+?)-(\d+)$/);
+				window.location = `admin/job/${user}/${id}`;
+			});
+		});
 });
 

@@ -171,7 +171,7 @@ class PDBRedoResult extends HTMLElement {
 		/* Code to manage a the toggle between raw and percentile values */
 		Array.from(shadow.querySelectorAll("button.toggle"))
 			.forEach(p => p.addEventListener('click', (e) => {
-				const state = e.target.getAttribute('data-state');
+				const state = e.target.dataset.state;
 				const raw = state === "raw";
 				Array.from(shadow.querySelectorAll("table.perc-raw-toggle"))
 					.forEach(e => {

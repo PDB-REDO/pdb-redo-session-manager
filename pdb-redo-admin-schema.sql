@@ -12,6 +12,8 @@ CREATE TABLE public.user (
 	modified timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
 	last_job_nr int default 0,
 	last_job_date timestamp with time zone,
+	last_job_status varchar,
+	last_update_request_date timestamp with time zone,
 	UNIQUE(name, email)
 );
 
@@ -35,13 +37,6 @@ CREATE TABLE public.session (
 	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
 );
 
--- CREATE TABLE public.job {
--- 	id serial primary key,
--- 	user_id bigint references public.user on delete cascade deferrable initially deferred,
--- 	job_nr int not null,
---     created timestamp with time zone default CURRENT_TIMESTAMP not null,
--- 	exit_status int
--- }
 ALTER TABLE
 	public.user OWNER TO "pdbAdmin";
 

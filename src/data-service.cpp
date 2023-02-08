@@ -88,12 +88,25 @@ std::tuple<std::istream *, std::string> data_service::get_zip_file(const std::st
 
 	ZipWriter zw;
 
-	for (auto f : fs::recursive_directory_iterator(entry_dir))
-	{
-		if (not f.is_regular_file())
-			continue;
+	fs::path d(pdbID);
 
-		zw.add(f.path(), (pdbID / f.path().filename()).string());
+	for (auto f : fs::directory_iterator(entry_dir))
+	{
+		if (f.path().filename() == "attic")
+			continue;
+		
+		if (f.is_regular_file())
+			zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
+		else if (f.is_directory())
+		{
+			for (auto fr : fs::directory_iterator(f.path()))
+			{
+				if (not fr.is_regular_file())
+					continue;
+				
+				zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
+			}
+		}
 	}
 
 	return { zw.finish(), pdbID + ".zip" };

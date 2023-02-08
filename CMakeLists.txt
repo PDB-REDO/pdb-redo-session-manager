@@ -124,9 +124,10 @@ set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.scss
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/admin.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/boxplot.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/dialog.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/inline-entry.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js

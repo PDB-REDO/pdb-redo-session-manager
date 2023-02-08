@@ -17,6 +17,7 @@ module.exports = (env) => {
 		entry: {
 			admin: SCRIPTS + "admin.js",
 			index: SCRIPTS + "index.js",
+			'inline-entry': SCRIPTS + 'inline-entry.js',
 			'job-overview': SCRIPTS + 'job-overview.js',
 			dialog: SCRIPTS + "dialog.js",
 			request: SCRIPTS + "request.js",

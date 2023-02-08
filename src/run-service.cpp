@@ -99,14 +99,22 @@ static const std::regex kRunDirNameRx(R"([0-9]{10})");
 
 Run Run::create(const fs::path &dir, const std::string &username)
 {
+	using namespace std::chrono;
+
 	Run run;
 
+	run.m_dir = dir;
 	run.id = std::stoul(dir.filename().string());
 	run.user = username;
 
 	run.status = RunStatus::REGISTERED;
 	if (fs::exists(dir / "startingProcess.txt"))
+	{
 		run.status = RunStatus::STARTING;
+
+		auto ft = fs::last_write_time(dir / "startingProcess.txt");
+		run.started = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+	}
 	if (fs::exists(dir / "rank.txt"))
 		run.status = RunStatus::QUEUED;
 	if (fs::exists(dir / "processRunning.txt"))
@@ -122,7 +130,6 @@ Run Run::create(const fs::path &dir, const std::string &username)
 
 	run.has_image = fs::exists(dir / "pdbin.png");
 
-	using namespace std::chrono;
 	auto ft = fs::last_write_time(dir);
     run.date = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
@@ -184,6 +191,80 @@ Run Run::create(const fs::path &dir, const std::string &username)
 	return run;
 }
 
+std::vector<std::string> Run::get_result_file_list()
+{
+	if (not fs::exists(m_dir))
+		throw std::runtime_error("Run directory does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << id;
+
+	fs::path output = m_dir / s.str() / "output";
+
+	if (not fs::exists(output))
+		throw std::runtime_error("Result directory does not exist");
+
+	std::vector<std::string> result;
+	for (auto f : fs::recursive_directory_iterator(output))
+	{
+		if (not f.is_regular_file())
+			continue;
+
+		result.push_back(fs::relative(f.path(), output).string());
+	}
+
+	return result;
+}
+
+std::filesystem::path Run::get_result_file(const std::string& file)
+{
+	if (not fs::exists(m_dir))
+		throw std::runtime_error("Run directory does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << id;
+
+	return m_dir / s.str() / "output" / file;
+}
+
+std::filesystem::path Run::get_image_file()
+{
+	if (not fs::exists(m_dir))
+		throw std::runtime_error("Run does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << id;
+
+	return m_dir / s.str() / "pdbin.png";
+}
+
+std::tuple<std::istream *, std::string> Run::get_zipped_result_file()
+{
+	if (not fs::exists(m_dir))
+		throw std::runtime_error("Run does not exist");
+
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << id;
+
+	fs::path output = m_dir / s.str() / "output";
+	fs::path d(s.str());
+
+	if (not fs::exists(output))
+		throw std::runtime_error("Result directory does not exist");
+
+	ZipWriter zw;
+
+	for (auto f : fs::recursive_directory_iterator(output))
+	{
+		if (not f.is_regular_file())
+			continue;
+		
+		zw.add(f.path(), (d / fs::relative(f.path(), output)).string());
+	}
+
+	return { zw.finish(), s.str() + ".zip" };
+}
+
 // --------------------------------------------------------------------
 
 std::unique_ptr<RunService> RunService::sInstance;
@@ -191,7 +272,16 @@ std::unique_ptr<RunService> RunService::sInstance;
 RunService::RunService(const std::string &runsDir)
 	: m_runsdir(runsDir)
 {
-	zeep::value_serializer<RunStatus>::instance("RunStatus")("undefined", RunStatus::UNDEFINED)("registered", RunStatus::REGISTERED)("starting", RunStatus::STARTING)("queued", RunStatus::QUEUED)("running", RunStatus::RUNNING)("stopping", RunStatus::STOPPING)("stopped", RunStatus::STOPPED)("ended", RunStatus::ENDED)("deleting", RunStatus::DELETING);
+	zeep::value_serializer<RunStatus>::instance("RunStatus")
+		("undefined", RunStatus::UNDEFINED)
+		("registered", RunStatus::REGISTERED)
+		("starting", RunStatus::STARTING)
+		("queued", RunStatus::QUEUED)
+		("running", RunStatus::RUNNING)
+		("stopping", RunStatus::STOPPING)
+		("stopped", RunStatus::STOPPED)
+		("ended", RunStatus::ENDED)
+		("deleting", RunStatus::DELETING);
 }
 
 void RunService::init(const std::string &runsDir)
@@ -219,7 +309,7 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 
 	auto runID = UserService::instance().create_run_id(user);
 
-	Run run{ runID, user, RunStatus::REGISTERED };
+	Run run{ m_runsdir, runID, user, RunStatus::REGISTERED };
 
 	std::ostringstream s;
 	s << std::setw(10) << std::setfill('0') << runID;
@@ -341,88 +431,42 @@ Run RunService::get_run(const std::string &username, unsigned long runID)
 	return result;
 }
 
-std::vector<std::string> RunService::get_result_file_list(const std::string &username, unsigned long runID)
+std::vector<Run> RunService::get_all_runs()
 {
-	auto dir = m_runsdir / username;
+	std::vector<Run> result;
 
-	if (not fs::exists(dir))
-		throw std::runtime_error("Run does not exist");
-
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << runID;
-
-	fs::path output = dir / s.str() / "output";
-
-	if (not fs::exists(output))
-		throw std::runtime_error("Result directory does not exist");
-
-	std::vector<std::string> result;
-	for (auto f : fs::recursive_directory_iterator(output))
+	for (auto userdir = fs::directory_iterator(m_runsdir); userdir != fs::directory_iterator(); ++userdir)
 	{
-		if (not f.is_regular_file())
-			continue;
-
-		result.push_back(fs::relative(f.path(), output).string());
-	}
-
-	return result;
-}
-
-fs::path RunService::get_result_file(const std::string &username, unsigned long runID, const std::string &file)
-{
-	auto dir = m_runsdir / username;
-
-	if (not fs::exists(dir))
-		throw std::runtime_error("Run does not exist");
-
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << runID;
-
-	return dir / s.str() / "output" / file;
-}
-
-fs::path RunService::get_image_file(const std::string &username, unsigned long runID)
-{
-	auto dir = m_runsdir / username;
-
-	if (not fs::exists(dir))
-		throw std::runtime_error("Run does not exist");
-
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << runID;
-
-	return dir / s.str() / "pdbin.png";
-}
-
-// --------------------------------------------------------------------
-
-std::tuple<std::istream *, std::string> RunService::get_zipped_result_file(const std::string &username, unsigned long runID)
-{
-	auto dir = m_runsdir / username;
-
-	if (not fs::exists(dir))
-		throw std::runtime_error("Run does not exist");
-
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << runID;
-
-	fs::path output = dir / s.str() / "output";
-	fs::path d(s.str());
-
-	if (not fs::exists(output))
-		throw std::runtime_error("Result directory does not exist");
-
-	ZipWriter zw;
-
-	for (auto f : fs::recursive_directory_iterator(output))
-	{
-		if (not f.is_regular_file())
+		if (not userdir->is_directory())
 			continue;
 		
-		zw.add(f.path(), (d / fs::relative(f.path(), output)).string());
+		for (auto i = fs::directory_iterator(*userdir); i != fs::directory_iterator(); ++i)
+		{
+			if (not i->is_directory())
+				continue;
+
+			// auto name = i->path().filename().string();
+			if (not std::regex_match(i->path().filename().string(), kRunDirNameRx))
+				continue;
+
+			if (not fs::is_directory(i->path() / "input"))
+				continue;
+
+			try
+			{
+				result.push_back(Run::create(i->path(), userdir->path().filename().string()));
+			}
+			catch (const std::exception &e)
+			{
+				std::cerr << e.what() << std::endl;
+			}
+		}
 	}
 
-	return { zw.finish(), s.str() + ".zip" };
+	std::sort(result.begin(), result.end(), [](Run &a, Run &b)
+		{ return a.id < b.id; });
+
+	return result;
 }
 
 // --------------------------------------------------------------------

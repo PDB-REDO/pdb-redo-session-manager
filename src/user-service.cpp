@@ -63,6 +63,14 @@ User::User(const pqxx::row &row)
 	email = row.at("email").as<std::string>();
 	institution = row.at("institution").as<std::string>();
 	password = row.at("password").as<std::string>();
+	created = parse_timestamp(row.at("created").as<std::string>());
+
+	if (not row.at("last_job_date").is_null())
+		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
+	if (not row.at("last_job_nr").is_null())
+		lastJobNr = row.at("last_job_nr").as<int>();
+	if (not row.at("last_job_status").is_null())
+		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(row.at("last_job_status").as<std::string>());
 }
 
 User &User::operator=(const pqxx::row &row)
@@ -72,6 +80,14 @@ User &User::operator=(const pqxx::row &row)
 	email = row.at("email").as<std::string>();
 	institution = row.at("institution").as<std::string>();
 	password = row.at("password").as<std::string>();
+	created = parse_timestamp(row.at("created").as<std::string>());
+
+	if (not row.at("last_job_date").is_null())
+		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
+	if (not row.at("last_job_nr").is_null())
+		lastJobNr = row.at("last_job_nr").as<int>();
+	if (not row.at("last_job_status").is_null())
+		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(row.at("last_job_status").as<std::string>());
 
 	return *this;
 }
@@ -192,6 +208,24 @@ User UserService::get_user(const std::string &name) const
 	tx.commit();
 
 	return User(r);
+}
+
+std::vector<User> UserService::get_all_users() const
+{
+	std::vector<User> result;
+
+	pqxx::transaction tx(prsm_db_connection::instance());
+	auto rows = tx.exec(R"(SELECT * FROM public.user)");
+
+	for (auto row : rows)
+	{
+		User user(row);
+		result.push_back(std::move(user));
+	}
+
+	tx.commit();
+
+	return result;
 }
 
 uint32_t UserService::create_run_id(const std::string &username)

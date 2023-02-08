@@ -26,11 +26,18 @@
 
 #pragma once
 
+#include <chrono>
 #include <mutex>
 
 #include <pqxx/pqxx>
 
 #include <zeep/http/error-handler.hpp>
+
+// --------------------------------------------------------------------
+
+std::chrono::time_point<std::chrono::system_clock> parse_timestamp(const std::string &timestamp);
+
+// --------------------------------------------------------------------
 
 class prsm_db_connection
 {
@@ -65,7 +72,6 @@ class prsm_db_connection
 };
 
 // --------------------------------------------------------------------
-
 class prsm_db_error_handler : public zeep::http::error_handler
 {
   public:

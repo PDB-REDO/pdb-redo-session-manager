@@ -3,7 +3,7 @@ window.addEventListener('load', () => {
 	const rows = table.querySelectorAll("tr");
 	Array.from(rows).forEach(tr => {
 		tr.addEventListener('click', (e) => {
-			const jobID = tr.getAttribute('data-job');
+			const jobID = tr.dataset.job;
 			window.location = `job/result/${jobID}`;
 		})
 	})

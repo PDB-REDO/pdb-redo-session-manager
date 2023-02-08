@@ -90,9 +90,7 @@ Session SessionStore::create(const std::string &name, const std::string &user)
 			   trim(both '"' from to_json(expires)::text) AS expires)");
 
 	unsigned long tokenid = r[0].as<unsigned long>();
-	std::stringstream created{ r[1].as<std::string>() };
-	std::chrono::time_point<std::chrono::system_clock> t_created;
-	created >> parse("%F %T", t_created);
+	std::string created{ r[1].as<std::string>() };
 
 	tx.commit();
 
@@ -101,7 +99,7 @@ Session SessionStore::create(const std::string &name, const std::string &user)
 		name,
 		user,
 		token,
-		t_created
+		parse_timestamp(created)
 	};
 }
 
@@ -186,6 +184,57 @@ std::vector<Session> SessionStore::get_all_sessions()
 }
 
 // --------------------------------------------------------------------
+
+Session &Session::operator=(const pqxx::row &row)
+{
+	id = row.at("id").as<unsigned long>();
+	name = row.at("name").as<std::string>();
+	user = row.at("user").as<std::string>();
+	token = row.at("token").as<std::string>();
+	created = parse_timestamp(row.at("created").as<std::string>());
+	expires = parse_timestamp(row.at("expires").as<std::string>());
+
+	return *this;
+}
+
+
+CreateSessionResult::CreateSessionResult(const Session &session)
+	: id(session.id)
+	, name(session.name)
+	, token(session.token)
+	, expires(session.expires)
+{
+}
+
+CreateSessionResult::CreateSessionResult(const pqxx::row &row)
+	: id(row.at("id").as<unsigned long>())
+	, name(row.at("name").as<std::string>())
+	, token(row.at("token").as<std::string>())
+	, expires(parse_timestamp(row.at("expires").as<std::string>()))
+{
+}
+
+CreateSessionResult &CreateSessionResult::operator=(const Session &session)
+{
+	id = session.id;
+	name = session.name;
+	token = session.token;
+	expires = session.expires;
+
+	return *this;
+}
+
+CreateSessionResult &CreateSessionResult::operator=(const pqxx::row &row)
+{
+	id = row.at("id").as<unsigned long>();
+	name = row.at("name").as<std::string>();
+	token = row.at("token").as<std::string>();
+	expires = parse_timestamp(row.at("expires").as<std::string>());
+
+	return *this;
+}
+
+
 
 SessionRESTController::SessionRESTController()
 	: zeep::http::rest_controller("api")

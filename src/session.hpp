@@ -39,17 +39,7 @@ struct Session
 	std::chrono::time_point<std::chrono::system_clock> created;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
-	Session &operator=(const pqxx::row &row)
-	{
-		id = row.at("id").as<unsigned long>();
-		name = row.at("name").as<std::string>();
-		user = row.at("user").as<std::string>();
-		token = row.at("token").as<std::string>();
-		created = zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("created").as<std::string>());
-		expires = zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>());
-
-		return *this;
-	}
+	Session &operator=(const pqxx::row &row);
 
 	operator bool() const { return id != 0; }
 
@@ -74,41 +64,10 @@ struct CreateSessionResult
 	std::string token;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
-	CreateSessionResult(const Session &session)
-		: id(session.id)
-		, name(session.name)
-		, token(session.token)
-		, expires(session.expires)
-	{
-	}
-
-	CreateSessionResult(const pqxx::row &row)
-		: id(row.at("id").as<unsigned long>())
-		, name(row.at("name").as<std::string>())
-		, token(row.at("token").as<std::string>())
-		, expires(zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>()))
-	{
-	}
-
-	CreateSessionResult &operator=(const Session &session)
-	{
-		id = session.id;
-		name = session.name;
-		token = session.token;
-		expires = session.expires;
-
-		return *this;
-	}
-
-	CreateSessionResult &operator=(const pqxx::row &row)
-	{
-		id = row.at("id").as<unsigned long>();
-		name = row.at("name").as<std::string>();
-		token = row.at("token").as<std::string>();
-		expires = zeep::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(row.at("expires").as<std::string>());
-
-		return *this;
-	}
+	CreateSessionResult(const Session &session);
+	CreateSessionResult(const pqxx::row &row);
+	CreateSessionResult &operator=(const Session &session);
+	CreateSessionResult &operator=(const pqxx::row &row);
 
 	operator bool() const { return id != 0; }
 

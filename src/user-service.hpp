@@ -26,11 +26,12 @@
 
 #pragma once
 
-#include <string>
+#include "run-service.hpp"
 
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/nvp.hpp>
+#include <zeep/value-serializer.hpp>
 
 #include <pqxx/pqxx>
 
@@ -43,6 +44,13 @@ struct User
 	std::string institution;
 	std::string email;
 	std::string password;
+	std::chrono::time_point<std::chrono::system_clock> created;
+
+	std::optional<RunStatus> lastJobStatus;
+	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastJobDate;
+	std::optional<int> lastJobNr;
+
+	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastUpdateRequest;
 
 	User(const std::string &name, const std::string &institution, const std::string &email, const std::string &password)
 		: name(name)
@@ -62,7 +70,14 @@ struct User
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("institution", institution)
 		   & zeep::make_nvp("email", email)
-		   & zeep::make_nvp("password", password);
+		   & zeep::make_nvp("password", password)
+		   & zeep::make_nvp("created", created)
+		   
+		   & zeep::make_nvp("last-job-nr", lastJobNr)
+		   & zeep::make_nvp("last-job-date", lastJobDate)
+		   & zeep::make_nvp("last-job-status", lastJobStatus)
+		   
+		   & zeep::make_nvp("last-update-request", lastUpdateRequest);
 	}
 };
 
@@ -106,6 +121,8 @@ class UserService : public zeep::http::user_service
 
 	User get_user(unsigned long id) const;
 	User get_user(const std::string &name) const;
+
+	std::vector<User> get_all_users() const;
 
 	uint32_t create_run_id(const std::string &username);
 

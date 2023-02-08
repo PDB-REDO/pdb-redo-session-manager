@@ -114,15 +114,23 @@ struct Score
 
 struct Run
 {
+	std::filesystem::path m_dir;
+
 	uint32_t id;
 	std::string user;
 	RunStatus status;
 	bool has_image;
 	std::chrono::time_point<std::chrono::system_clock> date;
+	std::optional<std::chrono::time_point<std::chrono::system_clock>> started;
 	std::optional<Score> score;
 	std::vector<std::string> input;
 
 	static Run create(const std::filesystem::path& dir, const std::string& username);
+
+	std::vector<std::string> get_result_file_list();
+	std::filesystem::path get_result_file(const std::string& file);
+	std::filesystem::path get_image_file();
+	std::tuple<std::istream *, std::string> get_zipped_result_file();
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -132,6 +140,7 @@ struct Run
 		   & zeep::make_nvp("status", status)
 		   & zeep::make_nvp("hasImage", has_image)
 		   & zeep::make_nvp("date", date)
+		   & zeep::make_nvp("started-date", started)
 		   & zeep::make_nvp("score", score)
 		   & zeep::make_nvp("input", input);
 	}
@@ -152,15 +161,12 @@ class RunService
 
 	std::vector<Run> get_runs_for_user(const std::string& username);
 	Run get_run(const std::string& username, unsigned long runID);
-
-	std::vector<std::string> get_result_file_list(const std::string& username, unsigned long runID);
-	std::filesystem::path get_result_file(const std::string& username, unsigned long runID, const std::string& file);
-	std::filesystem::path get_image_file(const std::string& username, unsigned long runID);
-
-	std::tuple<std::istream *, std::string> get_zipped_result_file(const std::string& username, unsigned long runID);
+	std::vector<Run> get_all_runs();
 
 	// add a clean up routine
 	void delete_run(const std::string& username, unsigned long runID);
+
+	std::filesystem::path get_runsdir() const { return m_runsdir; }
 
   private:
 
