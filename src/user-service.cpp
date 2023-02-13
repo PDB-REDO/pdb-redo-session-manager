@@ -248,7 +248,15 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 {
 	zeep::http::user_details result;
 
-	User user = get_user(username);
+	pqxx::transaction tx_1(prsm_db_connection::instance());
+	auto r = tx_1.exec1(R"(SELECT * FROM public.user WHERE name = )" + tx_1.quote(username));
+	tx_1.commit();
+
+	User user(r);
+
+	pqxx::transaction tx_2(prsm_db_connection::instance());
+	auto r2 = tx_2.exec0(R"(UPDATE public.user SET last_login = CURRENT_TIMESTAMP WHERE id = )" + tx_2.quote(user.id));
+	tx_2.commit();
 
 	result.username = user.name;
 	result.password = user.password;
