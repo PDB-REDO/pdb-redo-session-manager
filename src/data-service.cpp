@@ -220,9 +220,10 @@ float DataService::version() const
 		std::string line;
 		getline(version_file, line);
 
-		auto r = std::from_chars(line.data(), line.data() + line.length(), result);
-		if (r.ec != std::errc())
-			std::cerr << "Error converting version from redo-version.txt" << std::endl;
+		result = std::stof(line);
+		// auto r = std::from_chars(line.data(), line.data() + line.length(), result);
+		// if (r.ec != std::errc())
+		// 	std::cerr << "Error converting version from redo-version.txt" << std::endl;
 	}
 	
 	return result;
