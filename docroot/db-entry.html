@@ -40,11 +40,11 @@
 
 		<div z2:if="${not entry.status.ok and not (entry.data.NOPDB or entry.data.NOSF) }"
 				class="alert alert-secondary" role="alert">
-			<p>This entry is not up to date with the most recent version of PDB-REDO.</p>
-			<span z2:switch="${entry.updatePending}">
-				<span z2:case="${true}">Update to version <span z2:text="${version}" /> is
-					pending.</span>
+
+			<span z2:switch="${entry.status.version gt 0}">
+				<span z2:case="${true}" z2:text="|Update to version ${entry.status.version} is pending.|"></span>
 				<span z2:case="*">
+					<p>This entry is not up to date with the most recent version of PDB-REDO.</p>
 					<a z2:if="${#security.authorized}"
 						z2:href="@{|/db/update/${entry.id}|}">Request update</a>
 					<span z2:if="${not #security.authorized}">Please <a z2:href="@{/login}">log in</a>

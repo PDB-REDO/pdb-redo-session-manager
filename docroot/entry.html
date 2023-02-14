@@ -456,11 +456,11 @@
 					<td class="label">WHAT_CHECK</td>
 					<td class="ar">
 						<a z2:if="${entry.link['wo']}" z2:href="@{/${entry.link['wo']}}">Report</a>
-						<span z2:if="${not entry.link['wo']}" z2:case="*">No Report</span>
+						<span z2:if="${not entry.link['wo']}">No Report</span>
 					</td>
 					<td class="ar">
 						<a z2:if="${entry.link['wf']}" z2:href="@{/${entry.link['wf']}}">Report</a>
-						<span z2:if="${not entry.link['wf']}" z2:case="*">No Report</span>
+						<span z2:if="${not entry.link['wf']}">No Report</span>
 					</td>
 				</tr>
 			</table>

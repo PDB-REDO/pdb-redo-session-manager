@@ -160,6 +160,13 @@ UpdateStatus DataService::updateStatus(const std::string &pdbID)
 		status.ok = v >= version();
 	}
 
+	pqxx::transaction tx(prsm_db_connection::instance());
+	auto r = tx.exec1(R"(SELECT MAX(version) FROM public.update_request WHERE pdb_id = )" + tx.quote(pdbID));
+	tx.commit();
+
+	if (not r[0].is_null())
+		status.pendingVersion = r[0].as<float>();
+
 	return status;
 }
 

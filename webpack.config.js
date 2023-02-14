@@ -25,7 +25,7 @@ module.exports = (env) => {
 			'pdb-redo-result': SCRIPTS + 'pdb-redo-result.js',
 			'pdb-redo-result-loader': SCRIPTS + 'pdb-redo-result-loader.js',
 
-			'web-component-style': { import: SCRIPTS + 'web-component-style.scss', filename: '../css/[name].[id].css' }
+			'web-component-style': { import: SCRIPTS + 'web-component-style.scss' }
 		},
 
 		output: {
@@ -87,8 +87,7 @@ module.exports = (env) => {
 				cleanOnceBeforeBuildPatterns: [
 					'scripts/**/*',
 					'fonts/**/*',
-					'css/**',
-					'!css/w3.css'
+					'css/**'
 				]
 			}));
 

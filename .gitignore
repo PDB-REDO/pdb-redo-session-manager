@@ -7,3 +7,6 @@ prsmd.conf
 build/
 src/mrsrc.hpp
 src/revision.hpp
+docroot/css
+docroot/fonts
+docroot/scripts
