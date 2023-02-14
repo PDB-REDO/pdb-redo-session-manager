@@ -56,10 +56,11 @@
 					</tr>
 
 					<tr class="sorted" z2:each="user, i : ${users}">
-						<th scope="row" z2:text="${i.count}"></th>
+						<td z2:text="${i.count}"></td>
 						<td>
 							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em>
-[[${user.email}]]</div>
+[[${user.email}]]
+							</div>
 						</td>
 						<!-- <td z2:text="${user.lastLogin}"></td> -->
 						<td z2:text="${#dates.format(user.last-login, '%F')}"></td>
@@ -67,7 +68,8 @@
 							z2:text="${user.last-job-nr ? |${#dates.format(user.last-job-date, '%F %H:%M')} - ${user.last-job-nr}|}">
 						</td>
 						<td z2:text="${#dates.format(user.created, '%F')}"></td>
-						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a" aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${user.id}"></a></td>
+						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a"
+								aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${user.id}"></a></td>
 					</tr>
 
 				</tbody>
@@ -87,13 +89,15 @@
 						<th></th>
 					</tr>
 					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|">
-						<th scope="row" z2:text="${i.count}"></th>
+						<td z2:text="${i.count}"></td>
 						<td z2:text="${run.user}"></td>
 						<td z2:text="${run.id}"></td>
 						<td z2:text="${#dates.format(run.date, '%F %H:%M')}"></td>
 						<td z2:text="${#dates.format(run.started-date, '%F %H:%M')}"></td>
 						<td z2:text="${run.status}"></td>
-						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a" aria-label="Delete"  z2:attr="data-nr=${i.count},data-id=${run.user + '/' + run.id}"></a></td>
+						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a"
+								aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${run.user + '/' + run.id}"></a>
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -116,14 +120,15 @@
 				</thead>
 				<tbody>
 					<tr class="sorted" z2:each="session, i: ${sessions}">
-						<th scope="row" z2:text="${i.count}"></th>
+						<td z2:text="${i.count}"></td>
 						<td z2:text="${session.user}"></td>
 						<td z2:text="${session.name}"></td>
 						<td z2:text="${session.id}"></td>
 						<td z2:text="${session.token}"></td>
 						<td z2:text="${#dates.format(session.created, '%d %B %Y, %H:%M')}"></td>
 						<td z2:text="${#dates.format(session.expires, '%d %B %Y, %H:%M')}"></td>
-						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a" aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${session.id}"></a></td>
+						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a"
+								aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${session.id}"></a></td>
 					</tr>
 				</tbody>
 			</table>
@@ -142,12 +147,13 @@
 					</tr>
 
 					<tr z2:each="update, i : ${updates}">
-						<th scope="row" z2:text="${i.count}"></th>
+						<td z2:text="${i.count}"></td>
 						<td z2:text="${update.user}"></td>
 						<td z2:text="${#dates.format(update.created, '%d %B %Y, %H:%M')}"></td>
 						<td z2:text="${update.pdb_id}"></td>
 						<td z2:text="${#numbers.formatDecimal(update.version, 1, 2)}"></td>
-						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a" aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${update.id}"></a></td>
+						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a"
+								aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${update.id}"></a></td>
 					</tr>
 				</tbody>
 			</table>
