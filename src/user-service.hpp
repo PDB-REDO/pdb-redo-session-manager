@@ -46,6 +46,8 @@ struct User
 	std::string password;
 	std::chrono::time_point<std::chrono::system_clock> created;
 
+	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastLogin;
+
 	std::optional<RunStatus> lastJobStatus;
 	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastJobDate;
 	std::optional<int> lastJobNr;
@@ -73,6 +75,8 @@ struct User
 		   & zeep::make_nvp("password", password)
 		   & zeep::make_nvp("created", created)
 		   
+		   & zeep::make_nvp("last-login", lastLogin)
+
 		   & zeep::make_nvp("last-job-nr", lastJobNr)
 		   & zeep::make_nvp("last-job-date", lastJobDate)
 		   & zeep::make_nvp("last-job-status", lastJobStatus)

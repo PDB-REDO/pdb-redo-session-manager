@@ -1035,7 +1035,7 @@ Command should be either:
 
 			sc->register_password_encoder<PasswordEncoder>();
 			sc->set_validate_csrf(true);
-			sc->set_jwt_exp(std::chrono::days{1});
+			sc->set_jwt_exp(date::days{1});
 
 			auto s = new zeep::http::server(sc);
 

@@ -32,7 +32,7 @@
 #include <mailio/message.hpp>
 #include <mailio/smtp.hpp>
 
-#include <mrsrc.hpp>
+#include "mrsrc.hpp"
 
 #include <mcfp.hpp>
 
@@ -65,6 +65,9 @@ User::User(const pqxx::row &row)
 	password = row.at("password").as<std::string>();
 	created = parse_timestamp(row.at("created").as<std::string>());
 
+	if (not row.at("last_login").is_null())
+		lastLogin = parse_timestamp(row.at("last_login").as<std::string>());
+
 	if (not row.at("last_job_date").is_null())
 		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
 	if (not row.at("last_job_nr").is_null())
@@ -81,6 +84,9 @@ User &User::operator=(const pqxx::row &row)
 	institution = row.at("institution").as<std::string>();
 	password = row.at("password").as<std::string>();
 	created = parse_timestamp(row.at("created").as<std::string>());
+
+	if (not row.at("last_login").is_null())
+		lastLogin = parse_timestamp(row.at("last_login").as<std::string>());
 
 	if (not row.at("last_job_date").is_null())
 		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
@@ -215,7 +221,7 @@ std::vector<User> UserService::get_all_users() const
 	std::vector<User> result;
 
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto rows = tx.exec(R"(SELECT * FROM public.user)");
+	auto rows = tx.exec(R"(SELECT * FROM public.user ORDER BY created DESC)");
 
 	for (auto row : rows)
 	{

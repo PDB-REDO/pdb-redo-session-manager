@@ -11,6 +11,7 @@ CREATE TABLE public.user (
 	password varchar NOT NULL,
 	created timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
 	modified timestamp with time zone default CURRENT_TIMESTAMP NOT NULL,
+	last_login timestamp with time zone,
 	last_job_nr int default 0,
 	last_job_date timestamp with time zone,
 	last_job_status varchar,
