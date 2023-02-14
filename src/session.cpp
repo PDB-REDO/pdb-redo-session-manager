@@ -76,7 +76,7 @@ Session SessionStore::create(const std::string &name, const std::string &user)
 {
 	using namespace date;
 
-	User u = UserService::instance().get_user(user);
+	User u = UserService::instance().getUser(user);
 
 	pqxx::transaction tx(prsm_db_connection::instance());
 
@@ -247,7 +247,7 @@ SessionRESTController::SessionRESTController()
 // CRUD routines
 CreateSessionResult SessionRESTController::post_session(std::string user, std::string password, std::string name)
 {
-	User u = UserService::instance().get_user(user);
+	User u = UserService::instance().getUser(user);
 	std::string pw = u.password;
 
 	PasswordEncoder pwenc;

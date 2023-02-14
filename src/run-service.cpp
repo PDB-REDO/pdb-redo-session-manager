@@ -191,15 +191,12 @@ Run Run::create(const fs::path &dir, const std::string &username)
 	return run;
 }
 
-std::vector<std::string> Run::get_result_file_list()
+std::vector<std::string> Run::getResultFileList()
 {
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run directory does not exist");
 
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << id;
-
-	fs::path output = m_dir / s.str() / "output";
+	fs::path output = m_dir / "output";
 
 	if (not fs::exists(output))
 		throw std::runtime_error("Result directory does not exist");
@@ -216,18 +213,23 @@ std::vector<std::string> Run::get_result_file_list()
 	return result;
 }
 
-std::filesystem::path Run::get_result_file(const std::string& file)
+std::filesystem::path Run::getResultFile(const std::string& file)
 {
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run directory does not exist");
 
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << id;
-
-	return m_dir / s.str() / "output" / file;
+	return m_dir / "output" / file;
 }
 
-std::filesystem::path Run::get_image_file()
+std::filesystem::path Run::getImageFile()
+{
+	if (not fs::exists(m_dir))
+		throw std::runtime_error("Run does not exist");
+
+	return m_dir / "pdbin.png";
+}
+
+std::tuple<std::istream *, std::string> Run::getZippedResultFile()
 {
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run does not exist");
@@ -235,18 +237,7 @@ std::filesystem::path Run::get_image_file()
 	std::ostringstream s;
 	s << std::setw(10) << std::setfill('0') << id;
 
-	return m_dir / s.str() / "pdbin.png";
-}
-
-std::tuple<std::istream *, std::string> Run::get_zipped_result_file()
-{
-	if (not fs::exists(m_dir))
-		throw std::runtime_error("Run does not exist");
-
-	std::ostringstream s;
-	s << std::setw(10) << std::setfill('0') << id;
-
-	fs::path output = m_dir / s.str() / "output";
+	fs::path output = m_dir / "output";
 	fs::path d(s.str());
 
 	if (not fs::exists(output))
@@ -307,7 +298,7 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 	if (not fs::exists(userDir))
 		fs::create_directories(userDir);
 
-	auto runID = UserService::instance().create_run_id(user);
+	auto runID = UserService::instance().createRunID(user);
 
 	Run run{ m_runsdir, runID, user, RunStatus::REGISTERED };
 
@@ -377,7 +368,7 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 	return run;
 }
 
-std::vector<Run> RunService::get_runs_for_user(const std::string &username)
+std::vector<Run> RunService::getRunsForUser(const std::string &username)
 {
 	std::vector<Run> result;
 
@@ -414,7 +405,7 @@ std::vector<Run> RunService::get_runs_for_user(const std::string &username)
 	return result;
 }
 
-Run RunService::get_run(const std::string &username, unsigned long runID)
+Run RunService::getRun(const std::string &username, unsigned long runID)
 {
 	Run result;
 
@@ -431,7 +422,7 @@ Run RunService::get_run(const std::string &username, unsigned long runID)
 	return result;
 }
 
-std::vector<Run> RunService::get_all_runs()
+std::vector<Run> RunService::getAllRuns()
 {
 	std::vector<Run> result;
 
@@ -471,7 +462,7 @@ std::vector<Run> RunService::get_all_runs()
 
 // --------------------------------------------------------------------
 
-void RunService::delete_run(const std::string &username, unsigned long runID)
+void RunService::deleteRun(const std::string &username, unsigned long runID)
 {
 	auto dir = m_runsdir / username;
 

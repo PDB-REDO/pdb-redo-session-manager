@@ -196,7 +196,7 @@ UserService &UserService::instance()
 	return *sInstance;
 }
 
-User UserService::get_user(unsigned long id) const
+User UserService::getUser(unsigned long id) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec1(R"(SELECT * FROM public.user WHERE id = )" + std::to_string(id));
@@ -206,7 +206,7 @@ User UserService::get_user(unsigned long id) const
 	return User(r);
 }
 
-User UserService::get_user(const std::string &name) const
+User UserService::getUser(const std::string &name) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec1(R"(SELECT * FROM public.user WHERE name = )" + tx.quote(name));
@@ -216,7 +216,7 @@ User UserService::get_user(const std::string &name) const
 	return User(r);
 }
 
-std::vector<User> UserService::get_all_users() const
+std::vector<User> UserService::getAllUsers() const
 {
 	std::vector<User> result;
 
@@ -234,7 +234,7 @@ std::vector<User> UserService::get_all_users() const
 	return result;
 }
 
-uint32_t UserService::create_run_id(const std::string &username)
+uint32_t UserService::createRunID(const std::string &username)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec1(
@@ -327,11 +327,11 @@ void UserService::updateUser(const User &user)
 	}
 }
 
-void UserService::deleteUser(const User &user)
+void UserService::deleteUser(int id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 
-	tx.exec0("DELETE FROM public.user WHERE id = " + tx.quote(user.id));
+	tx.exec0("DELETE FROM public.user WHERE id = " + tx.quote(id));
 	tx.commit();
 }
 
@@ -411,7 +411,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 
 	try
 	{
-		User user = get_user(username);
+		User user = getUser(username);
 
 		if (user.email != email)
 			throw std::runtime_error("Username and e-mail address do not match");
@@ -754,7 +754,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	bool oldPWValid = false, newPWValid = isValidPassword(newPassword), newPW2Valid = newPassword == newPassword2;
 
-	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
 	oldPWValid = m_server->get_security_context().verify_username_password(user.name, oldPassword);
 
 	if (oldPWValid and newPWValid and newPW2Valid)
@@ -812,7 +812,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &scope)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
 
 	zeep::http::scope sub(scope);
 	sub.put("dialog", "update");
@@ -824,7 +824,7 @@ zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &s
 zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &scope, const std::string &institution, const std::string &email)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
 
 	bool institutionValid = not institution.empty(), emailValid = userService.isValidEmailForUser(user, email);
 
@@ -886,7 +886,7 @@ zeep::http::reply UserHTMLController::get_delete(const zeep::http::scope &scope)
 zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.get_user(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
 
 	userService.deleteUser(user);
 

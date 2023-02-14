@@ -65,7 +65,7 @@ DataService::DataService()
 		throw std::runtime_error("PDB-REDO data directory (" + m_data_dir.string() + ") does not exists");
 }
 
-std::vector<std::string> DataService::get_file_list(const std::string &pdbID)
+std::vector<std::string> DataService::getFileList(const std::string &pdbID)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (not fs::exists(entry_dir))
@@ -83,7 +83,7 @@ std::vector<std::string> DataService::get_file_list(const std::string &pdbID)
 	return result;
 }
 
-std::filesystem::path DataService::get_file(const std::string &pdbID, const std::string& file)
+std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string& file)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (not fs::exists(entry_dir))
@@ -97,7 +97,7 @@ std::filesystem::path DataService::get_file(const std::string &pdbID, const std:
 	return result;
 }
 
-zeep::json::element DataService::get_data(const std::string &pdbID)
+zeep::json::element DataService::getData(const std::string &pdbID)
 {
 	zeep::json::element data;
 
@@ -117,7 +117,7 @@ zeep::json::element DataService::get_data(const std::string &pdbID)
 	return data;
 }
 
-std::tuple<std::istream *, std::string> DataService::get_zip_file(const std::string &pdbID)
+std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (not fs::exists(entry_dir))
@@ -149,11 +149,11 @@ std::tuple<std::istream *, std::string> DataService::get_zip_file(const std::str
 	return { zw.finish(), pdbID + ".zip" };
 }
 
-UpdateStatus DataService::updateStatus(const std::string &pdbID)
+UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 {
 	UpdateStatus status;
 
-	auto data = get_data(pdbID);
+	auto data = getData(pdbID);
 	if (data and data["properties"])
 	{
 		auto v = data["properties"]["VERSION"].as<float>();
@@ -170,7 +170,7 @@ UpdateStatus DataService::updateStatus(const std::string &pdbID)
 	return status;
 }
 
-void DataService::request_update(const std::string &pdbID, const User &user)
+void DataService::requestUpdate(const std::string &pdbID, const User &user)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec0(R"(
@@ -178,6 +178,13 @@ void DataService::request_update(const std::string &pdbID, const User &user)
 		     VALUES ()" + tx.quote(pdbID) + ", "
 			 	        + tx.quote(user.id) + ", "
 						+ tx.quote(version()) + R"())");
+	tx.commit();
+}
+
+void DataService::deleteUpdateRequest(int id)
+{
+	pqxx::transaction tx(prsm_db_connection::instance());
+	auto r = tx.exec0(R"(DELETE FROM public.update_request WHERE id = )" + tx.quote(id));
 	tx.commit();
 }
 
@@ -199,7 +206,7 @@ std::vector<UpdateRequest> DataService::get_all_update_requests()
 
 	for (auto &req : result)
 	{
-		auto data = get_data(req.pdb_id);
+		auto data = getData(req.pdb_id);
 		auto upToDate = data and data["properties"] and data["properties"]["VERSION"].as<float>() >= pdbRedoVersion;
 
 		if (not upToDate)	// this entry is still not up-to-date

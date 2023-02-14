@@ -76,14 +76,15 @@ class DataService
   public:
 	static DataService &instance();
 
-	std::vector<std::string> get_file_list(const std::string &pdbID);
-	std::filesystem::path get_file(const std::string &pdbID, const std::string &file);
+	std::vector<std::string> getFileList(const std::string &pdbID);
+	std::filesystem::path getFile(const std::string &pdbID, const std::string &file);
 
-	std::tuple<std::istream *, std::string> get_zip_file(const std::string &pdbID);
-	zeep::json::element get_data(const std::string &pdbID);
+	std::tuple<std::istream *, std::string> getZipFile(const std::string &pdbID);
+	zeep::json::element getData(const std::string &pdbID);
 
-	UpdateStatus updateStatus(const std::string &pdbID);
-	void request_update(const std::string &pdbID, const User &user);
+	UpdateStatus getUpdateStatus(const std::string &pdbID);
+	void requestUpdate(const std::string &pdbID, const User &user);
+	void deleteUpdateRequest(int id);
 
 	float version() const;
 

@@ -202,7 +202,7 @@ json create_entry_data(json &data, const fs::path &dir, const std::vector<std::s
 
 json create_entry_data(Run &run, const fs::path &basePath)
 {
-	auto dataJsonFile = run.get_result_file("data.json");
+	auto dataJsonFile = run.getResultFile("data.json");
 	std::ifstream dataJson(dataJsonFile);
 
 	if (not dataJson.is_open())
@@ -211,7 +211,7 @@ json create_entry_data(Run &run, const fs::path &basePath)
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
 
-	return create_entry_data(data, basePath, run.get_result_file_list());
+	return create_entry_data(data, basePath, run.getResultFileList());
 }
 
 // --------------------------------------------------------------------
@@ -390,7 +390,7 @@ class APIRESTController : public zh::rest_controller
 	{
 		auto session = SessionStore::instance().get_by_id(id);
 
-		return RunService::instance().get_runs_for_user(session.user);
+		return RunService::instance().getRunsForUser(session.user);
 	}
 
 	Run create_job(unsigned long sessionID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
@@ -405,28 +405,28 @@ class APIRESTController : public zh::rest_controller
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
-		return RunService::instance().get_run(session.user, runID);
+		return RunService::instance().getRun(session.user, runID);
 	}
 
 	std::vector<std::string> get_result_file_list(unsigned long sessionID, unsigned long runID)
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
-		return RunService::instance().get_run(session.user, runID).get_result_file_list();
+		return RunService::instance().getRun(session.user, runID).getResultFileList();
 	}
 
 	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string &file)
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
-		return RunService::instance().get_run(session.user, runID).get_result_file(file);
+		return RunService::instance().getRun(session.user, runID).getResultFile(file);
 	}
 
 	zh::reply get_zipped_result_file(unsigned long sessionID, unsigned long runID)
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
-		const auto &[is, name] = RunService::instance().get_run(session.user, runID).get_zipped_result_file();
+		const auto &[is, name] = RunService::instance().getRun(session.user, runID).getZippedResultFile();
 
 		zh::reply rep{ zh::ok };
 		rep.set_content(is, "application/zip");
@@ -439,7 +439,7 @@ class APIRESTController : public zh::rest_controller
 	{
 		auto session = SessionStore::instance().get_by_id(sessionID);
 
-		return RunService::instance().delete_run(session.user, runID);
+		return RunService::instance().deleteRun(session.user, runID);
 	}
 
   private:
@@ -556,7 +556,7 @@ class JobController : public zh::html_controller
 		std::error_code ec;
 		json runs;
 
-		for (auto &run : RunService::instance().get_runs_for_user(credentials["username"].as<std::string>()))
+		for (auto &run : RunService::instance().getRunsForUser(credentials["username"].as<std::string>()))
 		{
 			json run_j;
 			to_element(run_j, run);
@@ -570,16 +570,28 @@ class JobController : public zh::html_controller
 	zh::reply get_output_file(const zh::scope &scope, unsigned long job_id, const std::string &file)
 	{
 		auto credentials = scope.get_credentials();
+		auto run = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
 
-		auto f = RunService::instance().get_run(credentials["username"].as<std::string>(), job_id).get_result_file(file);
-
-		std::error_code ec;
-		if (not fs::exists(f, ec))
-			return zh::reply::stock_reply(zh::not_found);
-		
 		zh::reply result(zh::ok);
-		result.set_content(new std::ifstream(f), "text/plain");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+
+		if (file == "zipped")
+		{
+			auto [f, name] = run.getZippedResultFile();
+			result.set_content(f, "text/plain");
+			result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
+		}
+		else
+		{
+			auto f = run.getResultFile(file);
+
+			std::error_code ec;
+			if (not fs::exists(f, ec))
+				return zh::reply::stock_reply(zh::not_found);
+			
+			result.set_content(new std::ifstream(f), "text/plain");
+			result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		}
+
 		return result;
 	}
 
@@ -587,7 +599,7 @@ class JobController : public zh::html_controller
 	{
 		auto credentials = scope.get_credentials();
 
-		auto f = RunService::instance().get_run(credentials["username"].as<std::string>(), job_id).get_image_file();
+		auto f = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id).getImageFile();
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
@@ -602,7 +614,7 @@ class JobController : public zh::html_controller
 	{
 		auto credentials = scope.get_credentials();
 
-		auto r = RunService::instance().get_run(credentials["username"].as<std::string>(), job_id);
+		auto r = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
 
 		zh::scope sub(scope);
 
@@ -614,9 +626,9 @@ class JobController : public zh::html_controller
 	zh::reply get_entry(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
-		auto r = RunService::instance().get_run(credentials["username"].as<std::string>(), job_id);
+		auto r = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
 
-		auto entry = create_entry_data(r, "/job/output");
+		auto entry = create_entry_data(r, "job/output/" + std::to_string(job_id));
 
 		zh::scope sub(scope);
 		sub.put("entry", entry);
@@ -627,7 +639,7 @@ class JobController : public zh::html_controller
 	zh::reply delete_entry(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
-		RunService::instance().delete_run(credentials["username"].as<std::string>(), job_id);
+		RunService::instance().deleteRun(credentials["username"].as<std::string>(), job_id);
 
 		return zh::reply::redirect("/job");
 	}
@@ -645,24 +657,15 @@ class RootController : public zh::html_controller
 		map_get("privacy-policy", "gdpr");
 		map_get("download", "download");
 
-		map_delete("admin/deleteSession", &RootController::handle_delete_session, "sessionid");
 		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
 
 		// map_post("job-entry", &RootController::handle_entry, "token-id", "token-secret", "job-id");
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
 	}
 
-	zh::reply handle_delete_session(const zh::scope &scope, unsigned long sessionID);
-
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
 	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
 };
-
-zh::reply RootController::handle_delete_session(const zh::scope &scope, unsigned long sessionID)
-{
-	SessionStore::instance().delete_by_id(sessionID);
-	return zh::reply::stock_reply(zh::ok);
-}
 
 zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
 {
@@ -712,11 +715,16 @@ class AdminController : public zh::html_controller
 		: zh::html_controller("admin")
 	{
 		map_get("", &AdminController::admin, "tab");
+		map_get("job/{user}/{id}/output/{file}", &AdminController::handle_get_job_file, "user", "id", "file");
 		map_get("job/{user}/{id}", &AdminController::job, "user", "id");
+		map_get("delete/{tab}/{id}", &AdminController::handle_delete, "tab", "id");
 	}
 
 	zh::reply admin(const zh::scope &scope, std::optional<std::string> tab);
-	zh::reply job(const zh::scope &scope, const std::string &user, int id);
+	zh::reply job(const zh::scope &scope, const std::string &user, unsigned long id);
+	zh::reply handle_get_job_file(const zh::scope &scope, const std::string &user, unsigned long id, const std::string &file);
+
+	zh::reply handle_delete(const zh::scope &scope, const std::string &tab, unsigned long id);
 };
 
 zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::string> tab)
@@ -738,14 +746,14 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 	else if (active == "users")
 	{
 		json users;
-		auto u = UserService::instance().get_all_users();
+		auto u = UserService::instance().getAllUsers();
 		to_element(users, u);
 		sub.put("users", users);
 	}
 	else if (active == "jobs")
 	{
 		json runs;
-		auto r = RunService::instance().get_all_runs();
+		auto r = RunService::instance().getAllRuns();
 		to_element(runs, r);
 		sub.put("runs", runs);
 	}
@@ -760,17 +768,64 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 	return get_template_processor().create_reply_from_template("admin", sub);
 }
 
-zh::reply AdminController::job(const zh::scope &scope, const std::string &user, int job_id)
+zh::reply AdminController::job(const zh::scope &scope, const std::string &user, unsigned long job_id)
 {
-	auto credentials = scope.get_credentials();
-	auto run = RunService::instance().get_run(user, job_id);
-
-	auto entry = create_entry_data(run, "/admin/job/" + user + "/output/");
+	auto run = RunService::instance().getRun(user, job_id);
+	auto entry = create_entry_data(run, "admin/job/" + user + '/' + std::to_string(job_id) + "/output/");
 
 	zh::scope sub(scope);
 	sub.put("entry", entry);
 
 	return get_template_processor().create_reply_from_template("admin-job-result", sub);
+}
+
+zh::reply AdminController::handle_get_job_file(const zh::scope &scope, const std::string &user, unsigned long job_id, const std::string &file)
+{
+	auto run = RunService::instance().getRun(user, job_id);
+
+	zh::reply result(zh::ok);
+
+	if (file == "zipped")
+	{
+		auto [f, name] = run.getZippedResultFile();
+		result.set_content(f, "text/plain");
+		result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
+	}
+	else
+	{
+		auto f = run.getResultFile(file);
+
+		std::error_code ec;
+		if (not fs::exists(f, ec))
+			return zh::reply::stock_reply(zh::not_found);
+		
+		result.set_content(new std::ifstream(f), "text/plain");
+		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+	}
+
+	return result;
+}
+
+zh::reply AdminController::handle_delete(const zh::scope &scope, const std::string &tab, unsigned long id)
+{
+	if (tab == "users")
+	{
+		auto &user_service = UserService::instance();
+		
+		auto me = user_service.getUser(scope.get_credentials()["username"].as<std::string>());
+		if (me.id == id)
+			throw std::runtime_error("Are you serious, do you want to throw away yourself?");
+
+		user_service.deleteUser(id);
+	}
+	else if (tab == "jobs")
+		;// RunService::instance().delete_run();
+	else if (tab == "sessions")
+		SessionStore::instance().delete_by_id(id);
+	else if (tab == "updates")
+		DataService::instance().deleteUpdateRequest(id);
+
+	return zh::reply::redirect("/admin?tab=" + tab);
 }
 
 // --------------------------------------------------------------------
@@ -805,8 +860,8 @@ class DbController : public zh::html_controller
 			if (not credentials)
 				throw std::runtime_error("You cannot request an update for this PDB-REDO entry since you are not logged in");
 			
-			User user = UserService::instance().get_user(credentials["username"].as<std::string>());
-			DataService::instance().request_update(pdbID, user);
+			User user = UserService::instance().getUser(credentials["username"].as<std::string>());
+			DataService::instance().requestUpdate(pdbID, user);
 
 			return zh::reply::redirect("/db/" + pdbID);
 		}
@@ -818,7 +873,7 @@ class DbController : public zh::html_controller
 
 	zh::reply handle_zipped(const zh::scope &scope, const std::string &pdbID)
 	{
-		const auto &[is, name] = DataService::instance().get_zip_file(pdbID);
+		const auto &[is, name] = DataService::instance().getZipFile(pdbID);
 
 		zh::reply rep{ zh::ok };
 		rep.set_content(is, "application/zip");
@@ -829,7 +884,7 @@ class DbController : public zh::html_controller
 
 	zh::reply handle_file(const zh::scope &scope, const std::string &pdbID, const std::string &file)
 	{
-		auto f = DataService::instance().get_file(pdbID, file);
+		auto f = DataService::instance().getFile(pdbID, file);
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
@@ -859,18 +914,18 @@ zh::reply DbController::handle_show(const zh::scope &scope, const std::string &p
 	sub.put("pdb-id", pdbID);
 	sub.put("version", pdbRedoVersion);
 
-	auto dataJsonFile = DataService::instance().get_file(pdbID, "data.json");
+	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
 
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
 
-	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().get_file_list(pdbID));
+	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().getFileList(pdbID));
 
 	entry["id"] = pdbID;
 	entry["dbEntry"] = true;
 
-	auto status = DataService::instance().updateStatus(pdbID);
+	auto status = DataService::instance().getUpdateStatus(pdbID);
 	to_element(entry["status"], status);
 
 	sub.put("entry", entry);
@@ -880,13 +935,13 @@ zh::reply DbController::handle_show(const zh::scope &scope, const std::string &p
 
 zh::reply DbController::handle_entry(const zh::scope &scope, const std::string &pdbID)
 {
-	auto dataJsonFile = DataService::instance().get_file(pdbID, "data.json");
+	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
 
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
 
-	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().get_file_list(pdbID));
+	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().getFileList(pdbID));
 
 	zh::scope sub(scope);
 	sub.put("entry", entry);

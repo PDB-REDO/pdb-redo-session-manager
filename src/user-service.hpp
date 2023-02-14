@@ -107,24 +107,26 @@ class UserService : public zeep::http::user_service
 	zeep::http::user_details load_user(const std::string &username) const override;
 	bool user_is_valid(const std::string &username) const override;
 
-	// create a password hash
-	static std::string create_password_hash(const std::string &password);
-
 	// create a new user
 	uint32_t createUser(const User &user);
 
 	void updateUser(const User &user);
-	void deleteUser(const User &user);
+
+	void deleteUser(int id);
+	void deleteUser(const User &user)
+	{
+		deleteUser(user.id);
+	}
 
 	// To reset a password
 	void sendNewPassword(const std::string &username, const std::string &email);
 
-	User get_user(unsigned long id) const;
-	User get_user(const std::string &name) const;
+	User getUser(unsigned long id) const;
+	User getUser(const std::string &name) const;
 
-	std::vector<User> get_all_users() const;
+	std::vector<User> getAllUsers() const;
 
-	uint32_t create_run_id(const std::string &username);
+	uint32_t createRunID(const std::string &username);
 
 	struct UserValidation
 	{

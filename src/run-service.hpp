@@ -127,10 +127,10 @@ struct Run
 
 	static Run create(const std::filesystem::path& dir, const std::string& username);
 
-	std::vector<std::string> get_result_file_list();
-	std::filesystem::path get_result_file(const std::string& file);
-	std::filesystem::path get_image_file();
-	std::tuple<std::istream *, std::string> get_zipped_result_file();
+	std::vector<std::string> getResultFileList();
+	std::filesystem::path getResultFile(const std::string& file);
+	std::filesystem::path getImageFile();
+	std::tuple<std::istream *, std::string> getZippedResultFile();
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -159,14 +159,14 @@ class RunService
 	Run submit(const std::string& user, const zeep::http::file_param& pdb, const zeep::http::file_param& mtz,
 		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::json::element& params);
 
-	std::vector<Run> get_runs_for_user(const std::string& username);
-	Run get_run(const std::string& username, unsigned long runID);
-	std::vector<Run> get_all_runs();
+	std::vector<Run> getRunsForUser(const std::string& username);
+	Run getRun(const std::string& username, unsigned long runID);
+	std::vector<Run> getAllRuns();
 
 	// add a clean up routine
-	void delete_run(const std::string& username, unsigned long runID);
+	void deleteRun(const std::string& username, unsigned long runID);
 
-	std::filesystem::path get_runsdir() const { return m_runsdir; }
+	std::filesystem::path getRunsDir() const { return m_runsdir; }
 
   private:
 

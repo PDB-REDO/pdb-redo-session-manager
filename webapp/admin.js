@@ -4,7 +4,7 @@ class SortableTable {
 	constructor(table) {
 		this.table = table;
 
-		[...table.querySelectorAll('th')].forEach(th => 
+		[...table.querySelectorAll('th')].forEach(th =>
 			th.addEventListener('click', (e) => this.sortOnColumn(e)));
 	}
 
@@ -26,7 +26,7 @@ class SortableTable {
 
 		const rowArray = [...this.table.querySelectorAll('tr.sorted')];
 
-		let desc = ! this.sortDescending;
+		let desc = !this.sortDescending;
 		if (this.sortedOnColumn !== ix) {
 			desc = false;
 			this.sortedOnColumn = ix;
@@ -95,16 +95,6 @@ window.addEventListener('load', () => {
 	const tabel = document.querySelector('table');
 	new SortableTable(tabel);
 
-	[...document.querySelectorAll('td > a.action')]
-		.forEach(a => {
-			a.addEventListener('click', (e) => {
-				e.preventDefault();
-
-				const sessionID = a.dataset["sessionid"];
-				deleteSession(sessionID);
-			});
-		});
-	
 	[...document.querySelectorAll('tr.run-row')]
 		.forEach(tr => {
 			tr.addEventListener('click', (e) => {
@@ -114,5 +104,16 @@ window.addEventListener('load', () => {
 				window.location = `admin/job/${user}/${id}`;
 			});
 		});
+
+	[...document.querySelectorAll('a.delete-a')]
+		.forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+
+				if (confirm(`Are you sure you want to delete row ${btn.dataset.nr}?`))
+					window.location = `admin/delete/${tab}/${btn.dataset.id}`;
+			});
+		})
 });
 
