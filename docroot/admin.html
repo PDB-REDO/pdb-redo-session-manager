@@ -88,7 +88,7 @@
 						<th class="sortable">Start Time</th>
 						<th class="sortable">Status</th>
 					</tr>
-					<tr class="run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|">
+					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|">
 						<td z2:text="${i.count}"></td>
 						<td z2:text="${run.user}"></td>
 						<td z2:text="${run.id}"></td>
@@ -103,7 +103,7 @@
 		<div z2:if="${tab == 'sessions'}">
 			<table class="table table-striped table-sm mt-3">
 				<thead>
-					<tr>
+					<tr data-keytype="i|s|s|i|s|s|s">
 						<th scope="col">#</th>
 						<th scope="col">User</th>
 						<th scope="col">Session Name</th>
@@ -115,7 +115,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr z2:each="session, i: ${sessions}">
+					<tr class="sorted" z2:each="session, i: ${sessions}">
 						<th scope="row" z2:text="${i.count}"></th>
 						<td z2:text="${session.user}"></td>
 						<td z2:text="${session.name}"></td>

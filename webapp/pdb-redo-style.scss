@@ -418,6 +418,7 @@ th.sortable {
 		width: 10px;
 		height: 10px;
 		margin: 0 auto;
+		margin-left: 5px;
 	}
 	
 	&.sorted-desc::after {
@@ -427,5 +428,6 @@ th.sortable {
 		width: 10px;
 		height: 10px;
 		margin: 0 auto;
+		margin-left: 5px;
 	}
 }
