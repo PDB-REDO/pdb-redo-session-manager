@@ -45,11 +45,10 @@
 
 			<table class="table table-striped table-sm mt-3" id="users-table">
 				<tbody>
-					<tr data-keytype="s|s|s|s|s">
+					<tr data-keytype="s|s|s|s">
 						<th class="sortable">User</th>
 						<th class="sortable">Last Login</th>
 						<th class="sortable">Last Job</th>
-						<th class="sortable">Last Update Request</th>
 						<th class="sortable">Created</th>
 						<th></th>
 					</tr>
@@ -64,7 +63,6 @@
 						<td
 							z2:text="${user.last-job-nr ? |${#dates.format(user.last-job-date, '%F %H:%M')} - ${user.last-job-nr}|}">
 						</td>
-						<td z2:text="${#dates.format(user.last-update-request, '%F')}"></td>
 						<td z2:text="${#dates.format(user.created, '%F')}"></td>
 						<td><button type="button" class="btn btn-outline-secondary" z2:attr="data-user-id=${user.id}"
 								aria-label="Delete">

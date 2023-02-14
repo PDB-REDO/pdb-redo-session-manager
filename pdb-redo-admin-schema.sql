@@ -15,7 +15,6 @@ CREATE TABLE public.user (
 	last_job_nr int default 0,
 	last_job_date timestamp with time zone,
 	last_job_status varchar,
-	last_update_request_date timestamp with time zone,
 	UNIQUE(name, email)
 );
 

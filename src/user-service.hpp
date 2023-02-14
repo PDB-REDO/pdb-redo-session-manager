@@ -52,8 +52,6 @@ struct User
 	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastJobDate;
 	std::optional<int> lastJobNr;
 
-	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastUpdateRequest;
-
 	User(const std::string &name, const std::string &institution, const std::string &email, const std::string &password)
 		: name(name)
 		, institution(institution)
@@ -79,9 +77,7 @@ struct User
 
 		   & zeep::make_nvp("last-job-nr", lastJobNr)
 		   & zeep::make_nvp("last-job-date", lastJobDate)
-		   & zeep::make_nvp("last-job-status", lastJobStatus)
-		   
-		   & zeep::make_nvp("last-update-request", lastUpdateRequest);
+		   & zeep::make_nvp("last-job-status", lastJobStatus);
 	}
 };
 
