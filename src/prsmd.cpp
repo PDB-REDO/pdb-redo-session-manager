@@ -771,12 +771,30 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 zh::reply AdminController::job(const zh::scope &scope, const std::string &user, unsigned long job_id)
 {
 	auto run = RunService::instance().getRun(user, job_id);
-	auto entry = create_entry_data(run, "admin/job/" + user + '/' + std::to_string(job_id) + "/output/");
 
-	zh::scope sub(scope);
-	sub.put("entry", entry);
+	if (run.status == RunStatus::ENDED)
+	{
+		auto entry = create_entry_data(run, "admin/job/" + user + '/' + std::to_string(job_id) + "/output/");
 
-	return get_template_processor().create_reply_from_template("admin-job-result", sub);
+		zh::scope sub(scope);
+		sub.put("entry", entry);
+
+		return get_template_processor().create_reply_from_template("admin-job-result", sub);
+	}
+
+	zh::reply result(zh::ok);
+
+	auto f = run.getResultFile("process.log");
+
+	std::error_code ec;
+	if (fs::exists(f, ec))
+	{
+		result.set_content(new std::ifstream(f), "text/plain");
+		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		return result;
+	}
+
+	return zh::reply::stock_reply(zh::not_found);
 }
 
 zh::reply AdminController::handle_get_job_file(const zh::scope &scope, const std::string &user, unsigned long job_id, const std::string &file)
