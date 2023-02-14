@@ -782,15 +782,14 @@ zh::reply AdminController::job(const zh::scope &scope, const std::string &user, 
 		return get_template_processor().create_reply_from_template("admin-job-result", sub);
 	}
 
-	zh::reply result(zh::ok);
-
 	auto f = run.getResultFile("process.log");
 
 	std::error_code ec;
 	if (fs::exists(f, ec))
 	{
+		zh::reply result(zh::ok);
 		result.set_content(new std::ifstream(f), "text/plain");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		// result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
 
