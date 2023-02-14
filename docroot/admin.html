@@ -45,9 +45,8 @@
 
 			<table class="table table-striped table-sm mt-3" id="users-table">
 				<tbody>
-					<tr data-keytype="s|s|s|b|s|i|s|s|s|s">
+					<tr data-keytype="s|s|s|s|s">
 						<th class="sortable">User</th>
-						<!-- <th class="sortable">Last Login</th> -->
 						<th class="sortable">Last Login</th>
 						<th class="sortable">Last Job</th>
 						<th class="sortable">Last Update Request</th>
@@ -55,20 +54,23 @@
 						<th></th>
 					</tr>
 
-					<tr z2:each="user, i : ${users}">
+					<tr class="sorted" z2:each="user, i : ${users}">
 						<td>
-							<div style="white-space: pre-wrap;">[[${user.name}]] 
-[[${user.institution}]] 
+							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em>
 [[${user.email}]]</div>
 						</td>
 						<!-- <td z2:text="${user.lastLogin}"></td> -->
-						<td z2:text="${user.last-login ? #dates.format(user.last-login, '%d %B %Y')}"></td>
-						<td z2:text="${user.last-job-nr ? |${user.last-job-nr}; ${#dates.format(user.last-job-date, '%F %H:%M')}|}"></td>
-						<td z2:text="${user.last-update-request}"></td>
-						<td z2:text="${#dates.format(user.created, '%d %B %Y')}"></td>
-						<td><a class="action" href="javascript:void(0);" z2:attr="data-user-id=${user.id}">
-								<i class="btn btn-sm bi bi-trash"></i>
-							</a></td>
+						<td z2:text="${#dates.format(user.last-login, '%F')}"></td>
+						<td
+							z2:text="${user.last-job-nr ? |${#dates.format(user.last-job-date, '%F %H:%M')} - ${user.last-job-nr}|}">
+						</td>
+						<td z2:text="${#dates.format(user.last-update-request, '%F')}"></td>
+						<td z2:text="${#dates.format(user.created, '%F')}"></td>
+						<td><button type="button" class="btn btn-outline-secondary" z2:attr="data-user-id=${user.id}"
+								aria-label="Delete">
+								<i class="bi bi-trash" aria-hidden="true"></i>
+							</button>
+						</td>
 					</tr>
 
 				</tbody>

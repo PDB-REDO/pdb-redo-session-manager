@@ -402,3 +402,30 @@ a.action:hover {
 	margin: 0;
 	padding: 1px;
 }
+
+// For the admin page
+
+th.sortable {
+	
+	&:hover {
+		text-decoration: underline;
+	}
+
+	&.sorted-asc::after {
+		content: "";
+		background: url("../docroot/images/driehoek-op.png") no-repeat top right;
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		margin: 0 auto;
+	}
+	
+	&.sorted-desc::after {
+		content: "";
+		background: url("../docroot/images/driehoek-neer.png") no-repeat top right;
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		margin: 0 auto;
+	}
+}

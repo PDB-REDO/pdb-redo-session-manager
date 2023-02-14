@@ -1,5 +1,4 @@
 import { PDBRedoApiRequest } from './request';
-import pdb_redo_style from './pdb-redo-result.scss';
 import { createBoxPlot } from "./boxplot";
 import { RamachandranPlot } from './ramaplot';
 
@@ -14,7 +13,7 @@ class PDBRedoResult extends HTMLElement {
 		// this limitation here. Assume the loader script is not renamed.
 		this.pdbRedoBaseURI = document.querySelector('script[src$="pdb-redo-result-loader.js"]')
 			.src
-			.replace(/scripts\/pdb-redo-result-loader\.js$/, '');
+			.replace(/\/?scripts\/pdb-redo-result-loader\.js$/, '');
 
 		// Some default values:
 
@@ -25,12 +24,17 @@ class PDBRedoResult extends HTMLElement {
 		// the shadow context
 		const shadow = this.attachShadow({ mode: 'open' });
 
+		const link = document.createElement('link');
+		link.setAttribute('href', `${this.pdbRedoBaseURI}/css/web-component-style.css`);
+		link.setAttribute('rel', 'stylesheet');
+		shadow.appendChild(link);
+
 		const div = document.createElement('div');
-		const style = document.createElement('style');
-		shadow.appendChild(style);
+		// const style = document.createElement('style');
+		// shadow.appendChild(style);
 		shadow.appendChild(div);
 
-		style.innerHTML = pdb_redo_style;
+		// style.innerHTML = pdb_redo_style;
 	}
 
 	connectedCallback() {

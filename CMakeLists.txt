@@ -121,7 +121,7 @@ add_executable(prsmd
 	
 set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-style.scss
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.scss
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/web-component-style.scss
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/admin.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/boxplot.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/dialog.js
