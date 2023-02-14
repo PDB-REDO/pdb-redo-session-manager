@@ -1,6 +1,6 @@
 window.addEventListener('load', () => {
 	const table = document.querySelector('#jobs-table');
-	const rows = table.querySelectorAll("tr");
+	const rows = table.querySelectorAll("tr.done");
 	Array.from(rows).forEach(tr => {
 		tr.addEventListener('click', (e) => {
 			const jobID = tr.dataset.job;

@@ -717,6 +717,7 @@ class AdminController : public zh::html_controller
 		map_get("", &AdminController::admin, "tab");
 		map_get("job/{user}/{id}/output/{file}", &AdminController::handle_get_job_file, "user", "id", "file");
 		map_get("job/{user}/{id}", &AdminController::job, "user", "id");
+		map_get("delete/jobs/{user}/{id}", &AdminController::handle_delete_job, "user", "id");
 		map_get("delete/{tab}/{id}", &AdminController::handle_delete, "tab", "id");
 	}
 
@@ -725,6 +726,7 @@ class AdminController : public zh::html_controller
 	zh::reply handle_get_job_file(const zh::scope &scope, const std::string &user, unsigned long id, const std::string &file);
 
 	zh::reply handle_delete(const zh::scope &scope, const std::string &tab, unsigned long id);
+	zh::reply handle_delete_job(const zh::scope &scope, const std::string &user, unsigned long id);
 };
 
 zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::string> tab)
@@ -789,7 +791,6 @@ zh::reply AdminController::job(const zh::scope &scope, const std::string &user, 
 	{
 		zh::reply result(zh::ok);
 		result.set_content(new std::ifstream(f), "text/plain");
-		// result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
 
@@ -843,6 +844,12 @@ zh::reply AdminController::handle_delete(const zh::scope &scope, const std::stri
 		DataService::instance().deleteUpdateRequest(id);
 
 	return zh::reply::redirect("/admin?tab=" + tab);
+}
+
+zh::reply AdminController::handle_delete_job(const zh::scope &scope, const std::string &user, unsigned long id)
+{
+	RunService::instance().deleteRun(user, id);
+	return zh::reply::redirect("/admin?tab=jobs");
 }
 
 // --------------------------------------------------------------------

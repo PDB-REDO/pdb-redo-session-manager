@@ -34,11 +34,9 @@
 					<th>&nbsp;</th>
 				</tr>
 
-				<tr z2:each="run: ${runs}" z2:classappend="${runStat.even}? 'even'"
-					z2:attr="keys=${'i:' + run.id + '|||s:' + run.date + '|s:' + run.status + '||s:' + run.group}"
-					z2:data-job="${run.id}">
+				<tr z2:each="run: ${runs}" z2:classappend="${run.status == 'ended'} ? 'done' : 'not-done'" z2:data-job="${run.id}">
 
-					<td z2:text="${run.id}">ID</td>
+					<td z2:text="${run.id}">ID xx</td>
 
 					<td>
 						<span
@@ -84,7 +82,6 @@
 
 					<td>
 						<a class="btn btn-sm btn-outline-secondary bi bi-trash"
-							z2:if="${run.status == 'stopped' or run.status == 'ended' or run.status == 'running'}"
 							z2:href="@{|/job/delete/${run.id}|}"></a>
 					</td>
 
