@@ -28,7 +28,7 @@
 #include "prsm-db-connection.hpp"
 #include "run-service.hpp"
 #include "user-service.hpp"
-#include "session.hpp"
+#include "session-service.hpp"
 
 #include "revision.hpp"
 #include "mrsrc.hpp"
@@ -351,7 +351,7 @@ class APIRESTController : public zh::rest_controller
 				auto tokenid = credentials[0];
 				auto date = credentials[1];
 
-				auto secret = SessionStore::instance().get_by_id(std::stoul(tokenid)).token;
+				auto secret = SessionService::instance().get_by_id(std::stoul(tokenid)).token;
 				auto keyString = "PDB-REDO" + secret;
 
 				auto key = zeep::hmac_sha256(date, keyString);
@@ -378,17 +378,17 @@ class APIRESTController : public zh::rest_controller
 
 	CreateSessionResult get_session(unsigned long id)
 	{
-		return SessionStore::instance().get_by_id(id);
+		return SessionService::instance().get_by_id(id);
 	}
 
 	void delete_session(unsigned long id)
 	{
-		SessionStore::instance().delete_by_id(id);
+		SessionService::instance().delete_by_id(id);
 	}
 
 	std::vector<Run> get_all_runs(unsigned long id)
 	{
-		auto session = SessionStore::instance().get_by_id(id);
+		auto session = SessionService::instance().get_by_id(id);
 
 		return RunService::instance().getRunsForUser(session.user);
 	}
@@ -396,35 +396,35 @@ class APIRESTController : public zh::rest_controller
 	Run create_job(unsigned long sessionID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
 		const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
 	{
-		auto session = SessionStore::instance().get_by_id(sessionID);
+		auto session = SessionService::instance().get_by_id(sessionID);
 
 		return RunService::instance().submit(session.user, coordinates, diffractionData, restraints, sequence, params);
 	}
 
 	Run get_run(unsigned long sessionID, unsigned long runID)
 	{
-		auto session = SessionStore::instance().get_by_id(sessionID);
+		auto session = SessionService::instance().get_by_id(sessionID);
 
 		return RunService::instance().getRun(session.user, runID);
 	}
 
 	std::vector<std::string> get_result_file_list(unsigned long sessionID, unsigned long runID)
 	{
-		auto session = SessionStore::instance().get_by_id(sessionID);
+		auto session = SessionService::instance().get_by_id(sessionID);
 
 		return RunService::instance().getRun(session.user, runID).getResultFileList();
 	}
 
 	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string &file)
 	{
-		auto session = SessionStore::instance().get_by_id(sessionID);
+		auto session = SessionService::instance().get_by_id(sessionID);
 
 		return RunService::instance().getRun(session.user, runID).getResultFile(file);
 	}
 
 	zh::reply get_zipped_result_file(unsigned long sessionID, unsigned long runID)
 	{
-		auto session = SessionStore::instance().get_by_id(sessionID);
+		auto session = SessionService::instance().get_by_id(sessionID);
 
 		const auto &[is, name] = RunService::instance().getRun(session.user, runID).getZippedResultFile();
 
@@ -437,7 +437,7 @@ class APIRESTController : public zh::rest_controller
 
 	void delete_run(unsigned long sessionID, unsigned long runID)
 	{
-		auto session = SessionStore::instance().get_by_id(sessionID);
+		auto session = SessionService::instance().get_by_id(sessionID);
 
 		return RunService::instance().deleteRun(session.user, runID);
 	}
@@ -741,7 +741,7 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 	if (active == "sessions")
 	{
 		json sessions;
-		auto s = SessionStore::instance().get_all_sessions();
+		auto s = SessionService::instance().getAllSessions();
 		to_element(sessions, s);
 		sub.put("sessions", sessions);
 	}
@@ -836,10 +836,10 @@ zh::reply AdminController::handle_delete(const zh::scope &scope, const std::stri
 
 		user_service.deleteUser(id);
 	}
-	else if (tab == "jobs")
-		;// RunService::instance().delete_run();
+	// else if (tab == "jobs")
+	// 	RunService::instance().delete_run();
 	else if (tab == "sessions")
-		SessionStore::instance().delete_by_id(id);
+		SessionService::instance().delete_by_id(id);
 	else if (tab == "updates")
 		DataService::instance().deleteUpdateRequest(id);
 
@@ -1084,7 +1084,7 @@ Command should be either:
 
 		RunService::init(runsDir);
 
-		SessionStore::init();
+		SessionService::init();
 		UserService::init(admin);
 
 		std::string secret;

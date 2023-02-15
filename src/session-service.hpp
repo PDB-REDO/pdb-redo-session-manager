@@ -35,6 +35,7 @@ struct Session
 	unsigned long id = 0;
 	std::string name;
 	std::string user;
+	int user_nr;
 	std::string token;
 	std::chrono::time_point<std::chrono::system_clock> created;
 	std::chrono::time_point<std::chrono::system_clock> expires;
@@ -51,6 +52,7 @@ struct Session
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("user", user)
+		   & zeep::make_nvp("user-nr", user_nr)
 		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("created", created)
 		   & zeep::make_nvp("expires", expires);
@@ -85,15 +87,15 @@ struct CreateSessionResult
 
 // --------------------------------------------------------------------
 
-class SessionStore
+class SessionService
 {
   public:
 	static void init()
 	{
-		sInstance = new SessionStore();
+		sInstance = new SessionService();
 	}
 
-	static SessionStore &instance()
+	static SessionService &instance()
 	{
 		return *sInstance;
 	}
@@ -106,20 +108,20 @@ class SessionStore
 
 	Session create(const std::string &name, const std::string &user);
 
-	Session get_by_id(unsigned long id);
-	Session get_by_token(const std::string &token);
-	void delete_by_id(unsigned long id);
+	// Session get_by_id(unsigned long id);
+	// Session get_by_token(const std::string &token);
+	// void delete_by_id(unsigned long id);
 
-	std::vector<Session> get_all_sessions();
+	std::vector<Session> getAllSessions();
 
   private:
-	SessionStore();
-	~SessionStore();
+	SessionService();
+	~SessionService();
 
-	SessionStore(const SessionStore &) = delete;
-	SessionStore &operator=(const SessionStore &) = delete;
+	SessionService(const SessionService &) = delete;
+	SessionService &operator=(const SessionService &) = delete;
 
-	void run_clean_thread();
+	void runCleanThread();
 
 	bool m_done = false;
 
@@ -127,7 +129,7 @@ class SessionStore
 	std::mutex m_cv_m;
 	std::thread m_clean;
 
-	static SessionStore *sInstance;
+	static SessionService *sInstance;
 };
 
 // --------------------------------------------------------------------

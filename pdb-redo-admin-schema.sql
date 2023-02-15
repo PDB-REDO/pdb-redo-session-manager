@@ -18,6 +18,7 @@ CREATE TABLE redo.user (
 	last_job_nr int default 0,
 	last_job_date timestamp with time zone,
 	last_job_status varchar,
+	last_session_nr int default 0,
 	UNIQUE(name, email)
 );
 
@@ -35,10 +36,12 @@ UPDATE OF name, institution, email, password
 CREATE TABLE redo.session (
 	id serial primary key,
 	user_id bigint references redo.user on delete cascade deferrable initially deferred,
+	user_nr int NOT NULL,
 	name varchar NOT NULL,
 	token varchar NOT NULL,
 	created timestamp with time zone default CURRENT_TIMESTAMP not null,
-	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
+	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null,
+	UNIQUE(user_id, user_nr)
 );
 
 CREATE TABLE redo.update_request (
