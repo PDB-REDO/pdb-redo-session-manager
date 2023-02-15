@@ -74,7 +74,7 @@
 		</div>
 
 		<div z2:if="${tab == 'jobs'}">
-			<table class="table table-striped table-sm mt-3">
+			<table class="table table-striped table-hover table-sm mt-3">
 				<tbody>
 					<tr data-keytype="s|i|s|s|s">
 						<th class="sortable">User</th>
@@ -84,7 +84,8 @@
 						<th class="sortable">Status</th>
 						<th></th>
 					</tr>
-					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|">
+					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|"
+							z2:classappend="${run.status == 'ended'} ? 'done' : 'not-done'">
 						<td z2:text="${run.user}"></td>
 						<td z2:text="${run.id}"></td>
 						<td z2:text="${#dates.format(run.date, '%F %H:%M')}"></td>
