@@ -58,9 +58,8 @@
 					<tr class="sorted" z2:each="user, i : ${users}">
 						<td z2:text="${i.count}"></td>
 						<td>
-							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em>
-[[${user.email}]]
-							</div>
+							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em></div>
+							<div z2:text="${user.email}"></div>
 						</td>
 						<!-- <td z2:text="${user.lastLogin}"></td> -->
 						<td z2:text="${#dates.format(user.last-login, '%F')}"></td>
