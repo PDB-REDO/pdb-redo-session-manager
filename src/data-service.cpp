@@ -25,6 +25,8 @@
  */
 
 #include "data-service.hpp"
+
+#include "https-client.hpp"
 #include "zip-support.hpp"
 #include "prsm-db-connection.hpp"
 
@@ -241,4 +243,40 @@ float DataService::version() const
 	}
 	
 	return result;
+}
+
+std::string DataService::getWhyNot(const std::string &pdbID)
+{
+	std::string whynot("The PDB-REDO entry is being created");
+
+	std::ifstream whyNotFile(m_data_dir / "whynot" / (pdbID + ".txt"));
+	if (whyNotFile.is_open())
+	{
+		getline(whyNotFile, whynot);
+
+		if (whynot.starts_with("COMMENT: "))
+			whynot.erase(0, 9);
+	}
+	else
+	{
+		auto &config = mcfp::config::instance();
+
+		auto uri = config.get("ebi-coord-template");
+		for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+			uri.replace(i, 5, pdbID);
+		
+		if (not head_request(uri))
+			whynot = "PDB Entry does not exist";
+		else
+		{
+			auto uri = config.get("ebi-sf-template");
+			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+				uri.replace(i, 5, pdbID);
+
+			if (not head_request(uri))
+				whynot = "No reflection data available";
+		}
+	}
+	
+	return whynot;
 }

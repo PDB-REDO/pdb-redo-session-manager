@@ -15,15 +15,16 @@ module.exports = (env) => {
 	const webpackConf = {
 		entry: {
 			admin: SCRIPTS + "admin.js",
+			dialog: SCRIPTS + "dialog.js",
 			index: SCRIPTS + "index.js",
 			'inline-entry': SCRIPTS + 'inline-entry.js',
-			'job-overview': SCRIPTS + 'job-overview.js',
-			dialog: SCRIPTS + "dialog.js",
-			request: SCRIPTS + "request.js",
-			"test-api": SCRIPTS + "test-api.js",
-
+			jobs: SCRIPTS + 'jobs.js',
 			'pdb-redo-result': SCRIPTS + 'pdb-redo-result.js',
 			'pdb-redo-result-loader': SCRIPTS + 'pdb-redo-result-loader.js',
+			request: SCRIPTS + "request.js",
+			sessions: SCRIPTS + "sessions.js",
+			"test-api": SCRIPTS + "test-api.js",
+
 
 			'web-component-style': { import: SCRIPTS + 'web-component-style.scss' }
 		},

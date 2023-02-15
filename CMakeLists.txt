@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # set the project name
-project(pdb-redo-session-manager VERSION 1.1.0 LANGUAGES CXX)
+project(pdb-redo-session-manager VERSION 2.0.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -93,6 +93,8 @@ find_package(LibArchive REQUIRED)
 
 set(ENV{PKG_CONFIG_PATH} "$ENV{HOME}/.local/lib/pkgconfig/")
 pkg_check_modules(PKG_PQ libpqxx>=7.2 libpq IMPORTED_TARGET REQUIRED)
+pkg_check_modules(SSL libssl IMPORTED_TARGET)
+pkg_check_modules(CRYPTO libcrypto IMPORTED_TARGET)
 
 find_program(YARN yarn REQUIRED)
 
@@ -103,8 +105,12 @@ find_package(gxrio REQUIRED)
 add_subdirectory(mailio EXCLUDE_FROM_ALL)
 
 add_executable(prsmd
+	${CMAKE_CURRENT_SOURCE_DIR}/src/api-controller.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/api-controller.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/https-client.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/https-client.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.cpp
@@ -122,16 +128,18 @@ add_executable(prsmd
 set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-style.scss
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/web-component-style.scss
+
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/admin.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/boxplot.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/dialog.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/inline-entry.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/job-overview.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/jobs.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/request.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/sessions.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/test-api.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
 )
@@ -155,7 +163,9 @@ mrc_target_resources(prsmd
 	${PROJECT_SOURCE_DIR}/rsrc/reset-password-mail.txt)
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio PkgConfig::PKG_PQ mailio)
+target_link_libraries(prsmd
+	zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio
+	PkgConfig::PKG_PQ PkgConfig::SSL PkgConfig::CRYPTO mailio)
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}

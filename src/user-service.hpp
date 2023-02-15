@@ -175,4 +175,8 @@ class UserHTMLController : public zeep::http::login_controller
 	zeep::http::reply post_delete(const zeep::http::scope &scope);
 
 	zeep::http::reply get_token_for_ccp4(const zeep::http::scope &scope, const std::string &reqid, const std::string &cburl);
+
+	zeep::http::reply getSessions(const zeep::http::scope &scope);
+	zeep::http::reply createSession(const zeep::http::scope &scope, std::string name);
+	zeep::http::reply deleteSession(const zeep::http::scope &scope, unsigned long id);
 };

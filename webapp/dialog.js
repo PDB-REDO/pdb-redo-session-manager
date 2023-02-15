@@ -38,7 +38,7 @@ class CCP4TokenDialog extends Dialog {
 		const uri = this.form.elements['cburl'].value;
 		const reqid = this.form.elements['reqid'].value;
 
-		fetch(`api/session?name=${reqid}`, {
+		fetch(`session?name=${reqid}`, {
 			credentials: 'include'
 		}).then(r => {
 			if (!r.ok)

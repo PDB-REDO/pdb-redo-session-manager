@@ -1,0 +1,74 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO Session for [[${#security.username}]]</title>
+
+	<script z2:src="@{/scripts/sessions.js}"></script>
+</head>
+
+<body class="site">
+
+	<nav z2:replace="~{menu :: navbar('session')}"></nav>
+
+	<main class="container site-content">
+
+		<article>
+			<h2>Sessions, also known as API Tokens</h2>
+
+			<p>The PDB-REDO website offers a service API you can use to automate running jobs.
+				The API requires you to have a <em>token-id</em> and <em>token-secret</em>.
+				You can use the form below to create a new pair. For more information and
+				example scripts see <a href="https://github.com/PDB-REDO/pdb-redo-session-manager">github page for pdb-redo-session-manager</a>.
+			</p>
+
+			<form z2:action="@{/session}" style="max-width: 30em;">
+				<div class="input-group input-group-sm mb-3">
+					<span class="input-group-text" id="name-fld">Name</span>
+					<input type="text" class="form-control" placeholder="name for your token" aria-label="Name"
+						aria-describedby="name-fld" name="name" />
+					<button class="btn btn-secondary" type="submit" id="button-addon2">Create</button>
+				</div>
+			</form>
+
+		</article>
+
+		<article>
+			<h2>Current API Tokens</h2>
+
+			<table class="table table-striped table-sm mt-3">
+				<thead>
+					<tr>
+						<th>Token-ID</th>
+						<th>Token-Secret</th>
+						<th>Session Name</th>
+						<th>Created</th>
+						<th>Expires</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="sorted" z2:each="session, i: ${sessions}">
+						<td z2:text="${session.id}"></td>
+						<td z2:text="${session.token}"></td>
+						<td z2:text="${session.name}"></td>
+						<td z2:text="${#dates.format(session.created, '%d %B %Y, %H:%M')}"></td>
+						<td z2:text="${#dates.format(session.expires, '%d %B %Y, %H:%M')}"></td>
+						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a"
+								aria-label="Delete" z2:attr="data-id=${session.id}"></a></td>
+					</tr>
+				</tbody>
+			</table>
+		</article>
+
+	</main>
+
+	<footer z2:replace="~{footer::content}" />
+</body>
+
+</html>

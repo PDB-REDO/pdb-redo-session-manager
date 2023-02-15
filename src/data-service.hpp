@@ -90,6 +90,8 @@ class DataService
 
 	std::vector<UpdateRequest> get_all_update_requests();
 
+	std::string getWhyNot(const std::string &pdbID);
+
   private:
 	DataService();
 

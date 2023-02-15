@@ -40,6 +40,12 @@
 								z2:href="@{/job}">Jobs</a>
 						</li>
 
+						<li class="nav-item">
+							<a class="nav-link"
+								z2:classappend="|${page == 'session' ? 'active' : ''} ${#security.authorized ?: 'disabled'}|"
+								z2:href="@{/sessions}">Sessions</a>
+						</li>
+
 						<!-- <li class="nav-item">
 							<a class="nav-link" z2:classappend="${page == 'session' ? 'active' : ''}"
 								z2:href="@{/tokens}">Token generator</a>
@@ -69,8 +75,6 @@
 								<li><a class="dropdown-item" z2:href="@{/change-password}">Change Password</a></li>
 								<li><a class="dropdown-item" z2:href="@{/update-info}">Update User Information</a></li>
 								<li><a class="dropdown-item" z2:href="@{/delete}">Delete account</a></li>
-								<li><hr class="dropdown-divider"/></li>
-								<li><a class="dropdown-item" z2:href="@{/token}">Generate API Token</a></li>
 								<li><hr class="dropdown-divider"/></li>
 								<li><a class="dropdown-item" z2:href="@{/logout}">Log out</a></li>
 							</ul>

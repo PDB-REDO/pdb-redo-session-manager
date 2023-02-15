@@ -1,0 +1,30 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO for PDB ID <span z2:text="${pdb-id}"></span></title>
+</head>
+
+<body class="site">
+
+	<nav z2:replace="~{menu :: navbar('db')}"></nav>
+
+	<main class="container site-content">
+
+		<article>
+			<h2>Not in PDB-REDO</h2>
+
+			<p>This entry was not found in PDB-REDO. The reason is <em z2:text="${whynot}"></em>.</p>
+		</article>
+
+	</main>
+
+	<footer z2:replace="~{footer::content}"></footer>
+</body>
+
+</html>

@@ -25,6 +25,8 @@
  */
 
 #include "user-service.hpp"
+
+#include "session-service.hpp"
 #include "prsm-db-connection.hpp"
 
 #include <zeep/http/uri.hpp>
@@ -615,6 +617,10 @@ UserHTMLController::UserHTMLController()
 	map_post("delete", &UserHTMLController::post_delete);
 
 	map_get("ccp4-token-request", &UserHTMLController::get_token_for_ccp4, "reqid", "cburl");
+
+	map_get("sessions", &UserHTMLController::getSessions);
+	map_delete("sessions", &UserHTMLController::deleteSession, "id");
+	map_get("session", &UserHTMLController::createSession, "name");
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -905,4 +911,50 @@ zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope
 	sub.put("reqid", reqid);
 	sub.put("cburl", cburl);
 	return get_template_processor().create_reply_from_template("index", sub);
+}
+
+zeep::http::reply UserHTMLController::getSessions(const zeep::http::scope &scope)
+{
+	auto username = scope.get_credentials()["username"].as<std::string>();
+
+	zeep::http::scope sub(scope);
+	
+	auto s = SessionService::instance().getAllSessionsForUser(username);
+	zeep::json::element e;
+	to_element(e, s);
+	sub.put("sessions", e);
+
+	return get_template_processor().create_reply_from_template("sessions", sub);
+}
+
+zeep::http::reply UserHTMLController::deleteSession(const zeep::http::scope &scope, unsigned long id)
+{
+	auto username = scope.get_credentials()["username"].as<std::string>();
+
+	zeep::http::scope sub(scope);
+
+	Session s = SessionService::instance().getSessionByID(id);
+
+	if (s.user != username)
+		throw zeep::http::forbidden;
+
+	SessionService::instance().deleteSession(id);
+
+	return zeep::http::reply::stock_reply(zeep::http::ok);
+}
+
+zeep::http::reply UserHTMLController::createSession(const zeep::http::scope &scope, std::string name)
+{
+	auto credentials = scope.get_credentials();
+	if (not credentials)
+		throw zeep::http::unauthorized;
+
+	auto username = credentials["username"].as<std::string>();
+
+	if (name.empty())
+		name = "<untitled>";
+
+	auto s = SessionService::instance().create(name, username);
+
+	return zeep::http::reply::redirect("/sessions");
 }

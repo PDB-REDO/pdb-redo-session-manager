@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2023 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -35,14 +35,16 @@ struct Session
 	unsigned long id = 0;
 	std::string name;
 	std::string user;
-	int user_nr;
 	std::string token;
 	std::chrono::time_point<std::chrono::system_clock> created;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
+	Session(const pqxx::row &row);
+	Session(unsigned long id, std::string name, const std::string &user, const std::string &token,
+		std::chrono::time_point<std::chrono::system_clock> created, std::chrono::time_point<std::chrono::system_clock> expires);
 	Session &operator=(const pqxx::row &row);
 
-	operator bool() const { return id != 0; }
+	explicit operator bool() const { return id != 0; }
 
 	bool expired() const { return std::chrono::system_clock::now() > expires; }
 
@@ -52,35 +54,8 @@ struct Session
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("user-nr", user_nr)
 		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("created", created)
-		   & zeep::make_nvp("expires", expires);
-	}
-};
-
-struct CreateSessionResult
-{
-	unsigned long id = 0;
-	std::string name;
-	std::string token;
-	std::chrono::time_point<std::chrono::system_clock> expires;
-
-	CreateSessionResult(const Session &session);
-	CreateSessionResult(const pqxx::row &row);
-	CreateSessionResult &operator=(const Session &session);
-	CreateSessionResult &operator=(const pqxx::row &row);
-
-	operator bool() const { return id != 0; }
-
-	bool expired() const { return std::chrono::system_clock::now() > expires; }
-
-	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
-	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("name", name)
-		   & zeep::make_nvp("token", token)
 		   & zeep::make_nvp("expires", expires);
 	}
 };
@@ -107,12 +82,11 @@ class SessionService
 	}
 
 	Session create(const std::string &name, const std::string &user);
-
-	// Session get_by_id(unsigned long id);
-	// Session get_by_token(const std::string &token);
-	// void delete_by_id(unsigned long id);
+	Session getSessionByID(unsigned long id);
+	void deleteSession(unsigned long id);
 
 	std::vector<Session> getAllSessions();
+	std::vector<Session> getAllSessionsForUser(const std::string &user);
 
   private:
 	SessionService();
@@ -134,14 +108,37 @@ class SessionService
 
 // --------------------------------------------------------------------
 
+struct CreateSessionResult
+{
+	unsigned long id = 0;
+	std::string name;
+	std::string token;
+	std::chrono::time_point<std::chrono::system_clock> expires;
+
+	CreateSessionResult(const Session &session);
+	CreateSessionResult(const pqxx::row &row);
+	CreateSessionResult &operator=(const Session &session);
+	CreateSessionResult &operator=(const pqxx::row &row);
+
+	explicit operator bool() const { return id != 0; }
+
+	bool expired() const { return std::chrono::system_clock::now() > expires; }
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("name", name)
+		   & zeep::make_nvp("token", token)
+		   & zeep::make_nvp("expires", expires);
+	}
+};
+
 class SessionRESTController : public zeep::http::rest_controller
 {
   public:
 	SessionRESTController();
 
 	// CRUD routines
-	CreateSessionResult post_session(std::string user, std::string password, std::string name);
-
-	// A simple version, requires user to be logged in
-	CreateSessionResult get_session(std::string name);
+	CreateSessionResult postSession(std::string user, std::string password, std::string name);
 };

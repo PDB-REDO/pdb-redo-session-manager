@@ -325,7 +325,7 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 
 	for (auto &&[type, file] : files)
 	{
-		if (not file)
+		if (not file or file.length == 0)
 			continue;
 
 		zeep::char_streambuf sb(file.data, file.length);

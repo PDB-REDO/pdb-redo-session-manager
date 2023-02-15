@@ -73,26 +73,17 @@
 					z2:href="@{/license.txt}">here</a> you can find the data usage license.</p>
 		</article>
 
-		<div class="row">
+		<article class="col">
+			<h2>PDB-REDO server</h2>
 
-			<article class="col">
-				<h2>PDB-REDO server</h2>
+			<p>The PDB-REDO server helps you to get a publication quality structure. It takes your current
+				model (PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
+				model, new maps, validation reports, and many tools to continue working on your model,
+				including COOT menus customised for inspecting your structure.</p>
 
-				<p>The PDB-REDO server helps you to get a publication quality structure. It takes your current
-					model (PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
-					model, new maps, validation reports, and many tools to continue working on your model,
-					including COOT menus customised for inspecting your structure.</p>
-
-				<p z2:if="${not #security.authorized}">You have to <a z2:href="@{/login}">log in</a> in order to be
-					able to submit new PDB-REDO jobs.</p>
-			</article>
-
-			<article z2:if="${#security.authorized}" class="col">
-				<h2>Submit new PDB-REDO run</h2>
-
-				<div z2:replace="~{submit :: submit-form}"></div>
-			</article>
-		</div>
+			<p z2:if="${not #security.authorized}">You have to <a z2:href="@{/login}">log in</a> in order to be
+				able to submit new PDB-REDO jobs.</p>
+		</article>
 
 	</div>
 

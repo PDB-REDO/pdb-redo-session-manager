@@ -24,11 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "api-controller.hpp"
 #include "data-service.hpp"
 #include "prsm-db-connection.hpp"
-#include "run-service.hpp"
 #include "user-service.hpp"
-#include "session-service.hpp"
 
 #include "revision.hpp"
 #include "mrsrc.hpp"
@@ -216,238 +215,6 @@ json create_entry_data(Run &run, const fs::path &basePath)
 
 // --------------------------------------------------------------------
 
-class APIRESTController : public zh::rest_controller
-{
-  public:
-	APIRESTController()
-		: zh::rest_controller("api")
-	{
-		// get session info
-		map_get_request("session/{id}", &APIRESTController::get_session, "id");
-
-		// delete a session
-		map_delete_request("session/{id}", &APIRESTController::delete_session, "id");
-
-		// return a list of runs
-		map_get_request("session/{id}/run", &APIRESTController::get_all_runs, "id");
-
-		// Submit a run (job)
-		map_post_request("session/{id}/run", &APIRESTController::create_job, "id",
-			"mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters");
-
-		// return info for a run
-		map_get_request("session/{id}/run/{run}", &APIRESTController::get_run, "id", "run");
-
-		// get a list of the files in output
-		map_get_request("session/{id}/run/{run}/output", &APIRESTController::get_result_file_list, "id", "run");
-
-		// get all results file zipped into an archive
-		map_get_request("session/{id}/run/{run}/output/zipped", &APIRESTController::get_zipped_result_file, "id", "run");
-
-		// get a result file
-		map_get_request("session/{id}/run/{run}/output/{file}", &APIRESTController::get_result_file, "id", "run", "file");
-
-		// delete a run
-		map_delete_request("session/{id}/run/{run}", &APIRESTController::delete_run, "id", "run");
-	}
-
-	virtual bool handle_request(zh::request &req, zh::reply &rep)
-	{
-		bool result = false;
-
-		if (req.get_method() == "OPTIONS")
-		{
-			get_options(req, rep);
-			result = true;
-		}
-		else
-		{
-			try
-			{
-				std::string authorization = req.get_header("Authorization");
-				// PDB-REDO-api Credential=token-id/date/pdb-redo-apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
-
-				if (authorization.compare(0, 13, "PDB-REDO-api ") != 0)
-					throw zh::unauthorized_exception();
-
-				std::vector<std::string> signedHeaders;
-
-				std::regex re(R"rx(Credential=("[^"]*"|'[^']*'|[^,]+),\s*SignedHeaders=("[^"]*"|'[^']*'|[^,]+),\s*Signature=("[^"]*"|'[^']*'|[^,]+)\s*)rx", std::regex::icase);
-
-				std::smatch m;
-				if (not std::regex_search(authorization, m, re))
-					throw zh::unauthorized_exception();
-
-				std::vector<std::string> credentials;
-				std::string credential = m[1].str();
-
-				for (std::string::size_type i = 0, j = credential.find("/");;)
-				{
-					credentials.push_back(credential.substr(i, j - i));
-					if (j == std::string::npos)
-						break;
-					i = j + 1;
-					j = credential.find("/", i);
-				}
-
-				if (credentials.size() != 3 or credentials[2] != "pdb-redo-api")
-					throw zh::unauthorized_exception();
-
-				auto signature = zeep::decode_base64(m[3].str());
-
-				// Validate the signature
-
-				// canonical request
-
-				std::vector<std::tuple<std::string, std::string>> params;
-				for (auto &p : req.get_parameters())
-					params.push_back(std::make_tuple(p.first, p.second));
-				std::sort(params.begin(), params.end());
-				std::ostringstream ps;
-				auto n = params.size();
-				for (auto &[name, value] : params)
-				{
-					ps << zeep::http::encode_url(name);
-					if (not value.empty())
-						ps << '=' << zeep::http::encode_url(value);
-					if (n-- > 1)
-						ps << '&';
-				}
-
-				auto contentHash = zeep::encode_base64(zeep::sha256(req.get_payload()));
-
-				auto pathPart = req.get_uri();
-				auto pqs = pathPart.find('?');
-				if (pqs != std::string::npos)
-					pathPart.erase(pqs, std::string::npos);
-
-				// Correct for a potential context
-				if (not m_server->get_context_name().empty())
-				{
-					zeep::http::uri uri(m_server->get_context_name());
-					pathPart = fs::path("/") / uri.get_path() / fs::path(pathPart).relative_path();
-				}
-
-				std::ostringstream ss;
-				ss << req.get_method() << std::endl
-				   << pathPart << std::endl
-				   << ps.str() << std::endl
-				   << req.get_header("host") << std::endl
-				   << contentHash;
-
-				auto canonicalRequest = ss.str();
-				auto canonicalRequestHash = zeep::encode_base64(zeep::sha256(canonicalRequest));
-
-				// string to sign
-				auto timestamp = req.get_header("X-PDB-REDO-Date");
-
-				std::ostringstream ss2;
-				ss2 << "PDB-REDO-api" << std::endl
-					<< timestamp << std::endl
-					<< credential << std::endl
-					<< canonicalRequestHash;
-				auto stringToSign = ss2.str();
-
-				auto tokenid = credentials[0];
-				auto date = credentials[1];
-
-				auto secret = SessionService::instance().get_by_id(std::stoul(tokenid)).token;
-				auto keyString = "PDB-REDO" + secret;
-
-				auto key = zeep::hmac_sha256(date, keyString);
-				if (zeep::hmac_sha256(stringToSign, key) != signature)
-					throw zh::unauthorized_exception();
-
-				result = zh::rest_controller::handle_request(req, rep);
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals;
-
-				rep.set_content(json({ { "error", e.what() } }));
-				rep.set_status(zh::unauthorized);
-
-				result = true;
-			}
-		}
-
-		return result;
-	}
-
-	// CRUD routines
-
-	CreateSessionResult get_session(unsigned long id)
-	{
-		return SessionService::instance().get_by_id(id);
-	}
-
-	void delete_session(unsigned long id)
-	{
-		SessionService::instance().delete_by_id(id);
-	}
-
-	std::vector<Run> get_all_runs(unsigned long id)
-	{
-		auto session = SessionService::instance().get_by_id(id);
-
-		return RunService::instance().getRunsForUser(session.user);
-	}
-
-	Run create_job(unsigned long sessionID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
-		const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
-	{
-		auto session = SessionService::instance().get_by_id(sessionID);
-
-		return RunService::instance().submit(session.user, coordinates, diffractionData, restraints, sequence, params);
-	}
-
-	Run get_run(unsigned long sessionID, unsigned long runID)
-	{
-		auto session = SessionService::instance().get_by_id(sessionID);
-
-		return RunService::instance().getRun(session.user, runID);
-	}
-
-	std::vector<std::string> get_result_file_list(unsigned long sessionID, unsigned long runID)
-	{
-		auto session = SessionService::instance().get_by_id(sessionID);
-
-		return RunService::instance().getRun(session.user, runID).getResultFileList();
-	}
-
-	fs::path get_result_file(unsigned long sessionID, unsigned long runID, const std::string &file)
-	{
-		auto session = SessionService::instance().get_by_id(sessionID);
-
-		return RunService::instance().getRun(session.user, runID).getResultFile(file);
-	}
-
-	zh::reply get_zipped_result_file(unsigned long sessionID, unsigned long runID)
-	{
-		auto session = SessionService::instance().get_by_id(sessionID);
-
-		const auto &[is, name] = RunService::instance().getRun(session.user, runID).getZippedResultFile();
-
-		zh::reply rep{ zh::ok };
-		rep.set_content(is, "application/zip");
-		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
-
-		return rep;
-	}
-
-	void delete_run(unsigned long sessionID, unsigned long runID)
-	{
-		auto session = SessionService::instance().get_by_id(sessionID);
-
-		return RunService::instance().deleteRun(session.user, runID);
-	}
-
-  private:
-	fs::path m_pdb_redo_dir;
-};
-
-// --------------------------------------------------------------------
-
 struct Stats
 {
 	double RFREE, RFFIN, OZRAMA, FZRAMA, OCHI12, FCHI12, URESO;
@@ -537,15 +304,17 @@ class JobController : public zh::html_controller
 	JobController()
 		: zh::html_controller("job")
 	{
-		map_get("", &JobController::get_job_listing);
-		map_get("output/{job-id}/{file}", &JobController::get_output_file, "job-id", "file");
-		map_get("image/{job-id}", &JobController::get_image_file, "job-id");
-		map_get("result/{job-id}", &JobController::get_result, "job-id");
-		map_get("entry/{job-id}", &JobController::get_entry, "job-id");
-		map_get("delete/{job-id}", &JobController::delete_entry, "job-id");
+		map_get("", &JobController::getJobListing);
+		map_post("", &JobController::postJob, "mtz", "coords", "restraints", "sequence", "params");
+
+		map_get("output/{job-id}/{file}", &JobController::getOutputFile, "job-id", "file");
+		map_get("image/{job-id}", &JobController::getImageFile, "job-id");
+		map_get("result/{job-id}", &JobController::getResult, "job-id");
+		map_get("entry/{job-id}", &JobController::getEntry, "job-id");
+		map_delete("{job-id}", &JobController::deleteJob, "job-id");
 	}
 
-	zh::reply get_job_listing(const zh::scope &scope)
+	zh::reply getJobListing(const zh::scope &scope)
 	{
 		auto credentials = scope.get_credentials();
 
@@ -564,10 +333,24 @@ class JobController : public zh::html_controller
 		}
 		sub.put("runs", std::move(runs));
 
-		return get_template_processor().create_reply_from_template("job-overview", sub);
+		return get_template_processor().create_reply_from_template("jobs", sub);
 	}
 
-	zh::reply get_output_file(const zh::scope &scope, unsigned long job_id, const std::string &file)
+	zh::reply postJob(const zh::scope &scope, const zh::file_param &diffractionData, const zh::file_param &coordinates,
+		const zh::file_param &restraints, const zh::file_param &sequence, bool pairedRefinement)
+	{
+		auto credentials = scope.get_credentials();
+
+		zeep::json::element params;
+		if (pairedRefinement)
+			params["paired"] = true;
+
+		auto r = RunService::instance().submit(credentials["username"].as<std::string>(), coordinates, diffractionData, restraints, sequence, params);
+
+		return getJobListing(scope);
+	}
+
+	zh::reply getOutputFile(const zh::scope &scope, unsigned long job_id, const std::string &file)
 	{
 		auto credentials = scope.get_credentials();
 		auto run = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
@@ -595,7 +378,7 @@ class JobController : public zh::html_controller
 		return result;
 	}
 
-	zh::reply get_image_file(const zh::scope &scope, unsigned long job_id)
+	zh::reply getImageFile(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
 
@@ -610,7 +393,7 @@ class JobController : public zh::html_controller
 		return result;
 	}
 
-	zh::reply get_result(const zh::scope &scope, unsigned long job_id)
+	zh::reply getResult(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
 
@@ -623,7 +406,7 @@ class JobController : public zh::html_controller
 		return get_template_processor().create_reply_from_template("job-result", sub);
 	}
 
-	zh::reply get_entry(const zh::scope &scope, unsigned long job_id)
+	zh::reply getEntry(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
 		auto r = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
@@ -636,12 +419,12 @@ class JobController : public zh::html_controller
 		return get_template_processor().create_reply_from_template("entry::tables", sub);
 	}
 
-	zh::reply delete_entry(const zh::scope &scope, unsigned long job_id)
+	zh::reply deleteJob(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
 		RunService::instance().deleteRun(credentials["username"].as<std::string>(), job_id);
 
-		return zh::reply::redirect("/job");
+		return zh::reply::stock_reply(zh::ok);
 	}
 };
 
@@ -837,9 +620,9 @@ zh::reply AdminController::handle_delete(const zh::scope &scope, const std::stri
 		user_service.deleteUser(id);
 	}
 	// else if (tab == "jobs")
-	// 	RunService::instance().delete_run();
+	// 	RunService::instance().deleteRun();
 	else if (tab == "sessions")
-		SessionService::instance().delete_by_id(id);
+		SessionService::instance().deleteSession(id);
 	else if (tab == "updates")
 		DataService::instance().deleteUpdateRequest(id);
 
@@ -926,7 +709,7 @@ zh::reply DbController::handle_get(const zh::scope &scope, const std::string &pd
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
 	
-	return zh::reply::redirect(pdbID);
+	return zh::reply::redirect("/db/" + pdbID);
 }
 
 zh::reply DbController::handle_show(const zh::scope &scope, const std::string &pdbID)
@@ -938,23 +721,34 @@ zh::reply DbController::handle_show(const zh::scope &scope, const std::string &p
 	sub.put("pdb-id", pdbID);
 	sub.put("version", pdbRedoVersion);
 
-	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
-	std::ifstream dataJson(dataJsonFile);
+	try
+	{
+		auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
+		std::ifstream dataJson(dataJsonFile);
 
-	zeep::json::element data;
-	zeep::json::parse_json(dataJson, data);
+		zeep::json::element data;
+		zeep::json::parse_json(dataJson, data);
 
-	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().getFileList(pdbID));
+		auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().getFileList(pdbID));
 
-	entry["id"] = pdbID;
-	entry["dbEntry"] = true;
+		entry["id"] = pdbID;
+		entry["dbEntry"] = true;
 
-	auto status = DataService::instance().getUpdateStatus(pdbID);
-	to_element(entry["status"], status);
+		auto status = DataService::instance().getUpdateStatus(pdbID);
+		to_element(entry["status"], status);
 
-	sub.put("entry", entry);
+		sub.put("entry", entry);
 
-	return get_template_processor().create_reply_from_template("db-entry", sub);
+		return get_template_processor().create_reply_from_template("db-entry", sub);
+	}
+	catch (...) {}
+
+	// OK, that failed. Find out whynot
+
+	auto whynot = DataService::instance().getWhyNot(pdbID);
+	sub.put("whynot", whynot);
+
+	return get_template_processor().create_reply_from_template("why-not", sub);
 }
 
 zh::reply DbController::handle_entry(const zh::scope &scope, const std::string &pdbID)
@@ -1012,6 +806,9 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option<std::string>("smtp-password", "password of SMTP server used for resetting password"),
 		mcfp::make_option<std::string>("smtp-host", "host of SMTP server used for resetting password"),
 		mcfp::make_option<uint16_t>("smtp-port", "port of SMTP server used for resetting password"),
+
+		mcfp::make_option<std::string>("ebi-coord-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/pdb${id}.ent", "Link template for coord file at the EBI"),
+		mcfp::make_option<std::string>("ebi-sf-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/r${id}sf.ent", "Link template for sf file at the EBI"),
 
 		// for rama-angles
 		mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
@@ -1105,7 +902,7 @@ Command should be either:
 			auto sc = new zh::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
 			sc->add_rule("/admin/**", { "ADMIN" });
-			sc->add_rule("/job", { "USER" });
+			sc->add_rule("/{job,sessions}", { "USER" });
 			sc->add_rule("/job/**", { "USER" });
 
 			sc->add_rule("/{change-password,update-info,token,delete,ccp4-token-request}", { "USER" });

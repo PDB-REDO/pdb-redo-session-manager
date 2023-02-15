@@ -22,6 +22,12 @@
 
 	<main class="container site-content">
 
+		<article z2:if="${whynot}">
+			<h2>Not in PDB-REDO</h2>
+
+			<p>This entry was not found in PDB-REDO. The reason is <span z2:text="${whynot}"></span>.</p>
+		</article>
+
 		<pdb-redo-result z2:url="@{/}">
 			<!-- Placeholders to improve time to first paint -->
 			<h1>PDB-REDO results for job <span z2:text="${job-id}"></span></h1>

@@ -61,7 +61,7 @@ void SessionService::runCleanThread()
 			try
 			{
 				pqxx::transaction tx(prsm_db_connection::instance());
-				auto r = tx.exec0(R"(DELETE FROM session WHERE CURRENT_TIMESTAMP > expires)");
+				auto r = tx.exec0(R"(DELETE FROM redo.session WHERE CURRENT_TIMESTAMP > expires)");
 				tx.commit();
 			}
 			catch (const std::exception &ex)
@@ -82,18 +82,15 @@ Session SessionService::create(const std::string &name, const std::string &user)
 
 	std::string token = zeep::encode_base64url(zeep::random_hash());
 
-	auto r1 = tx.exec1("UPDATE redo.user SET last_session_nr = last_session_nr WHERE id = )" + tx.quote(u.id) + R"( RETURNING last_session_nr")");
-	int session_nr = r1[0].as<int>();
-
 	auto r = tx.exec1(
-		R"(INSERT INTO session (user_id, user_nr, name, token)
-		   VALUES ()" + std::to_string(u.id) +", " + tx.quote(session_nr) + ", " +
-			tx.quote(name) + ", " + tx.quote(token) + R"()
+		R"(INSERT INTO redo.session (user_id, name, token)
+		   VALUES ()" + std::to_string(u.id) + ", " + tx.quote(name) + ", " + tx.quote(token) + R"()
 		   RETURNING id, name, token, trim(both '"' from to_json(created)::text) AS created,
 			   trim(both '"' from to_json(expires)::text) AS expires)");
 
 	unsigned long tokenid = r[0].as<unsigned long>();
 	std::string created{ r["created"].as<std::string>() };
+	std::string expires{ r["expires"].as<std::string>() };
 
 	tx.commit();
 
@@ -101,63 +98,36 @@ Session SessionService::create(const std::string &name, const std::string &user)
 		tokenid,
 		name,
 		user,
-		session_nr,
 		token,
-		parse_timestamp(created)
+		parse_timestamp(created),
+		parse_timestamp(expires)
 	};
 }
 
-Session SessionService::get_by_id(unsigned long id)
+Session SessionService::getSessionByID(unsigned long id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec(
-		R"(SELECT a.id,
-				  a.name AS name,
-				  b.name AS user,
-				  a.user_nr,
-				  a.token,
-				  trim(both '"' from to_json(a.created)::text) AS created,
-				  trim(both '"' from to_json(a.expires)::text) AS expires
-		   FROM session a LEFT JOIN redo.user b ON a.user_id = b.id
-		   WHERE a.id = )" +
-		std::to_string(id));
-
-	Session result = {};
-	if (r.size() == 1)
-		result = r.front();
-
-	tx.commit();
-
-	return result;
-}
-
-Session SessionService::get_by_token(const std::string &token)
-{
-	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec(
+	auto r = tx.exec1(
 		R"(SELECT a.id,
 				  a.name AS name,
 				  b.name AS user,
 				  a.token,
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
-		   FROM session a LEFT JOIN redo.user b ON a.user_id = b.id
-		   WHERE a.token = )" +
-		tx.quote(token));
+		   FROM redo.session a LEFT JOIN redo.user b ON a.user_id = b.id
+		   WHERE a.id = )" + tx.quote(id));
 
-	Session result = {};
-	if (r.size() == 1)
-		result = r.front();
+	Session result(r);
 
 	tx.commit();
 
 	return result;
 }
 
-void SessionService::delete_by_id(unsigned long id)
+void SessionService::deleteSession(unsigned long id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec0(R"(DELETE FROM session WHERE id = )" + std::to_string(id));
+	auto r = tx.exec0(R"(DELETE FROM redo.session WHERE id = )" + std::to_string(id));
 	tx.commit();
 }
 
@@ -173,30 +143,67 @@ std::vector<Session> SessionService::getAllSessions()
 				  trim(both '"' from to_json(a.expires)::text) AS expires,
 				  a.name AS name,
 				  b.name AS user,
-				  a.user_nr,
 				  a.token
-			 FROM session a, redo.user b
+			 FROM redo.session a, redo.user b
 			WHERE a.user_id = b.id
 			ORDER BY a.created ASC)");
 
 	for (auto row : rows)
-	{
-		Session session;
-		session = row;
-		result.push_back(std::move(session));
-	}
+		result.emplace_back(row);
+
+	return result;
+}
+
+std::vector<Session> SessionService::getAllSessionsForUser(const std::string &username)
+{
+	std::vector<Session> result;
+
+	pqxx::transaction tx(prsm_db_connection::instance());
+
+	auto rows = tx.exec(
+		R"(SELECT a.id AS id,
+				  trim(both '"' from to_json(a.created)::text) AS created,
+				  trim(both '"' from to_json(a.expires)::text) AS expires,
+				  a.name AS name,
+				  b.name AS user,
+				  a.token
+			 FROM redo.session a, redo.user b
+			WHERE a.user_id = b.id AND b.name = )" + tx.quote(username) + R"(
+			ORDER BY a.created ASC)");
+
+	for (auto row : rows)
+		result.emplace_back(row);
 
 	return result;
 }
 
 // --------------------------------------------------------------------
 
+Session::Session(unsigned long id, std::string name, const std::string &user, const std::string &token,
+	std::chrono::time_point<std::chrono::system_clock> created, std::chrono::time_point<std::chrono::system_clock> expires)
+	: id(id)
+	, user(user)
+	, token(token)
+	, created(created)
+	, expires(expires)
+{
+}
+
+Session::Session(const pqxx::row &row)
+	: id(row.at("id").as<unsigned long>())
+	, name(row.at("name").as<std::string>())
+	, user(row.at("user").as<std::string>())
+	, token(row.at("token").as<std::string>())
+	, created(parse_timestamp(row.at("created").as<std::string>()))
+	, expires(parse_timestamp(row.at("expires").as<std::string>()))
+{
+}
+
 Session &Session::operator=(const pqxx::row &row)
 {
 	id = row.at("id").as<unsigned long>();
 	name = row.at("name").as<std::string>();
 	user = row.at("user").as<std::string>();
-	user_nr = row.at("user_nr").as<int>();
 	token = row.at("token").as<std::string>();
 	created = parse_timestamp(row.at("created").as<std::string>());
 	expires = parse_timestamp(row.at("expires").as<std::string>());
@@ -204,9 +211,10 @@ Session &Session::operator=(const pqxx::row &row)
 	return *this;
 }
 
+// --------------------------------------------------------------------
 
 CreateSessionResult::CreateSessionResult(const Session &session)
-	: id(session.user_nr)
+	: id(session.id)
 	, name(session.name)
 	, token(session.token)
 	, expires(session.expires)
@@ -214,7 +222,7 @@ CreateSessionResult::CreateSessionResult(const Session &session)
 }
 
 CreateSessionResult::CreateSessionResult(const pqxx::row &row)
-	: id(row.at("user_nr").as<unsigned long>())
+	: id(row.at("id").as<unsigned long>())
 	, name(row.at("name").as<std::string>())
 	, token(row.at("token").as<std::string>())
 	, expires(parse_timestamp(row.at("expires").as<std::string>()))
@@ -233,7 +241,7 @@ CreateSessionResult &CreateSessionResult::operator=(const Session &session)
 
 CreateSessionResult &CreateSessionResult::operator=(const pqxx::row &row)
 {
-	id = row.at("user_nr").as<unsigned long>();
+	id = row.at("id").as<unsigned long>();
 	name = row.at("name").as<std::string>();
 	token = row.at("token").as<std::string>();
 	expires = parse_timestamp(row.at("expires").as<std::string>());
@@ -242,17 +250,14 @@ CreateSessionResult &CreateSessionResult::operator=(const pqxx::row &row)
 }
 
 SessionRESTController::SessionRESTController()
-	: zeep::http::rest_controller("api")
+	: zeep::http::rest_controller("session")
 {
 	// create a new session, user should provide username, password and session name
-	map_post_request("session", &SessionRESTController::post_session, "user", "password", "name");
-
-	// create a new session for a user that is logged in
-	map_get_request("session", &SessionRESTController::get_session, "name");
+	map_post_request("", &SessionRESTController::postSession, "user", "password", "name");
 }
 
 // CRUD routines
-CreateSessionResult SessionRESTController::post_session(std::string user, std::string password, std::string name)
+CreateSessionResult SessionRESTController::postSession(std::string user, std::string password, std::string name)
 {
 	User u = UserService::instance().getUser(user);
 	std::string pw = u.password;
@@ -262,16 +267,8 @@ CreateSessionResult SessionRESTController::post_session(std::string user, std::s
 	if (not pwenc.matches(password, u.password))
 		throw std::runtime_error("Invalid username/password");
 
-	return SessionService::instance().create(name, user);
-}
-
-CreateSessionResult SessionRESTController::get_session(std::string name)
-{
-	auto credentials = get_credentials();
-	if (not credentials)
-		throw zeep::http::forbidden;
-	
-	auto user = credentials["username"].as<std::string>();
+	if (name.empty())
+		name = "<untitled>";
 
 	return SessionService::instance().create(name, user);
 }

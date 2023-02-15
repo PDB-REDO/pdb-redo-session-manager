@@ -54,7 +54,7 @@ def do_login(args):
     if (password == None):
         password = getpass.getpass('Password for ' + args.username + ": ")
     
-    r = requests.post(args.url + "/api/session", data={"user": args.username, "password": password})
+    r = requests.post(args.url + "/session", data={"user": args.username, "password": password})
     r.raise_for_status()
     
     payload = r.json()
