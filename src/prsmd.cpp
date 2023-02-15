@@ -709,7 +709,7 @@ zh::reply DbController::handle_get(const zh::scope &scope, const std::string &pd
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
 	
-	return zh::reply::redirect("/db/" + pdbID);
+	return zh::reply::redirect(pdbID);
 }
 
 zh::reply DbController::handle_show(const zh::scope &scope, const std::string &pdbID)
