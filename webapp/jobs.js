@@ -1,5 +1,25 @@
 window.addEventListener('load', () => {
 
+	const form = document.querySelector("#submit-job-form");
+	form.addEventListener('submit', (e) => {
+		e.preventDefault();
+
+		const data = new FormData(form);
+
+		fetch(form.action, {
+			method: "POST",
+			body: data
+		}).then(response => {
+			if (response.ok)
+				window.location = "job";
+			else
+				throw "Server replied with an error";
+		}).catch(err => {
+			console.log(err);
+			alert("Failed to submit job: " + err);
+		});
+	});
+
 	const table = document.querySelector('#jobs-table');
 	const rows = table.querySelectorAll("tr.done");
 	Array.from(rows).forEach(tr => {

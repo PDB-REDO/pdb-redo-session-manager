@@ -347,7 +347,7 @@ class JobController : public zh::html_controller
 
 		auto r = RunService::instance().submit(credentials["username"].as<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
-		return getJobListing(scope);
+		return zh::reply::stock_reply(zh::ok);
 	}
 
 	zh::reply getOutputFile(const zh::scope &scope, unsigned long job_id, const std::string &file)
