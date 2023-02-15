@@ -1,9 +1,12 @@
 -- New DB Schema for pdb-redo
-DROP TABLE IF EXISTS public.session;
-DROP TABLE IF EXISTS public.update_request;
-DROP TABLE IF EXISTS public.user;
 
-CREATE TABLE public.user (
+CREATE SCHEMA IF NOT EXISTS redo AUTHORIZATION "pdbAdmin";
+
+DROP TABLE IF EXISTS redo.session;
+DROP TABLE IF EXISTS redo.update_request;
+DROP TABLE IF EXISTS redo.user;
+
+CREATE TABLE redo.user (
 	id serial primary key,
 	name varchar NOT NULL UNIQUE,
 	institution varchar NOT NULL,
@@ -27,37 +30,37 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_user_modtime BEFORE
 UPDATE OF name, institution, email, password
-	ON public.user FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+	ON redo.user FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 
-CREATE TABLE public.session (
+CREATE TABLE redo.session (
 	id serial primary key,
-	user_id bigint references public.user on delete cascade deferrable initially deferred,
+	user_id bigint references redo.user on delete cascade deferrable initially deferred,
 	name varchar NOT NULL,
 	token varchar NOT NULL,
 	created timestamp with time zone default CURRENT_TIMESTAMP not null,
 	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
 );
 
-CREATE TABLE public.update_request (
+CREATE TABLE redo.update_request (
 	id serial primary key,
 	pdb_id varchar(8) not null,
 	created timestamp with time zone default CURRENT_TIMESTAMP not null,
 	version double precision not null,
-	user_id bigint references public.user on delete cascade deferrable initially deferred,
+	user_id bigint references redo.user on delete cascade deferrable initially deferred,
 	UNIQUE(pdb_id, user_id)
 );
 
 ALTER TABLE
-	public.user OWNER TO "pdbAdmin";
+	redo.user OWNER TO "pdbAdmin";
 
 ALTER TABLE
-	public.session OWNER TO "pdbAdmin";
+	redo.session OWNER TO "pdbAdmin";
 
 ALTER TABLE
-	public.update_request OWNER TO "pdbAdmin";
+	redo.update_request OWNER TO "pdbAdmin";
 
 insert into
-	public.user (name, institution, email, password, created)
+	redo.user (name, institution, email, password, created)
 values
 	(
 		'maarten',

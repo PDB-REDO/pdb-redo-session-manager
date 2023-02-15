@@ -161,7 +161,7 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 	}
 
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT MAX(version) FROM public.update_request WHERE pdb_id = )" + tx.quote(pdbID));
+	auto r = tx.exec1(R"(SELECT MAX(version) FROM redo.update_request WHERE pdb_id = )" + tx.quote(pdbID));
 	tx.commit();
 
 	if (not r[0].is_null())
@@ -174,7 +174,7 @@ void DataService::requestUpdate(const std::string &pdbID, const User &user)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec0(R"(
-		INSERT INTO public.update_request(pdb_id, user_id, version)
+		INSERT INTO redo.update_request(pdb_id, user_id, version)
 		     VALUES ()" + tx.quote(pdbID) + ", "
 			 	        + tx.quote(user.id) + ", "
 						+ tx.quote(version()) + R"())");
@@ -184,7 +184,7 @@ void DataService::requestUpdate(const std::string &pdbID, const User &user)
 void DataService::deleteUpdateRequest(int id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec0(R"(DELETE FROM public.update_request WHERE id = )" + tx.quote(id));
+	auto r = tx.exec0(R"(DELETE FROM redo.update_request WHERE id = )" + tx.quote(id));
 	tx.commit();
 }
 
@@ -195,7 +195,7 @@ std::vector<UpdateRequest> DataService::get_all_update_requests()
 	std::vector<UpdateRequest> result;
 
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto rows = tx.exec(R"(SELECT a.*, b.name AS user FROM public.update_request a JOIN public.user b ON a.user_id = b.id)");
+	auto rows = tx.exec(R"(SELECT a.*, b.name AS user FROM redo.update_request a JOIN redo.user b ON a.user_id = b.id)");
 
 	for (auto row : rows)
 		result.emplace_back(row);
@@ -213,7 +213,7 @@ std::vector<UpdateRequest> DataService::get_all_update_requests()
 			continue;
 
 		pqxx::transaction tx1(prsm_db_connection::instance());
-		tx1.exec0(R"(DELETE FROM public.update_request WHERE id = )" + tx1.quote(req.id));
+		tx1.exec0(R"(DELETE FROM redo.update_request WHERE id = )" + tx1.quote(req.id));
 		tx1.commit();
 
 		req.id = 0;
