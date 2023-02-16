@@ -46,8 +46,7 @@
 
 			<table class="table table-striped table-sm mt-3" id="users-table">
 				<tbody>
-					<tr data-keytype="i|s|s|s|s">
-						<th class="sortable">Nr</th>
+					<tr data-keytype="s|s|s|s">
 						<th class="sortable">User</th>
 						<th class="sortable">Last Login</th>
 						<th class="sortable">Last Job</th>
@@ -56,11 +55,9 @@
 					</tr>
 
 					<tr class="sorted" z2:each="user, i : ${users}">
-						<td z2:text="${i.count}"></td>
 						<td>
-							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em>
-[[${user.email}]]
-							</div>
+							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em></div>
+							<div z2:text="${user.email}"></div>
 						</td>
 						<!-- <td z2:text="${user.lastLogin}"></td> -->
 						<td z2:text="${#dates.format(user.last-login, '%F')}"></td>
@@ -77,10 +74,9 @@
 		</div>
 
 		<div z2:if="${tab == 'jobs'}">
-			<table class="table table-striped table-sm mt-3">
+			<table class="table table-striped table-hover table-sm mt-3">
 				<tbody>
-					<tr data-keytype="i|s|i|s|s|s">
-						<th class="sortable">Nr</th>
+					<tr data-keytype="s|i|s|s|s">
 						<th class="sortable">User</th>
 						<th class="sortable">Id</th>
 						<th class="sortable">Date</th>
@@ -88,8 +84,8 @@
 						<th class="sortable">Status</th>
 						<th></th>
 					</tr>
-					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|">
-						<td z2:text="${i.count}"></td>
+					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|"
+							z2:classappend="${run.status == 'ended'} ? 'done' : 'not-done'">
 						<td z2:text="${run.user}"></td>
 						<td z2:text="${run.id}"></td>
 						<td z2:text="${#dates.format(run.date, '%F %H:%M')}"></td>
@@ -106,8 +102,7 @@
 		<div z2:if="${tab == 'sessions'}">
 			<table class="table table-striped table-sm mt-3">
 				<thead>
-					<tr data-keytype="i|s|s|i|s|s|s">
-						<th class="sortable">#</th>
+					<tr data-keytype="s|s|i|s|s|s">
 						<th class="sortable">User</th>
 						<th class="sortable">Session Name</th>
 						<th class="sortable">Session ID</th>
@@ -120,7 +115,6 @@
 				</thead>
 				<tbody>
 					<tr class="sorted" z2:each="session, i: ${sessions}">
-						<td z2:text="${i.count}"></td>
 						<td z2:text="${session.user}"></td>
 						<td z2:text="${session.name}"></td>
 						<td z2:text="${session.id}"></td>
@@ -137,8 +131,7 @@
 		<div z2:if="${tab == 'updates'}">
 			<table class="table table-striped table-sm mt-3">
 				<tbody>
-					<tr data-keytype="i|s|s|s|f">
-						<th class="sortable">Nr</th>
+					<tr data-keytype="s|s|s|f">
 						<th class="sortable">User</th>
 						<th class="sortable">Date</th>
 						<th class="sortable">PDB ID</th>
@@ -147,7 +140,6 @@
 					</tr>
 
 					<tr z2:each="update, i : ${updates}">
-						<td z2:text="${i.count}"></td>
 						<td z2:text="${update.user}"></td>
 						<td z2:text="${#dates.format(update.created, '%d %B %Y, %H:%M')}"></td>
 						<td z2:text="${update.pdb_id}"></td>

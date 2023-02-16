@@ -455,7 +455,7 @@ std::vector<Run> RunService::getAllRuns()
 	}
 
 	std::sort(result.begin(), result.end(), [](Run &a, Run &b)
-		{ return a.id < b.id; });
+		{ return a.date > b.date; });
 
 	return result;
 }
