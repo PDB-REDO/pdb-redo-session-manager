@@ -99,7 +99,7 @@ params = {
 
 
 # Create a new job/run
-r = requests.post(PDBREDO_URI + "/api/session/{token_id}/run".format(token_id = token_id), auth = auth, files = files, data = {'parameters': json.dumps(params)})
+r = requests.post(PDBREDO_URI + "/api/run", auth = auth, files = files, data = {'parameters': json.dumps(params)})
 if (not r.ok):
     raise ValueError('Could not submit job to server: ' + r.text)
 
@@ -108,7 +108,7 @@ print("Job submitted with id", run_id)
 
 # Loop until job is done
 while(True):
-    r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}".format(token_id = token_id, run_id = run_id), auth = auth)
+    r = requests.get(PDBREDO_URI + "/api/run/{run_id}".format(run_id = run_id), auth = auth)
     status = r.json()['status']
     
     if (status == 'stopped'):
@@ -122,7 +122,7 @@ while(True):
 
 
 # Get the list of files produced in the output directory
-r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output".format(token_id = token_id, run_id = run_id), auth = auth)
+r = requests.get(PDBREDO_URI + "/api/run/{run_id}/output".format(run_id = run_id), auth = auth)
 
 if (not r.ok):
     raise ValueError("Failed to receive the output file list")
@@ -131,7 +131,7 @@ for file in r.json():
 	print(file)
 
 # Retrieve a single result file. Here you would probably like to retrieve more files
-r = requests.get(PDBREDO_URI + "/api/session/{token_id}/run/{run_id}/output/process.log".format(token_id = token_id, run_id = run_id), auth = auth)
+r = requests.get(PDBREDO_URI + "/api/run/{run_id}/output/process.log".format(run_id = run_id), auth = auth)
 
 if (not r.ok):
     raise ValueError("Failed to receive the process log")

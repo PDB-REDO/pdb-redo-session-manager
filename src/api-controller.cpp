@@ -37,39 +37,42 @@ using json = zeep::json::element;
 
 // --------------------------------------------------------------------
 
-APIRESTController::APIRESTController()
+unsigned long thread_local APIRESTController_v2::s_session_id = 0;
+
+
+APIRESTController_v2::APIRESTController_v2()
 	: zh::rest_controller("api")
 {
 	// get session info
-	map_get_request("session/{id}", &APIRESTController::getSession, "id");
+	map_get_request("", &APIRESTController_v2::getSession);
 
 	// delete a session
-	map_delete_request("session/{id}", &APIRESTController::deleteSession, "id");
+	map_delete_request("", &APIRESTController_v2::deleteSession);
 
 	// return a list of runs
-	map_get_request("session/{id}/run", &APIRESTController::getAllRuns, "id");
+	map_get_request("run", &APIRESTController_v2::getAllRuns);
 
 	// Submit a run (job)
-	map_post_request("session/{id}/run", &APIRESTController::createJob, "id",
+	map_post_request("run", &APIRESTController_v2::createJob,
 		"mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters");
 
 	// return info for a run
-	map_get_request("session/{id}/run/{run}", &APIRESTController::getRun, "id", "run");
+	map_get_request("run/{run}", &APIRESTController_v2::getRun, "run");
 
 	// get a list of the files in output
-	map_get_request("session/{id}/run/{run}/output", &APIRESTController::getResultFileList, "id", "run");
+	map_get_request("run/{run}/output", &APIRESTController_v2::getResultFileList, "run");
 
 	// get all results file zipped into an archive
-	map_get_request("session/{id}/run/{run}/output/zipped", &APIRESTController::getZippedResultFile, "id", "run");
+	map_get_request("run/{run}/output/zipped", &APIRESTController_v2::getZippedResultFile, "run");
 
 	// get a result file
-	map_get_request("session/{id}/run/{run}/output/{file}", &APIRESTController::getResultFile, "id", "run", "file");
+	map_get_request("run/{run}/output/{file}", &APIRESTController_v2::getResultFile, "run", "file");
 
 	// delete a run
-	map_delete_request("session/{id}/run/{run}", &APIRESTController::deleteRun, "id", "run");
+	map_delete_request("run/{run}", &APIRESTController_v2::deleteRun, "run");
 }
 
-bool APIRESTController::handle_request(zh::request &req, zh::reply &rep)
+bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 {
 	bool result = false;
 
@@ -175,6 +178,8 @@ bool APIRESTController::handle_request(zh::request &req, zh::reply &rep)
 			auto key = zeep::hmac_sha256(date, keyString);
 			if (zeep::hmac_sha256(stringToSign, key) != signature)
 				throw zh::unauthorized_exception();
+			
+			s_session_id = stoi(credentials[0]);
 
 			result = zh::rest_controller::handle_request(req, rep);
 		}
@@ -189,60 +194,63 @@ bool APIRESTController::handle_request(zh::request &req, zh::reply &rep)
 		}
 	}
 
+	// reset, just in case
+	s_session_id = 0;
+
 	return result;
 }
 
 // CRUD routines
 
-CreateSessionResult APIRESTController::getSession(unsigned long id)
+CreateSessionResult APIRESTController_v2::getSession()
 {
-	return SessionService::instance().getSessionByID(id);
+	return getSessionForRequest();
 }
 
-void APIRESTController::deleteSession(unsigned long id)
+void APIRESTController_v2::deleteSession()
 {
-	SessionService::instance().deleteSession(id);
+	SessionService::instance().deleteSession(s_session_id);
 }
 
-std::vector<Run> APIRESTController::getAllRuns(unsigned long id)
+std::vector<Run> APIRESTController_v2::getAllRuns()
 {
-	auto session = SessionService::instance().getSessionByID(id);
+	auto session = getSessionForRequest();
 
 	return RunService::instance().getRunsForUser(session.user);
 }
 
-Run APIRESTController::createJob(unsigned long sessionID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
+Run APIRESTController_v2::createJob(const zh::file_param &diffractionData, const zh::file_param &coordinates,
 	const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
 {
-	auto session = SessionService::instance().getSessionByID(sessionID);
+	auto session = getSessionForRequest();
 
 	return RunService::instance().submit(session.user, coordinates, diffractionData, restraints, sequence, params);
 }
 
-Run APIRESTController::getRun(unsigned long sessionID, unsigned long runID)
+Run APIRESTController_v2::getRun(unsigned long runID)
 {
-	auto session = SessionService::instance().getSessionByID(sessionID);
+	auto session = getSessionForRequest();
 
 	return RunService::instance().getRun(session.user, runID);
 }
 
-std::vector<std::string> APIRESTController::getResultFileList(unsigned long sessionID, unsigned long runID)
+std::vector<std::string> APIRESTController_v2::getResultFileList(unsigned long runID)
 {
-	auto session = SessionService::instance().getSessionByID(sessionID);
+	auto session = getSessionForRequest();
 
 	return RunService::instance().getRun(session.user, runID).getResultFileList();
 }
 
-fs::path APIRESTController::getResultFile(unsigned long sessionID, unsigned long runID, const std::string &file)
+fs::path APIRESTController_v2::getResultFile(unsigned long runID, const std::string &file)
 {
-	auto session = SessionService::instance().getSessionByID(sessionID);
+	auto session = getSessionForRequest();
 
 	return RunService::instance().getRun(session.user, runID).getResultFile(file);
 }
 
-zh::reply APIRESTController::getZippedResultFile(unsigned long sessionID, unsigned long runID)
+zh::reply APIRESTController_v2::getZippedResultFile(unsigned long runID)
 {
-	auto session = SessionService::instance().getSessionByID(sessionID);
+	auto session = getSessionForRequest();
 
 	const auto &[is, name] = RunService::instance().getRun(session.user, runID).getZippedResultFile();
 
@@ -253,9 +261,106 @@ zh::reply APIRESTController::getZippedResultFile(unsigned long sessionID, unsign
 	return rep;
 }
 
-void APIRESTController::deleteRun(unsigned long sessionID, unsigned long runID)
+void APIRESTController_v2::deleteRun(unsigned long runID)
 {
-	auto session = SessionService::instance().getSessionByID(sessionID);
+	auto session = getSessionForRequest();
 
 	return RunService::instance().deleteRun(session.user, runID);
+}
+
+// --------------------------------------------------------------------
+
+APIRESTController_v1::APIRESTController_v1()
+	: APIRESTController_v2()
+{
+	// get session info
+	map_get_request("session/{id}", &APIRESTController_v1::getSession, "id");
+
+	// delete a session
+	map_delete_request("session/{id}", &APIRESTController_v1::deleteSession, "id");
+
+	// return a list of runs
+	map_get_request("session/{id}/run", &APIRESTController_v1::getAllRuns, "id");
+
+	// Submit a run (job)
+	map_post_request("session/{id}/run", &APIRESTController_v1::createJob, "id",
+		"mtz-file", "pdb-file", "restraints-file", "sequence-file", "parameters");
+
+	// return info for a run
+	map_get_request("session/{id}/run/{run}", &APIRESTController_v1::getRun, "id", "run");
+
+	// get a list of the files in output
+	map_get_request("session/{id}/run/{run}/output", &APIRESTController_v1::getResultFileList, "id", "run");
+
+	// get all results file zipped into an archive
+	map_get_request("session/{id}/run/{run}/output/zipped", &APIRESTController_v1::getZippedResultFile, "id", "run");
+
+	// get a result file
+	map_get_request("session/{id}/run/{run}/output/{file}", &APIRESTController_v1::getResultFile, "id", "run", "file");
+
+	// delete a run
+	map_delete_request("session/{id}/run/{run}", &APIRESTController_v1::deleteRun, "id", "run");
+}
+
+void APIRESTController_v1::checkSessionID(unsigned long sessionID)
+{
+	if (sessionID != s_session_id)
+		throw zh::forbidden;
+}
+
+// CRUD routines
+
+CreateSessionResult APIRESTController_v1::getSession(unsigned long id)
+{
+	checkSessionID(id);
+	return APIRESTController_v2::getSession();
+}
+
+void APIRESTController_v1::deleteSession(unsigned long id)
+{
+	checkSessionID(id);
+	APIRESTController_v2::deleteSession();
+}
+
+std::vector<Run> APIRESTController_v1::getAllRuns(unsigned long id)
+{
+	checkSessionID(id);
+	return APIRESTController_v2::getAllRuns();
+}
+
+Run APIRESTController_v1::createJob(unsigned long sessionID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
+	const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
+{
+	checkSessionID(sessionID);
+	return APIRESTController_v2::createJob(diffractionData, coordinates, restraints, sequence, params);
+}
+
+Run APIRESTController_v1::getRun(unsigned long sessionID, unsigned long runID)
+{
+	checkSessionID(sessionID);
+	return APIRESTController_v2::getRun(runID);
+}
+
+std::vector<std::string> APIRESTController_v1::getResultFileList(unsigned long sessionID, unsigned long runID)
+{
+	checkSessionID(sessionID);
+	return APIRESTController_v2::getResultFileList(runID);
+}
+
+fs::path APIRESTController_v1::getResultFile(unsigned long sessionID, unsigned long runID, const std::string &file)
+{
+	checkSessionID(sessionID);
+	return APIRESTController_v2::getResultFile(runID, file);
+}
+
+zh::reply APIRESTController_v1::getZippedResultFile(unsigned long sessionID, unsigned long runID)
+{
+	checkSessionID(sessionID);
+	return APIRESTController_v2::getZippedResultFile(runID);
+}
+
+void APIRESTController_v1::deleteRun(unsigned long sessionID, unsigned long runID)
+{
+	checkSessionID(sessionID);
+	APIRESTController_v2::deleteRun(runID);
 }

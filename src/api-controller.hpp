@@ -33,15 +33,48 @@
 
 // --------------------------------------------------------------------
 
-class APIRESTController : public zeep::http::rest_controller
+class APIRESTController_v2 : public zeep::http::rest_controller
 {
   public:
-	APIRESTController();
+	APIRESTController_v2();
 
 	// Bottle neck, to validate access tokens on requests
 	virtual bool handle_request(zeep::http::request &req, zeep::http::reply &rep);
 
 	// CRUD routines
+
+	CreateSessionResult getSession();
+	void deleteSession();
+	std::vector<Run> getAllRuns();
+
+	Run createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
+		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::json::element &params);
+
+	Run getRun(unsigned long runID);
+
+	std::vector<std::string> getResultFileList(unsigned long runID);
+
+	std::filesystem::path getResultFile(unsigned long runID, const std::string &file);
+
+	zeep::http::reply getZippedResultFile(unsigned long runID);
+
+	void deleteRun(unsigned long runID);
+
+  protected:
+
+	Session getSessionForRequest() const
+	{
+		return SessionService::instance().getSessionByID(s_session_id);
+	}
+
+	std::filesystem::path m_pdb_redo_dir;
+	static thread_local unsigned long s_session_id;
+};
+
+class APIRESTController_v1 : public APIRESTController_v2
+{
+  public:
+	APIRESTController_v1();
 
 	CreateSessionResult getSession(unsigned long id);
 	void deleteSession(unsigned long id);
@@ -60,6 +93,5 @@ class APIRESTController : public zeep::http::rest_controller
 
 	void deleteRun(unsigned long sessionID, unsigned long runID);
 
-  private:
-	std::filesystem::path m_pdb_redo_dir;
+	void checkSessionID(unsigned long sessionID);
 };
