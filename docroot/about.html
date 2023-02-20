@@ -19,29 +19,71 @@
 
 			<p>This is PDB-REDO web server. Before using it, please read the <a z2:href="@{/privacy-policy}">privacy policy</a>.</p>
 		</article>
-
+		
+		
 		<article>
+			<h2>References</h2>
 
-			<h2>The Science behind PDB-REDO</h2>
-			<p>Click on the links below to get a reprint of PDB-REDO publications</p>
-
+			<p>There are two main references for PDB-REDO depending on whether you refer to the server or the databank.</p>
 			<div class="programListTable">
 				<table style="margin-left: 0;">
 					<tr>
-						<td><a z2:href="@{/publications/webserver.pdf}" target="_BLANK">Web server </a></td>
+						<td><a z2:href="https://doi.org/10.1107/S2052252514009324" target="_BLANK">Web server</a></td>
 						<td>Joosten RP, Long F, Murshudov GN, Perrakis A. The PDB_REDO server for macromolecular
 							structure model optimization. IUCrJ. 2014 May 30;1(Pt 4):213-20.
 						</td>
 					</tr>
 					<tr>
-						<td><a z2:href="@{/publications/CCP42011.pdf}" target="_BLANK">Decision making </a></td>
+						<td><a z2:href="https://doi.org/10.1002/pro.3353" target="_BLANK">Databank</a></td>
+						<td>van
+							Beusekom B, Touw WG, Tatineni M, Somani S, Rajagopal G, Luo J, Gilliland GL,
+							Perrakis A, Joosten RP Homology-based hydrogen bond information improves
+							crystallographic structures in the PDB. Protein Science. 2018;27:798-808.
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+		
+		<article>
+
+			<h2>The Science behind PDB-REDO</h2>
+			
+			<p>Below are other publications that describe different algorithms and concepts of PDB-REDO.</p>
+
+			<div class="programListTable">
+				<table style="margin-left: 0;">
+                                        <tr>
+						<td><a z2:href="https://doi.org/10.1126/science.317.5835.195" target="_BLANK">No data, no
+								PDB-REDO</a></td>
+						<td>Joosten RP, Vriend G. PDB improvement starts with data deposition. Science 2007;
+							317:195-196.
+						</td>
+					</tr>					
+					<tr>
+						<td><a z2:href="https://dx.doi.org/10.1107/S0907444908037591" target="_BLANK">The value of
+								re&#8209;refinement </a>
+						</td>
+						<td>Joosten RP, Womack T, Vriend G, Bricogne G. Re-refinement from deposited X&#8209;ray
+							data can deliver improved models for most PDB entries. Acta Cryst. 2009;
+							D65:176-185.
+						</td>
+					</tr>					
+					<tr>
+						<td><a z2:href="https://doi.org/10.1107/S0021889809008784" target="_BLANK">The first PDB-REDO</a></td>
+						<td>Joosten RP, et al and Vriend G. PDB_REDO: automated re&#8209;refinement of
+							X&#8209;ray
+							structure models in the PDB. J. Appl. Cryst. 2009; 42:376-384.
+						</td>
+					</tr><tr>
+						<td><a z2:href="https://doi.org/10.1107/S0907444911054515" target="_BLANK">Decision making</a></td>
 						<td>Joosten RP, Joosten K, Murshudov GN, Perrakis A. PDB_REDO: constructive validation,
 							more
 							than just looking for errors. Acta Cryst. 2012; D68:484-496.
 						</td>
 					</tr>
 					<tr>
-						<td><a z2:href="@{/publications/bioinformatics.pdf}" target="_BLANK">Model rebuilding
+						<td><a z2:href="https://doi.org/10.1093/bioinformatics/btr590" target="_BLANK">Model rebuilding
 							</a>
 						</td>
 						<td>Joosten RP, Joosten K, Cohen SX, Vriend G, Perrakis A. Automatic rebuilding and
@@ -49,79 +91,46 @@
 							2011; 27:3392-3398.
 						</td>
 					</tr>
-					<tr>
-						<td><a z2:href="@{/publications/nar.pdf}" target="_BLANK">Database stuff</a></td>
-						<td>Joosten RP, Te Beek TAH, Krieger E, Hekkelman ML, Hooft RWW, Schneider R, Sander C,
-							Vriend G. A series of PDB related databases for everyday needs. Nucl. Acids Res.
-							2011;
-							39:D411-D419.
-						</td>
-					</tr>
-					<tr>
-						<td><a z2:href="@{/publications/science.pdf}" target="_BLANK">No data, no
-								re&#8209;refinement</a></td>
-						<td>Joosten RP, Vriend G. PDB improvement starts with data deposition. Science 2007;
-							317:195-196.
-						</td>
-					</tr>
-					<tr>
-						<td><a z2:href="@{/publications/actacrystd.pdf}" target="_BLANK">The value of
-								re&#8209;refinement </a>
-						</td>
-						<td>Joosten RP, Womack T, Vriend G, Bricogne G. Re-refinement from deposited X&#8209;ray
-							data can deliver improved models for most PDB entries. Acta Cryst. 2009;
-							D65:176-185.
-						</td>
-					</tr>
-					<tr>
-						<td><a z2:href="@{/publications/japplcryst.pdf}" target="_BLANK">PDB-REDO idea </a></td>
-						<td>Joosten RP, et al and Vriend G. PDB_REDO: automated re&#8209;refinement of
-							X&#8209;ray
-							structure models in the PDB. J. Appl. Cryst. 2009; 42:376-384.
-						</td>
-					</tr>
-
-					<tr>
-						<td><a z2:href="@{/publications/Beusekom_et_al-2018-Protein_Science.pdf}"
-								target="_blank">Homology restraints</a></td>
+                                        <tr>
+						<td><a z2:href="https://doi.org/10.1002/pro.3353" target="_blank">Homology restraints</a></td>
 						<td>van
 							Beusekom B, Touw WG, Tatineni M, Somani S, Rajagopal G, Luo J, Gilliland GL,
-							Perrakis A, Joosten RP Homology-based hydrogen bond information improves
-							crystallographic structures in the PDB. Protein Science. 2018;27:798-808.
+							Perrakis A, Joosten RP. Homology-based hydrogen bond information improves
+							crystallographic structures in the PDB. Protein Science. 2018; 27:798-808.
 						</td>
 					</tr>
-
+                                        <tr>
+						<td><a z2:href="https://doi.org/10.1107/S2052252518010552" target="_blank">Loop building</a></td>
+						<td>van
+							Beusekom B, Joosten K, Hekkelman ML, Joosten RP,
+							Perrakis A. Homology-based loop modeling yields more complete crystallographic protein structures.
+							IUCrJ 2018; 5:585-594.
+						</td>
+					</tr>
+                                        <tr>
+						<td><a z2:href="https://doi.org/10.1107/S2059798319003875" target="_blank">N-glycan building</a></td>
+						<td>van
+							Beusekom B, Wezel N, Hekkelman ML, Perrakis A, Emsley E, Joosten RP. 
+							Building and rebuilding N-glycans in protein structure models.
+							Acta Cryst. 2019; D75:416-425.
+						</td>
+					</tr>
+                                        <tr>
+						<td><a z2:href="https://doi.org/10.1107/S2059798321007610" target="_blank">Nucleic acids</a></td>
+						<td>de Vries I, Kwakman T, Lu X-J, Hekkelman ML, Deshpande M, Velankar S, Perrakis A, Joosten RP. 
+							New restraints and validation approaches for nucleic acid structures in PDB-REDO.
+							Acta Cryst. 2021; D77:1127-1141.
+						</td>
+					</tr>
+                                        <tr>
+						<td><a z2:href="https://doi.org/10.1107/S2059798316013036" target="_blank">Zinc sites</a></td>
+						<td>Touw WG, van Beusekom B, Evers JMG, Vriend G, Joosten RP. 
+							Validation and correction of Zn–CysxHisy complexes.
+							Acta Cryst. 2016; D72:1110-1118.
+						</td>
+					</tr>
 				</table>
 			</div>
-		</article>
-
-		<article>
-			<h2>More PDB-REDO</h2>
-			<a name="MORE"></a>
-
-			<p>Click on the links below to download the software, access the PDB-REDO databank, etc</p>
-
-			<div class="programListTable">
-				<table style="margin-left: 0;">
-					<tr>
-						<td>
-							<!--a href="http://pdb-redo.eu/software/downloads.html"-->
-							PDB-REDO software
-							<!--/a-->
-						</td>
-						<td><em>Download the scripts and programs</em> (<a
-								href="https://pdb-redo.eu/software/pdb-redo.tar.bz2">Linux and Bash on Windows
-								10</a>)
-						</td>
-					</tr>
-					<tr>
-						<td><a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/" target="_BLANK">REFMAC</a>
-						</td>
-						<td><em>The PDB-REDO refinement engine from the G. Murshudov group</em></td>
-					</tr>
-				</table>
-			</div>
-
 		</article>
 
 	</div>
