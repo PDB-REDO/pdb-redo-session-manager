@@ -124,7 +124,7 @@
 						<span class="warning" z2:if="${data.RFREE == 'N/A'}">
 							<img z2:src="@{/images/waarschuwing.svg}" />
 							<span class="warningtext">
-								R-free could not be extracted from the PDB header
+								R-free could not be extracted from the structure model header
 							</span>
 						</span>
 					</td>
@@ -149,7 +149,7 @@
 						<span class="warning" z2:if="${data.TSTCNT != data.NTSTCNT}">
 							<img z2:src="@{/images/waarschuwing.svg}" />
 							<span class="warningtext">
-								New test set, PDB-REDO compensated for this.
+								New test set, PDB-REDO compensated for this
 							</span>
 						</span>
 					</td>
@@ -278,7 +278,7 @@
 								<span class="warning">
 									<img z2:src="@{/images/waarschuwing.svg}" />
 									<span class="warningtext">R-free was considered biased, the
-										estimated unbiased R-free was used.</span>
+										estimated unbiased R-free was used</span>
 								</span>
 							</span>
 							<span z2:case="*"
@@ -316,7 +316,7 @@
 					</th>
 				</tr>
 				<tr z2:if="${entry.data.GOT_PROT == null or entry.data.GOT_PROT}">
-					<td class="label">Ramachandran plot appearance</td>
+					<td class="label">Ramachandran plot normality</td>
 					<td class="ar">
 						<span class="raw-value"
 							z2:text="${data.OZRAMA != null ? #numbers.formatDecimal(data.OZRAMA, 1, 3) : 'N/A'}" />
@@ -500,7 +500,7 @@
 
 		<div class="result" z2:with="data=${entry.data}">
 			<table class="c3 perc perc-raw-toggle">
-				<caption>Significant model changes</caption>
+				<caption>Significant structural changes</caption>
 				<tr>
 					<th>Description</th>
 					<th class="ar">Count</th>
