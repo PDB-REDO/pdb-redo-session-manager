@@ -2,7 +2,7 @@
 
 CREATE SCHEMA IF NOT EXISTS redo AUTHORIZATION "pdbAdmin";
 
-DROP TABLE IF EXISTS redo.session;
+DROP TABLE IF EXISTS redo.token;
 DROP TABLE IF EXISTS redo.update_request;
 DROP TABLE IF EXISTS redo.user;
 
@@ -18,7 +18,7 @@ CREATE TABLE redo.user (
 	last_job_nr int default 0,
 	last_job_date timestamp with time zone,
 	last_job_status varchar,
-	last_session_nr int default 0,
+	last_token_nr int default 0,
 	UNIQUE(name, email)
 );
 
@@ -33,11 +33,11 @@ CREATE TRIGGER update_user_modtime BEFORE
 UPDATE OF name, institution, email, password
 	ON redo.user FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 
-CREATE TABLE redo.session (
+CREATE TABLE redo.token (
 	id serial primary key,
 	user_id bigint references redo.user on delete cascade deferrable initially deferred,
 	name varchar NOT NULL,
-	token varchar NOT NULL,
+	secret varchar NOT NULL,
 	created timestamp with time zone default CURRENT_TIMESTAMP not null,
 	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
 );
@@ -55,7 +55,7 @@ ALTER TABLE
 	redo.user OWNER TO "pdbAdmin";
 
 ALTER TABLE
-	redo.session OWNER TO "pdbAdmin";
+	redo.token OWNER TO "pdbAdmin";
 
 ALTER TABLE
 	redo.update_request OWNER TO "pdbAdmin";

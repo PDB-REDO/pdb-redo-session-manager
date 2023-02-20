@@ -6,21 +6,21 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-	<title>PDB-REDO Session Manager</title>
+	<title>PDB-REDO</title>
 
 	<script z2:src="@{/scripts/test-api.js}"></script>
 </head>
 
 <body>
 
-	<nav z2:replace="~{menu :: navbar('session')}" />
+	<nav z2:replace="~{menu :: navbar('token')}" />
 
 	<div class="container">
 
 		<div class="row">
 			<div class="col column-sm mx-5 my-2">
 				<h6>Token generator</h6>
-				<form id="token-form" action="session" method="post">
+				<form id="token-form" action="token" method="post">
 					<div class="input-group input-group-sm mb-3">
 						<span class="input-group-text" id="input-group-tg-user-name">user name</span>
 						<input class="form-control form-control-sm" maxlength="254" id="user" name="user" type="text"
@@ -32,7 +32,7 @@
 							type="password" required="true" aria-describedby="input-group-tg-password" />
 					</div>
 					<div class="input-group input-group-sm mb-3">
-						<span class="input-group-text" id="input-group-tg-name">session name</span>
+						<span class="input-group-text" id="input-group-tg-name">token name</span>
 						<input class="form-control form-control-sm" maxlength="254" id="name" name="name" type="text"
 							aria-describedby="input-group-tg-name" required="true" />
 					</div>

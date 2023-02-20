@@ -30,19 +30,19 @@
 
 #include <pqxx/pqxx>
 
-struct Session
+struct Token
 {
 	unsigned long id = 0;
 	std::string name;
 	std::string user;
-	std::string token;
+	std::string secret;
 	std::chrono::time_point<std::chrono::system_clock> created;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
-	Session(const pqxx::row &row);
-	Session(unsigned long id, std::string name, const std::string &user, const std::string &token,
+	Token(const pqxx::row &row);
+	Token(unsigned long id, std::string name, const std::string &user, const std::string &secret,
 		std::chrono::time_point<std::chrono::system_clock> created, std::chrono::time_point<std::chrono::system_clock> expires);
-	Session &operator=(const pqxx::row &row);
+	Token &operator=(const pqxx::row &row);
 
 	explicit operator bool() const { return id != 0; }
 
@@ -54,7 +54,7 @@ struct Session
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("name", name)
 		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("token", token)
+		   & zeep::make_nvp("secret", secret)
 		   & zeep::make_nvp("created", created)
 		   & zeep::make_nvp("expires", expires);
 	}
@@ -62,15 +62,15 @@ struct Session
 
 // --------------------------------------------------------------------
 
-class SessionService
+class TokenService
 {
   public:
 	static void init()
 	{
-		sInstance = new SessionService();
+		sInstance = new TokenService();
 	}
 
-	static SessionService &instance()
+	static TokenService &instance()
 	{
 		return *sInstance;
 	}
@@ -81,19 +81,19 @@ class SessionService
 		sInstance = nullptr;
 	}
 
-	Session create(const std::string &name, const std::string &user);
-	Session getSessionByID(unsigned long id);
-	void deleteSession(unsigned long id);
+	Token create(const std::string &name, const std::string &user);
+	Token getTokenByID(unsigned long id);
+	void deleteToken(unsigned long id);
 
-	std::vector<Session> getAllSessions();
-	std::vector<Session> getAllSessionsForUser(const std::string &user);
+	std::vector<Token> getAllTokens();
+	std::vector<Token> getAllTokensForUser(const std::string &user);
 
   private:
-	SessionService();
-	~SessionService();
+	TokenService();
+	~TokenService();
 
-	SessionService(const SessionService &) = delete;
-	SessionService &operator=(const SessionService &) = delete;
+	TokenService(const TokenService &) = delete;
+	TokenService &operator=(const TokenService &) = delete;
 
 	void runCleanThread();
 
@@ -103,42 +103,16 @@ class SessionService
 	std::mutex m_cv_m;
 	std::thread m_clean;
 
-	static SessionService *sInstance;
+	static TokenService *sInstance;
 };
 
 // --------------------------------------------------------------------
 
-struct CreateSessionResult
-{
-	unsigned long id = 0;
-	std::string name;
-	std::string token;
-	std::chrono::time_point<std::chrono::system_clock> expires;
-
-	CreateSessionResult(const Session &session);
-	CreateSessionResult(const pqxx::row &row);
-	CreateSessionResult &operator=(const Session &session);
-	CreateSessionResult &operator=(const pqxx::row &row);
-
-	explicit operator bool() const { return id != 0; }
-
-	bool expired() const { return std::chrono::system_clock::now() > expires; }
-
-	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
-	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("name", name)
-		   & zeep::make_nvp("token", token)
-		   & zeep::make_nvp("expires", expires);
-	}
-};
-
-class SessionRESTController : public zeep::http::rest_controller
+class TokenRESTController : public zeep::http::rest_controller
 {
   public:
-	SessionRESTController();
+	TokenRESTController();
 
 	// CRUD routines
-	CreateSessionResult postSession(std::string user, std::string password, std::string name);
+	Token postToken(std::string user, std::string password, std::string name);
 };

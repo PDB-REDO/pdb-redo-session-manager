@@ -26,7 +26,7 @@
 
 #include "user-service.hpp"
 
-#include "session-service.hpp"
+#include "token-service.hpp"
 #include "prsm-db-connection.hpp"
 
 #include <zeep/http/uri.hpp>
@@ -618,9 +618,9 @@ UserHTMLController::UserHTMLController()
 
 	map_get("ccp4-token-request", &UserHTMLController::get_token_for_ccp4, "reqid", "cburl");
 
-	map_get("sessions", &UserHTMLController::getSessions);
-	map_delete("sessions", &UserHTMLController::deleteSession, "id");
-	map_get("session", &UserHTMLController::createSession, "name");
+	map_get("tokens", &UserHTMLController::getTokens);
+	map_delete("tokens", &UserHTMLController::deleteToken, "id");
+	map_get("token", &UserHTMLController::createToken, "name");
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -913,37 +913,37 @@ zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope
 	return get_template_processor().create_reply_from_template("index", sub);
 }
 
-zeep::http::reply UserHTMLController::getSessions(const zeep::http::scope &scope)
+zeep::http::reply UserHTMLController::getTokens(const zeep::http::scope &scope)
 {
 	auto username = scope.get_credentials()["username"].as<std::string>();
 
 	zeep::http::scope sub(scope);
 	
-	auto s = SessionService::instance().getAllSessionsForUser(username);
+	auto s = TokenService::instance().getAllTokensForUser(username);
 	zeep::json::element e;
 	to_element(e, s);
-	sub.put("sessions", e);
+	sub.put("tokens", e);
 
-	return get_template_processor().create_reply_from_template("sessions", sub);
+	return get_template_processor().create_reply_from_template("tokens", sub);
 }
 
-zeep::http::reply UserHTMLController::deleteSession(const zeep::http::scope &scope, unsigned long id)
+zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope, unsigned long id)
 {
 	auto username = scope.get_credentials()["username"].as<std::string>();
 
 	zeep::http::scope sub(scope);
 
-	Session s = SessionService::instance().getSessionByID(id);
+	Token s = TokenService::instance().getTokenByID(id);
 
 	if (s.user != username)
 		throw zeep::http::forbidden;
 
-	SessionService::instance().deleteSession(id);
+	TokenService::instance().deleteToken(id);
 
 	return zeep::http::reply::stock_reply(zeep::http::ok);
 }
 
-zeep::http::reply UserHTMLController::createSession(const zeep::http::scope &scope, std::string name)
+zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope, std::string name)
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
@@ -954,7 +954,7 @@ zeep::http::reply UserHTMLController::createSession(const zeep::http::scope &sco
 	if (name.empty())
 		name = "<untitled>";
 
-	auto s = SessionService::instance().create(name, username);
+	auto s = TokenService::instance().create(name, username);
 
-	return zeep::http::reply::redirect("/sessions");
+	return zeep::http::reply::redirect("/tokens");
 }

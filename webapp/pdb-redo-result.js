@@ -137,7 +137,7 @@ class PDBRedoResult extends HTMLElement {
 	}
 
 	reloadJobData() {
-		fetch(new PDBRedoApiRequest(`${this.url}/api/session/${this.tokenID}/run/${this.jobID}/output/data.json`, {
+		fetch(new PDBRedoApiRequest(`${this.url}/api/run/${this.jobID}/output/data.json`, {
 			token: {
 				id: this.tokenID,
 				secret: this.tokenSecret,

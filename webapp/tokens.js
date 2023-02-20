@@ -6,9 +6,9 @@ window.addEventListener('load', () => {
 				e.preventDefault();
 				e.stopPropagation();
 
-				if (confirm(`Are you sure you want to delete session ${btn.dataset.id}?`))
+				if (confirm(`Are you sure you want to delete token ${btn.dataset.id}?`))
 				{
-					fetch(`sessions?id=${btn.dataset.id}`, {
+					fetch(`tokens?id=${btn.dataset.id}`, {
 						method: "DELETE",
 						credentials: 'include'
 					}).then(r => {
@@ -18,7 +18,7 @@ window.addEventListener('load', () => {
 							return r.text();
 					}).then(r => {
 						console.log(r);
-						alert("Deleting the session failed");
+						alert("Deleting the token failed");
 					});
 				}
 			});

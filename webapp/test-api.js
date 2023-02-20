@@ -79,7 +79,7 @@ class ApiTester {
 			return;
 		}
 
-		const req = new PDBRedoApiRequest(`api/session/${this.token.id}`, {
+		const req = new PDBRedoApiRequest(`api`, {
 			method: "DELETE",
 			token: {
 				id: this.token.id,
@@ -116,7 +116,7 @@ class ApiTester {
 
 		let statusOK;
 
-		PDBRedoApiRequest.create(`/api/session/${tokenID}`, {
+		PDBRedoApiRequest.create(`/api`, {
 			method: "GET",
 			token: {
 				id: tokenID,
@@ -151,7 +151,7 @@ class ApiTester {
 
 		let statusOK;
 
-		PDBRedoApiRequest.create(`api/session/${tokenID}/run`, {
+		PDBRedoApiRequest.create(`api/run`, {
 			method: "POST",
 			token: {
 				id: tokenID,
@@ -185,7 +185,7 @@ class ApiTester {
 		const form = document.forms["fetch-runs-form"];
 		const tokenID = form["token-id"].value;
 
-		const req = new PDBRedoApiRequest(`api/session/${tokenID}/run`, {
+		const req = new PDBRedoApiRequest(`api/run`, {
 			token: {
 				id: tokenID,
 				secret: form["token-secret"].value
@@ -241,7 +241,7 @@ class ApiTester {
 	deleteRun(tokenID, runID) {
 		const form = document.forms["fetch-runs-form"];
 
-		PDBRedoApiRequest.create(`/api/session/${tokenID}/run/${runID}`, {
+		PDBRedoApiRequest.create(`/api/run/${runID}`, {
 			method: "DELETE",
 			token: {
 				id: tokenID,

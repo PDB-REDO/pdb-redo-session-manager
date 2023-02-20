@@ -521,12 +521,12 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 	std::string active = tab.value_or("users");
 	sub.put("tab", active);
 
-	if (active == "sessions")
+	if (active == "tokens")
 	{
-		json sessions;
-		auto s = SessionService::instance().getAllSessions();
-		to_element(sessions, s);
-		sub.put("sessions", sessions);
+		json tokens;
+		auto s = TokenService::instance().getAllTokens();
+		to_element(tokens, s);
+		sub.put("tokens", tokens);
 	}
 	else if (active == "users")
 	{
@@ -621,8 +621,8 @@ zh::reply AdminController::handle_delete(const zh::scope &scope, const std::stri
 	}
 	// else if (tab == "jobs")
 	// 	RunService::instance().deleteRun();
-	else if (tab == "sessions")
-		SessionService::instance().deleteSession(id);
+	else if (tab == "tokens")
+		TokenService::instance().deleteToken(id);
 	else if (tab == "updates")
 		DataService::instance().deleteUpdateRequest(id);
 
@@ -881,7 +881,7 @@ Command should be either:
 
 		RunService::init(runsDir);
 
-		SessionService::init();
+		TokenService::init();
 		UserService::init(admin);
 
 		std::string secret;
@@ -902,7 +902,7 @@ Command should be either:
 			auto sc = new zh::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
 			sc->add_rule("/admin/**", { "ADMIN" });
-			sc->add_rule("/{job,sessions}", { "USER" });
+			sc->add_rule("/{job,tokens}", { "USER" });
 			sc->add_rule("/job/**", { "USER" });
 
 			sc->add_rule("/{change-password,update-info,token,delete,ccp4-token-request}", { "USER" });
@@ -935,7 +935,7 @@ Command should be either:
 			s->add_controller(new UserHTMLController());
 			s->add_controller(new AdminController());
 			s->add_controller(new DbController());
-			s->add_controller(new SessionRESTController());
+			s->add_controller(new TokenRESTController());
 			s->add_controller(new APIRESTController_v1());
 			s->add_controller(new APIRESTController_v2());
 

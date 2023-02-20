@@ -34,8 +34,8 @@ class SortableTable {
 		this.sortDescending = desc;
 
 		rowArray.sort((a, b) => {
-			let ka = Array.from(a.getElementsByTagName("td"))[ix].innerText;
-			let kb = Array.from(b.getElementsByTagName("td"))[ix].innerText;
+			let ka = Array.from(a.children)[ix].innerText;
+			let kb = Array.from(b.children)[ix].innerText;
 
 			let d = 0;
 
@@ -72,23 +72,6 @@ class SortableTable {
 		th.classList.add(desc ? "sorted-desc" : "sorted-asc");
 	}
 }
-
-function deleteSession(sessionID) {
-
-	const fd = new FormData();
-	fd.append("sessionid", sessionID);
-
-	fetch('admin/deleteSession', {
-		method: "DELETE",
-		body: fd
-	}).then(r => {
-		if (r.ok)
-			window.location.reload();
-		else
-			alert("delete failed");
-	});
-}
-
 
 window.addEventListener('load', () => {
 

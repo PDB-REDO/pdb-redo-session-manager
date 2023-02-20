@@ -27,7 +27,7 @@
 #pragma once
 
 #include "run-service.hpp"
-#include "session-service.hpp"
+#include "token-service.hpp"
 
 #include <zeep/http/rest-controller.hpp>
 
@@ -43,8 +43,8 @@ class APIRESTController_v2 : public zeep::http::rest_controller
 
 	// CRUD routines
 
-	CreateSessionResult getSession();
-	void deleteSession();
+	Token getToken();
+	void deleteToken();
 	std::vector<Run> getAllRuns();
 
 	Run createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
@@ -62,13 +62,13 @@ class APIRESTController_v2 : public zeep::http::rest_controller
 
   protected:
 
-	Session getSessionForRequest() const
+	Token getTokenForRequest() const
 	{
-		return SessionService::instance().getSessionByID(s_session_id);
+		return TokenService::instance().getTokenByID(s_token_id);
 	}
 
 	std::filesystem::path m_pdb_redo_dir;
-	static thread_local unsigned long s_session_id;
+	static thread_local unsigned long s_token_id;
 };
 
 class APIRESTController_v1 : public APIRESTController_v2
@@ -76,22 +76,22 @@ class APIRESTController_v1 : public APIRESTController_v2
   public:
 	APIRESTController_v1();
 
-	CreateSessionResult getSession(unsigned long id);
-	void deleteSession(unsigned long id);
+	Token getToken(unsigned long id);
+	void deleteToken(unsigned long id);
 	std::vector<Run> getAllRuns(unsigned long id);
 
-	Run createJob(unsigned long sessionID, const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
+	Run createJob(unsigned long tokenID, const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
 		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::json::element &params);
 
-	Run getRun(unsigned long sessionID, unsigned long runID);
+	Run getRun(unsigned long tokenID, unsigned long runID);
 
-	std::vector<std::string> getResultFileList(unsigned long sessionID, unsigned long runID);
+	std::vector<std::string> getResultFileList(unsigned long tokenID, unsigned long runID);
 
-	std::filesystem::path getResultFile(unsigned long sessionID, unsigned long runID, const std::string &file);
+	std::filesystem::path getResultFile(unsigned long tokenID, unsigned long runID, const std::string &file);
 
-	zeep::http::reply getZippedResultFile(unsigned long sessionID, unsigned long runID);
+	zeep::http::reply getZippedResultFile(unsigned long tokenID, unsigned long runID);
 
-	void deleteRun(unsigned long sessionID, unsigned long runID);
+	void deleteRun(unsigned long tokenID, unsigned long runID);
 
-	void checkSessionID(unsigned long sessionID);
+	void checkTokenID(unsigned long tokenID);
 };

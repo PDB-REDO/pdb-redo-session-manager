@@ -6,7 +6,7 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-	<title>PDB-REDO Session Manager - Admin console</title>
+	<title>PDB-REDO - Admin console</title>
 
 	<script src="scripts/admin.js"></script>
 </head>
@@ -33,8 +33,8 @@
 					<a href="?tab=jobs" class="nav-link" z2:classappend="${tab == 'jobs' ? 'active'}">Jobs</a>
 				</li>
 				<li class="nav-item">
-					<a href="?tab=sessions" class="nav-link"
-						z2:classappend="${tab == 'sessions' ? 'active'}">Sessions</a>
+					<a href="?tab=tokens" class="nav-link"
+						z2:classappend="${tab == 'tokens' ? 'active'}">tokens</a>
 				</li>
 				<li class="nav-item">
 					<a href="?tab=updates" class="nav-link" z2:classappend="${tab == 'updates' ? 'active'}">Updates</a>
@@ -46,7 +46,8 @@
 
 			<table class="table table-striped table-sm mt-3" id="users-table">
 				<tbody>
-					<tr data-keytype="s|s|s|s">
+					<tr data-keytype="i|s|s|s|s">
+						<th class="sortable">Nr</th>
 						<th class="sortable">User</th>
 						<th class="sortable">Last Login</th>
 						<th class="sortable">Last Job</th>
@@ -55,6 +56,7 @@
 					</tr>
 
 					<tr class="sorted" z2:each="user, i : ${users}">
+						<td z2:text="${i.count}"></td>
 						<td>
 							<div style="white-space: pre-wrap;"><strong>[[${user.name}]]</strong>, <em>[[${user.institution}]]</em></div>
 							<div z2:text="${user.email}"></div>
@@ -76,7 +78,8 @@
 		<div z2:if="${tab == 'jobs'}">
 			<table class="table table-striped table-hover table-sm mt-3">
 				<tbody>
-					<tr data-keytype="s|i|s|s|s">
+					<tr data-keytype="i|s|i|s|s|s">
+						<th class="sortable">Nr</th>
 						<th class="sortable">User</th>
 						<th class="sortable">Id</th>
 						<th class="sortable">Date</th>
@@ -84,8 +87,8 @@
 						<th class="sortable">Status</th>
 						<th></th>
 					</tr>
-					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|"
-							z2:classappend="${run.status == 'ended'} ? 'done' : 'not-done'">
+					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|" z2:classappend="${run.status == 'ended'} ? 'done' : 'not-done'">
+						<td z2:text="${i.count}"></td>
 						<td z2:text="${run.user}"></td>
 						<td z2:text="${run.id}"></td>
 						<td z2:text="${#dates.format(run.date, '%F %H:%M')}"></td>
@@ -99,13 +102,14 @@
 			</table>
 		</div>
 
-		<div z2:if="${tab == 'sessions'}">
+		<div z2:if="${tab == 'tokens'}">
 			<table class="table table-striped table-sm mt-3">
 				<thead>
-					<tr data-keytype="s|s|i|s|s|s">
+					<tr data-keytype="i|s|s|i|s|s|s">
+						<th class="sortable">Nr</th>
 						<th class="sortable">User</th>
-						<th class="sortable">Session Name</th>
-						<th class="sortable">Session ID</th>
+						<th class="sortable">Token Name</th>
+						<th class="sortable">Token ID</th>
 						<th class="sortable">Token</th>
 						<th class="sortable">Created</th>
 						<th class="sortable">Expires</th>
@@ -114,15 +118,16 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="sorted" z2:each="session, i: ${sessions}">
-						<td z2:text="${session.user}"></td>
-						<td z2:text="${session.name}"></td>
-						<td z2:text="${session.id}"></td>
-						<td z2:text="${session.token}"></td>
-						<td z2:text="${#dates.format(session.created, '%d %B %Y, %H:%M')}"></td>
-						<td z2:text="${#dates.format(session.expires, '%d %B %Y, %H:%M')}"></td>
+					<tr class="sorted" z2:each="token, i: ${tokens}">
+						<td z2:text="${i.count}"></td>
+						<td z2:text="${token.user}"></td>
+						<td z2:text="${token.name}"></td>
+						<td z2:text="${token.id}"></td>
+						<td z2:text="${token.token}"></td>
+						<td z2:text="${#dates.format(token.created, '%d %B %Y, %H:%M')}"></td>
+						<td z2:text="${#dates.format(token.expires, '%d %B %Y, %H:%M')}"></td>
 						<td><a href="#" class="btn btn-sm btn-outline-secondary bi bi-trash delete-a"
-								aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${session.id}"></a></td>
+								aria-label="Delete" z2:attr="data-nr=${i.count},data-id=${token.id}"></a></td>
 					</tr>
 				</tbody>
 			</table>
@@ -131,7 +136,8 @@
 		<div z2:if="${tab == 'updates'}">
 			<table class="table table-striped table-sm mt-3">
 				<tbody>
-					<tr data-keytype="s|s|s|f">
+					<tr data-keytype="i|s|s|s|f">
+						<th class="sortable">Nr</th>
 						<th class="sortable">User</th>
 						<th class="sortable">Date</th>
 						<th class="sortable">PDB ID</th>
@@ -139,7 +145,8 @@
 						<th></th>
 					</tr>
 
-					<tr z2:each="update, i : ${updates}">
+					<tr class="sorted" z2:each="update, i : ${updates}">
+						<td z2:text="${i.count}"></td>
 						<td z2:text="${update.user}"></td>
 						<td z2:text="${#dates.format(update.created, '%d %B %Y, %H:%M')}"></td>
 						<td z2:text="${update.pdb_id}"></td>

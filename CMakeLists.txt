@@ -115,8 +115,8 @@ add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/session-service.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/session-service.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/token-service.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/token-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/prsm-db-connection.cpp
 
@@ -139,7 +139,7 @@ set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/request.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/sessions.js
+	${CMAKE_CURRENT_SOURCE_DIR}/webapp/tokens.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/test-api.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
 )

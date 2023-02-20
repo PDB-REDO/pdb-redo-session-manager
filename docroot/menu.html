@@ -11,9 +11,7 @@
 
 				<nav class="first">
 					<a href="http://www.nki.nl" target="_BLANK">NKI Research</a> |
-					<a href="http://www.nki.nl/divisions/biochemistry/" title="BioChemistry Homepage"
-						target="_BLANK">Biochemistry</a>
-					|
+					<!-- <a href="http://www.nki.nl/divisions/biochemistry/" title="BioChemistry Homepage" target="_BLANK">Biochemistry</a> | -->
 					<a href="http://www.nki.nl/divisions/biochemistry/perrakis-a-group/" target="_BLANK">Perrakis
 						group</a>
 				</nav>
@@ -34,6 +32,21 @@
 								z2:href="@{/}">Home</a>
 						</li>
 
+						<li class="nav-item dropdown">
+							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button"
+								data-bs-toggle="dropdown" aria-expanded="false">
+								Tools
+							</a>
+
+							<ul class="dropdown-menu m-0" aria-labelledby="navbarDropdown2">
+								<li><a class="dropdown-item" href="https://lahma.pdb-redo.eu/">Lahma</a></li>
+								<li><a class="dropdown-item" href="https://alphafill.eu">AlphaFill</a></li>
+								<li><a class="dropdown-item" href="https://pdb-redo.eu/tortoize">Tortoize</a></li>
+								<li><a class="dropdown-item" href="https://ccd.rhpc.nki.nl/">CCD</a></li>
+								<li><a class="dropdown-item" href="https://pdb-redo.eu/archive">Archive</a></li>
+							</ul>
+						</li>
+
 						<li class="nav-item">
 							<a class="nav-link"
 								z2:classappend="|${page == 'job' ? 'active' : ''} ${#security.authorized ?: 'disabled'}|"
@@ -42,12 +55,12 @@
 
 						<li class="nav-item">
 							<a class="nav-link"
-								z2:classappend="|${page == 'session' ? 'active' : ''} ${#security.authorized ?: 'disabled'}|"
-								z2:href="@{/sessions}">Sessions</a>
+								z2:classappend="|${page == 'token' ? 'active' : ''} ${#security.authorized ?: 'disabled'}|"
+								z2:href="@{/tokens}">Tokens</a>
 						</li>
 
 						<!-- <li class="nav-item">
-							<a class="nav-link" z2:classappend="${page == 'session' ? 'active' : ''}"
+							<a class="nav-link" z2:classappend="${page == 'token' ? 'active' : ''}"
 								z2:href="@{/tokens}">Token generator</a>
 						</li> -->
 
@@ -67,11 +80,11 @@
 						</li>
 
 						<li z2:if="${#security.authorized}" class="nav-item dropdown">
-							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown1" role="button"
 								data-bs-toggle="dropdown" aria-expanded="false" z2:text="${#security.username}">
 								Dropdown
 							</a>
-							<ul class="dropdown-menu m-0" aria-labelledby="navbarDropdown">
+							<ul class="dropdown-menu m-0" aria-labelledby="navbarDropdown1">
 								<li><a class="dropdown-item" z2:href="@{/change-password}">Change Password</a></li>
 								<li><a class="dropdown-item" z2:href="@{/update-info}">Update User Information</a></li>
 								<li><a class="dropdown-item" z2:href="@{/delete}">Delete account</a></li>
