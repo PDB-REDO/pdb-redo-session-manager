@@ -24,27 +24,16 @@
 		<article>
 			<h2>PDB-REDO: updated and optimised crystallographic structures</h2>
 
-			<p>PDB-REDO is a procedure to optimise crystallographic structure models, providing
-				algorithms that make a fully automated decision making system for refinement,
-				rebuilding and validation. It combines popular crystallographic software from
-				<a href="http://www.ccp4.ac.uk/">CCP4</a>, e.g.
-				<a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/">REFMAC</a> and
-				<a href="https://www2.mrc-lmb.cam.ac.uk/personal/pemsley/coot/">COOT</a>,
-				with with our specially developed rebuilding tools
-				<a href="https://pdb-redo.eu/publications/bioinformatics.pdf">Centrifuge, Pepflip &amp; SideAide</a>
-				and structure analysis tools like
-				<a href="http://swift.cmbi.ru.nl/whatif/">WHAT IF</a> and
-				<a href="http://www.glycosciences.de/tools/pdbcare/">PDB-care</a>.
-				PDB-REDO optimises refinement settings (e.g. geometric and B-factor restraint weights,
-				B-factor model, TLS groups, NCS and homology restraints), refines with REFMAC, partially
-				rebuilds the structure (rejects waters, refines side chains, checks peptide planes),
-				refines some more, and then validates the results.
+			<p>PDB-REDO is an automated procedure to refine, rebuild and validate your model. It combines popular 
+                                crystallographic software from <a href="http://www.ccp4.ac.uk/">CCP4</a>, e.g.
+				<a href="http://www2.mrc-lmb.cam.ac.uk/groups/murshudov/">REFMAC</a>,
+				with with our specially developed tools like pepflip, loopwhole, and HODER,
+				and structure analysis tools like tortoize and densty-fitness.
 			</p>
 
-			<p>With PDB-REDO you can obtain updated and optimised versions of existing entries of the
-				<a href="http://www.wwpdb.org/">PDB</a> from our DataBank, or you can optimise your own
-				structure model using our Server. If you want to know more or install PDB-REDO on your
-				own computers, please check <a href="#MORE">below</a>.
+			<p>With PDB-REDO you can obtain updated and optimised versions of 
+				<a href="http://www.wwpdb.org/">PDB</a> entries from our DataBank, or you can optimise your own
+				structure model using our Server. 
 			</p>
 		</article>
 
@@ -53,11 +42,7 @@
 			<h2>PDB-REDO Databank</h2>
 
 			<p>The PDB-REDO databank contains optimised versions of existing PDB entries with electron
-				density maps, a description of model changes, and a wealth of model validation data. It is a
-				good starting point for any structural biology project.</p>
-			<p>All the entries are treated with a consistent protocol that reduces the effects of
-				differences in age, software, and depositors. This makes PDB-REDO a great datatset for large
-				scale structure analysis studies.</p>
+				density maps, a description of model changes, and a wealth of model validation data. </p>
 
 			<form method="post" z2:action="@{/db/get}" style="max-width: 20em;" name="redo">
 				<div class="input-group input-group-sm mb-3">
@@ -69,20 +54,18 @@
 			</form>
 
 			<p><a href="download-info.html" z2:href="@{/download-info.html}">Here</a> you can find more information
-				about downloading PDB-REDO databank entries. And <a href="license.txt"
-					z2:href="@{/license.txt}">here</a> you can find the data usage license.</p>
+				about downloading PDB-REDO databank entries.</p>
 		</article>
 
 		<article>
 			<h2>PDB-REDO server</h2>
 
 			<p>The PDB-REDO server helps you to get a publication quality structure. It takes your current
-				model (PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
-				model, new maps, validation reports, and many tools to continue working on your model,
-				including COOT menus customised for inspecting your structure.</p>
+				model (mmCIF/PDB), diffraction data (MTZ), and (optional) ligand restraints and it returns a new
+				model, new maps, validation reports, and many tools to continue working on your model.</p>
 
-			<p z2:if="${not #security.authorized}">You have to <a z2:href="@{/login}">log in</a> in order to be
-				able to submit new PDB-REDO jobs.</p>
+			<p z2:if="${not #security.authorized}">You have to <a z2:href="@{/login}">log in</a> to 
+				submit PDB-REDO jobs.</p>
 		</article>
 
 	</div>
