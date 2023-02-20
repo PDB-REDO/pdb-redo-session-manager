@@ -21,7 +21,7 @@
 		<article>
 			<h2>Submit a new PDB-REDO job</h2>
 
-			<form z2:fragment="submit-form" id="submit-job-form" method="post" enctype="multipart/form-data">
+			<form z2:fragment="submit-form" name="job-form" method="post" enctype="multipart/form-data" z2:action="@{/job}">
 				<div class="input-group input-group-sm mb-3">
 					<label class="input-group-text" for="input-group-mtz-file">MTZ file</label>
 					<input type="file" class="form-control" id="input-group-mtz-file" name="mtz" />
@@ -47,7 +47,7 @@
 					<label class="form-check-label" for="paired-refinement-cb">Paired refinement</label>
 				</div>
 
-				<button type="submit" form="submit-job-form" class="btn btn-sm btn-primary mt-3">Submit</button>
+				<button type="submit" class="btn btn-sm btn-primary mt-3">Submit</button>
 			</form>
 		</article>
 
