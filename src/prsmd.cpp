@@ -439,6 +439,7 @@ class RootController : public zh::html_controller
 		map_get("about", "about");
 		map_get("privacy-policy", "gdpr");
 		map_get("download", "download");
+		map_get("license", "license");
 
 		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
 
