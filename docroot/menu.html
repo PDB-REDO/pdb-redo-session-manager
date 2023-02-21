@@ -58,13 +58,8 @@
 						<li class="nav-item">
 							<a class="nav-link"
 								z2:classappend="|${page == 'token' ? 'active' : ''} ${#security.authorized ?: 'disabled'}|"
-								z2:href="@{/tokens}">Tokens</a>
+								z2:href="@{/token}">Tokens</a>
 						</li>
-
-						<!-- <li class="nav-item">
-							<a class="nav-link" z2:classappend="${page == 'token' ? 'active' : ''}"
-								z2:href="@{/tokens}">Token generator</a>
-						</li> -->
 
 						<li class="nav-item">
 							<a class="nav-link" z2:classappend="${page == 'about' ? 'active' : ''}"

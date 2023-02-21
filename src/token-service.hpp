@@ -105,14 +105,3 @@ class TokenService
 
 	static TokenService *sInstance;
 };
-
-// --------------------------------------------------------------------
-
-class TokenRESTController : public zeep::http::rest_controller
-{
-  public:
-	TokenRESTController();
-
-	// CRUD routines
-	Token postToken(std::string user, std::string password, std::string name);
-};

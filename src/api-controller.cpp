@@ -37,18 +37,24 @@ using json = zeep::json::element;
 
 // --------------------------------------------------------------------
 
+JobInfo::JobInfo(const Run &run)
+	: id(run.id)
+	, status(run.status)
+	, date(run.date)
+	, started(run.started)
+	, score(run.score)
+	, input(run.input)
+{
+}
+
+// --------------------------------------------------------------------
+
 unsigned long thread_local APIRESTController_v2::s_token_id = 0;
 
 
 APIRESTController_v2::APIRESTController_v2()
 	: zh::rest_controller("api")
 {
-	// get token info
-	map_get_request("", &APIRESTController_v2::getToken);
-
-	// delete a token
-	map_delete_request("", &APIRESTController_v2::deleteToken);
-
 	// return a list of runs
 	map_get_request("run", &APIRESTController_v2::getAllRuns);
 
@@ -202,24 +208,28 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 
 // CRUD routines
 
-Token APIRESTController_v2::getToken()
-{
-	return getTokenForRequest();
-}
+// Token APIRESTController_v2::getToken()
+// {
+// 	return getTokenForRequest();
+// }
 
-void APIRESTController_v2::deleteToken()
-{
-	TokenService::instance().deleteToken(s_token_id);
-}
+// void APIRESTController_v2::deleteToken()
+// {
+// 	TokenService::instance().deleteToken(s_token_id);
+// }
 
-std::vector<Run> APIRESTController_v2::getAllRuns()
+std::vector<JobInfo> APIRESTController_v2::getAllRuns()
 {
 	auto token = getTokenForRequest();
 
-	return RunService::instance().getRunsForUser(token.user);
+	std::vector<JobInfo> result;
+	for (auto &run : RunService::instance().getRunsForUser(token.user))
+		result.emplace_back(run);
+
+	return result;
 }
 
-Run APIRESTController_v2::createJob(const zh::file_param &diffractionData, const zh::file_param &coordinates,
+JobInfo APIRESTController_v2::createJob(const zh::file_param &diffractionData, const zh::file_param &coordinates,
 	const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
 {
 	auto token = getTokenForRequest();
@@ -227,7 +237,7 @@ Run APIRESTController_v2::createJob(const zh::file_param &diffractionData, const
 	return RunService::instance().submit(token.user, coordinates, diffractionData, restraints, sequence, params);
 }
 
-Run APIRESTController_v2::getRun(unsigned long runID)
+JobInfo APIRESTController_v2::getRun(unsigned long runID)
 {
 	auto token = getTokenForRequest();
 
@@ -313,29 +323,29 @@ void APIRESTController_v1::checkTokenID(unsigned long tokenID)
 Token APIRESTController_v1::getToken(unsigned long id)
 {
 	checkTokenID(id);
-	return APIRESTController_v2::getToken();
+	return getTokenForRequest();
 }
 
 void APIRESTController_v1::deleteToken(unsigned long id)
 {
 	checkTokenID(id);
-	APIRESTController_v2::deleteToken();
+	TokenService::instance().deleteToken(s_token_id);
 }
 
-std::vector<Run> APIRESTController_v1::getAllRuns(unsigned long id)
+std::vector<JobInfo> APIRESTController_v1::getAllRuns(unsigned long id)
 {
 	checkTokenID(id);
 	return APIRESTController_v2::getAllRuns();
 }
 
-Run APIRESTController_v1::createJob(unsigned long tokenID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
+JobInfo APIRESTController_v1::createJob(unsigned long tokenID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
 	const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::createJob(diffractionData, coordinates, restraints, sequence, params);
 }
 
-Run APIRESTController_v1::getRun(unsigned long tokenID, unsigned long runID)
+JobInfo APIRESTController_v1::getRun(unsigned long tokenID, unsigned long runID)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::getRun(runID);

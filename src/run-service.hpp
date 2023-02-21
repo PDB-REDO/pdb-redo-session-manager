@@ -138,7 +138,7 @@ struct Run
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("user", user)
 		   & zeep::make_nvp("status", status)
-		   & zeep::make_nvp("hasImage", has_image)
+		   & zeep::make_nvp("has-image", has_image)
 		   & zeep::make_nvp("date", date)
 		   & zeep::make_nvp("started-date", started)
 		   & zeep::make_nvp("score", score)

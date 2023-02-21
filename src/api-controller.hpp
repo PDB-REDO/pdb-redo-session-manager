@@ -33,6 +33,30 @@
 
 // --------------------------------------------------------------------
 
+struct JobInfo
+{
+	uint32_t id;
+	RunStatus status;
+	std::chrono::time_point<std::chrono::system_clock> date;
+	std::optional<std::chrono::time_point<std::chrono::system_clock>> started;
+	std::optional<Score> score;
+	std::vector<std::string> input;
+
+	JobInfo(const Run &run);
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("status", status)
+		   & zeep::make_nvp("date", date)
+		   & zeep::make_nvp("started-date", started)
+		   & zeep::make_nvp("score", score)
+		   & zeep::make_nvp("input", input);
+	}
+};
+
+
 class APIRESTController_v2 : public zeep::http::rest_controller
 {
   public:
@@ -42,15 +66,12 @@ class APIRESTController_v2 : public zeep::http::rest_controller
 	virtual bool handle_request(zeep::http::request &req, zeep::http::reply &rep);
 
 	// CRUD routines
+	std::vector<JobInfo> getAllRuns();
 
-	Token getToken();
-	void deleteToken();
-	std::vector<Run> getAllRuns();
-
-	Run createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
+	JobInfo createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
 		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::json::element &params);
 
-	Run getRun(unsigned long runID);
+	JobInfo getRun(unsigned long runID);
 
 	std::vector<std::string> getResultFileList(unsigned long runID);
 
@@ -78,12 +99,12 @@ class APIRESTController_v1 : public APIRESTController_v2
 
 	Token getToken(unsigned long id);
 	void deleteToken(unsigned long id);
-	std::vector<Run> getAllRuns(unsigned long id);
+	std::vector<JobInfo> getAllRuns(unsigned long id);
 
-	Run createJob(unsigned long tokenID, const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
+	JobInfo createJob(unsigned long tokenID, const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
 		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::json::element &params);
 
-	Run getRun(unsigned long tokenID, unsigned long runID);
+	JobInfo getRun(unsigned long tokenID, unsigned long runID);
 
 	std::vector<std::string> getResultFileList(unsigned long tokenID, unsigned long runID);
 

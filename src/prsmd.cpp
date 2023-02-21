@@ -441,6 +441,7 @@ class RootController : public zh::html_controller
 		map_get("privacy-policy", "gdpr");
 		map_get("download", "download");
 		map_get("license", "license");
+		map_get("api-doc", "api-doc");
 
 		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
 
@@ -947,7 +948,7 @@ Command should be either:
 			s->add_controller(new UserHTMLController());
 			s->add_controller(new AdminController());
 			s->add_controller(new DbController());
-			s->add_controller(new TokenRESTController());
+			// s->add_controller(new TokenRESTController());
 			s->add_controller(new APIRESTController_v1());
 			s->add_controller(new APIRESTController_v2());
 

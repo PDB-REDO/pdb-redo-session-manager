@@ -210,29 +210,3 @@ std::vector<Token> TokenService::getAllTokensForUser(const std::string &username
 
 	return result;
 }
-
-// --------------------------------------------------------------------
-
-TokenRESTController::TokenRESTController()
-	: zeep::http::rest_controller("token")
-{
-	// create a new token, user should provide username, password and token name
-	map_post_request("", &TokenRESTController::postToken, "user", "password", "name");
-}
-
-// CRUD routines
-Token TokenRESTController::postToken(std::string user, std::string password, std::string name)
-{
-	User u = UserService::instance().getUser(user);
-	std::string pw = u.password;
-
-	PasswordEncoder pwenc;
-
-	if (not pwenc.matches(password, u.password))
-		throw std::runtime_error("Invalid username/password");
-
-	if (name.empty())
-		name = "<untitled>";
-
-	return TokenService::instance().create(name, user);
-}

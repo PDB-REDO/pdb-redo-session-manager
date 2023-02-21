@@ -618,9 +618,9 @@ UserHTMLController::UserHTMLController()
 
 	map_get("ccp4-token-request", &UserHTMLController::get_token_for_ccp4, "reqid", "cburl");
 
-	map_get("tokens", &UserHTMLController::getTokens);
-	map_delete("tokens", &UserHTMLController::deleteToken, "id");
-	map_get("token", &UserHTMLController::createToken, "name");
+	map_get("token", &UserHTMLController::getTokens);
+	map_delete("token", &UserHTMLController::deleteToken, "id");
+	map_post("token", &UserHTMLController::createToken, "name");
 }
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
@@ -954,7 +954,7 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 	if (name.empty())
 		name = "<untitled>";
 
-	auto s = TokenService::instance().create(name, username);
+	TokenService::instance().create(name, username);
 
-	return zeep::http::reply::redirect("/tokens");
+	return zeep::http::reply::redirect("/token", zeep::http::see_other);
 }

@@ -79,9 +79,9 @@
 
 						<td>
 							<span
-								z2:if="${not run.hasImage and (run.status == 'queued' or run.status == 'running' or run.status == 'starting')}">Creation
+								z2:if="${not run.has-image and (run.status == 'queued' or run.status == 'running' or run.status == 'starting')}">Creation
 								of structure cartoon in progress</span>
-							<img z2:if="${run.hasImage}" z2:src="@{|/job/image/${run.id}|}" alt="structure cartoon" />
+							<img z2:if="${run.has-image}" z2:src="@{|/job/image/${run.id}|}" alt="structure cartoon" />
 						</td>
 
 						<td z2:text="${#dates.format(run.date, '%F %H:%M')}"></td>

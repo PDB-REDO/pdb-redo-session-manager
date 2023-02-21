@@ -1,0 +1,220 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO</title>
+</head>
+
+<body class="site">
+	<nav z2:replace="~{menu :: navbar('api')}" />
+
+	<div class="container site-content">
+
+		<article>
+
+			<h2>PDB-REDO API</h2>
+
+			<p>The PDB-REDO service offers an API to submit and retrieve jobs. The service is a REST based service.
+				In order to access this service you will have to create an API token first. You can do that at the
+				<a z2:href="@{/token}">https://pdb-redo.eu/token</a> page.
+			</p>
+
+			<p>The API offers a simple CRUD interface to Create, Retrieve, Update and Delete jobs that are named
+				<em>runs</em> in this API.
+			</p>
+
+			<dl>
+				<dt><code><stong>GET</stong> https://pdb-redo.eu/api/run</code></dt>
+				<dd>
+					<p>This call will return a <em>JSON</em> array of <a href="#JobInfo">JobInfo</a> objects for the jobs that are currently known.</p>
+				</dd>
+
+				<dt><code><strong>POST</strong> https://pdb-redo.eu/api/run</code></dt>
+				<dd><p>This call will create a new job. The body of the request can contain these parameters:</p>
+
+					<dl class="container mt-3">
+						<dt>mtz-file</dt>
+						<dd>A file containing the reflection data.</dd>
+
+						<dt>pdb-file</dt>
+						<dd>A file containing the coordinates of the atoms. This file should preferrably be in mmCIF
+							format, but the legacy PDB format is also supported, albeit it limited.</dd>
+
+						<dt>restraints-file</dt>
+						<dd>A file containing additional restraint information. This parameter is optional.</dd>
+
+						<dt>sequence-file</dt>
+						<dd>A file containing the sequence of the protein in the coordinates file in FastA format. This
+							parameter is optional.</dd>
+
+						<dt>parameters</dt>
+						<dd>A <em>JSON</em> object containing additional parameters. This parameter is optional. See <a
+								href="#JobParams">JobParams</a> below.</dd>
+					</dl>
+				</dd>
+
+				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}</code></dt>
+
+				<dd>
+					<p>This call will return the <a href="#JobInfo">JobInfo</a> object for the job with the specified ID.</p>
+				</dd>
+
+				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}/output</code></dt>
+
+				<dd>
+					<p>This call will return an array of strings, specifying the output files for the job with the specified ID.</p>
+				</dd>
+
+				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}/output/{file}</code></dt>
+
+				<dd>
+					<p>This call will return the contents of the specified file for the job with the specified ID.</p>
+				</dd>
+
+
+				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}/output/zipped</code></dt>
+
+				<dd>
+					<p>This call will return all output files for the job with the specified ID in a ZIP archive.</p>
+				</dd>
+
+				<dt><code><strong>DELETE</strong> https://pdb-redo.eu/api/run/{id}</code></dt>
+
+				<dd>
+					<p>This call will delete all files associated with the job with the specified ID from the server.</p>
+				</dd>
+			</dl>
+
+
+			<h2 class="mt-5">Data types</h2>
+			<p>The API service uses the following data types in <em>JSON</em> format.</p>
+
+			<dl>
+				<dt><code id="JobParams">JobParams</code></dt>
+				<dd>
+					<p>A <em>JSON</em> object containing one member object called <code>parameters</code>. This
+						parameters object can contain the following fields. Each has a boolean value unless
+						otherwise specified.</p>
+
+					<dl class="container mt-3">
+						<dt>nohyd</dt>
+						<dd>do not add hydrogens (in riding postions) during refinement</dd>
+						<dt>legacy</dt>
+						<dd>for legacy PDB entries. R-factor is not checked and the number of refinement cycles is
+							increased (a lot)</dd>
+						<dt>notls</dt>
+						<dd>no TLS refinement is performed</dd>
+						<dt>notlsupdate</dt>
+						<dd>use TLS, but do not update the tensors in the final refinement</dd>
+						<dt>noncs</dt>
+						<dd>no NCS restraints are applied</dd>
+						<dt>nojelly</dt>
+						<dd>switch off jelly body refinement</dd>
+						<dt>notwin</dt>
+						<dd>no detwinning is performed</dd>
+						<dt>newmodel</dt>
+						<dd>always take an updated model from the re-refinement for the rebuilding steps. Only use this
+							option when all else fails</dd>
+						<dt>tighter</dt>
+						<dd>try tighter restraints than usual, the value should be an positive integer that indicates the increase in tightness</dd>
+						<dt>looser</dt>
+						<dd>try looser restraints than usual, the value should be an positive integer that indicates the increase in looseness</dd>
+						<dt>noloops</dt>
+						<dd>do not try to complete loops</dd>
+						<dt>nofixdmc</dt>
+						<dd>do not add missing backbone atoms</dd>
+						<dt>nopepflip</dt>
+						<dd>no peptide flips are performed</dd>
+						<dt>noscbuild</dt>
+						<dd>side chains will not be rebuilt</dd>
+						<dt>nocentrifuge</dt>
+						<dd>waters with poor density will not be deleted</dd>
+						<dt>nosugarbuild</dt>
+						<dd>no (re)building of carbohydrates</dd>
+						<dt>norebuild</dt>
+						<dd>all rebuilding steps are skipped</dd>
+						<dt>noanomalous</dt>
+						<dd>ignore all anomalous data if Fmean or Imean are available</dd>
+						<dt>fewrefs</dt>
+						<dd>deals with very small data sets by switching off R-free set sanity checks</dd>
+						<dt>crossval</dt>
+						<dd>performs (very lengthy) k-fold cross validation on the final results</dd>
+						<dt>intens</dt>
+						<dd>force the use of the intensities from the reflection file</dd>
+						<dt>noocc</dt>
+						<dd>do not refine occupancies</dd>
+						<dt>notruncate</dt>
+						<dd>do not use truncate to convert intensities to amplitudes</dd>
+						<dt>nosigma</dt>
+						<dd>do not use sigF or sigI for scaling etc.</dd>
+						<dt>nometalrest</dt>
+						<dd>do not generate special metal restraints</dd>
+						<dt>nohomology</dt>
+						<dd>do not use homology-based restraints</dd>
+						<dt>homology</dt>
+						<dd>force homology-based restraints</dd>
+						<dt>hbondrest</dt>
+						<dd>use hydrogen bond restraints</dd>
+						<dt>paired</dt>
+						<dd>force paired refinement</dd>
+						<dt>isotropic</dt>
+						<dd>force isotropic B-factors</dd>
+					</dl>
+				</dd>
+			</dl>
+
+			<dl>
+				<dt><code id="JobInfo">JobInfo</code></dt>
+				<dd>
+					<p>This object contains all publicly available information about a job.</p>
+
+					<dl class="container mt-3">
+
+						<dt>id</dt>
+						<dd>The ID of the job. This is a integral number.</dd>
+
+						<dt>status</dt>
+						<dd>A string describing the status of the job. The value can be one of these:
+
+							<div>
+								<code>undefined</code>,
+								<code>registered</code>,
+								<code>starting</code>,
+								<code>queued</code>,
+								<code>running</code>,
+								<code>stopping</code>,
+								<code>stopped</code>,
+								<code>ended</code>,
+								<code>deleting</code>
+							</div>
+
+							<p>Of these, <code>ended</code> indicates the job has finished successfully.</p>
+						</dd>
+
+						<dt>date</dt>
+						<dd>The submission date and time of the job.</dd>
+
+						<dt>started-date</dt>
+						<dd>The date and time at which the job started.</dd>
+
+						<dt>score</dt>
+						<dd>A <em>JSON</em> object describing the results of the PDB-REDO results.</dd>
+
+						<dt>input</dt>
+						<dd>An array containing the file names of the input files.</dd>
+					</dl>
+				</dd>
+			</dl>
+
+
+		</article>
+	</div>
+
+	<footer z2:replace="~{footer::content}"></footer>
+</body>
+
+</html>
