@@ -443,6 +443,8 @@ class RootController : public zh::html_controller
 		map_get("license", "license");
 		map_get("api-doc", "api-doc");
 
+		mount("client-api/**", &RootController::handle_client_api_file);
+
 		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
 
 		mount("{others,schema}/**", &RootController::handle_others);
@@ -458,6 +460,8 @@ class RootController : public zh::html_controller
 	{
 		m_db_dir.handle_file(request, scope, reply);
 	}
+
+	void handle_client_api_file(const zh::request& request, const zh::scope& scope, zh::reply& reply);
 
   private:
 	zh::file_based_html_template_processor m_db_dir;
@@ -500,6 +504,19 @@ zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json:
 	sub.put("entry", entry);
 
 	return get_template_processor().create_reply_from_template("entry::tables", sub);
+}
+
+void RootController::handle_client_api_file(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+{
+	fs::path file = fs::path(scope["baseuri"].as<std::string>()).lexically_relative("client-api");
+
+	mrsrc::rsrc data(file.string());
+
+	if (not data)
+		throw zh::not_found;
+	
+	reply = zh::reply::stock_reply(zh::ok);
+	reply.set_content(new mrsrc::istream(data), "text/plain");
 }
 
 // --------------------------------------------------------------------

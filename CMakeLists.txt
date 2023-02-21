@@ -158,7 +158,8 @@ add_dependencies(prsmd webpack)
 
 mrc_target_resources(prsmd
 	${PROJECT_SOURCE_DIR}/docroot/
-	${PROJECT_SOURCE_DIR}/rsrc/reset-password-mail.txt)
+	${PROJECT_SOURCE_DIR}/rsrc/reset-password-mail.txt
+	${PROJECT_SOURCE_DIR}/api/)
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
 target_link_libraries(prsmd

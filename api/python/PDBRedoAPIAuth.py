@@ -71,7 +71,6 @@ class PDBRedoAPIAuth(AuthBase):
         if (uri.port != 80 and uri.port != 443):
             host = "{host}:{port}".format(host=host, port = uri.port)
             
-        print(host)
         query = uri.query
 
         canonicalRequest = "\n".join([r.method, path, query, host, contentDigest])

@@ -17,14 +17,45 @@
 		<article>
 			<h2>Scripting PDB-REDO</h2>
 
-			<p>The PDB-REDO service offers an <a href="#API">API</a> to submit and retrieve jobs. The service is a REST based service.
+			<p>The PDB-REDO service offers an <a href="#API">API</a> to submit and retrieve jobs. The service is a REST
+				based service.
 				In order to access this service you will have to create an API token first. You can do that at the
 				<a z2:href="@{/token}">https://pdb-redo.eu/token</a> page.
 			</p>
 
-			<p>You can write your own client code to access this API, but you can also use the basic Python script that is located in
-				the github repository for this server.
+			<p>You can write your own client code to access this API, but you can also use the basic Python script that
+				is located in
+				the github repository for this server. This python script can be used to submit jobs, retrieve their
+				status and fetch
+				the zipped results. Using this python script is as easy as:
 			</p>
+
+			<pre><code>
+$ python ./pdb-redo.py submit --xyzin=1cbs.cif --hklin=1cbs_map.mtz-file --token-id=1 --token-secret=123456789a
+Job submitted with id 17
+$ python ./pdb-redo.py status --job-id=17 --token-id=1 --token-secret=123456789a
+Job status is running
+...
+$ python ./pdb-redo.py status --job-id=17 --token-id=1 --token-secret=123456789a
+Job status is ended
+$ python ./pdb-redo.py fetch --job-id=17 --token-id=1 --token-secret=123456789a
+$ ls
+pdb-redo-result-17.zip  ...</code></pre>
+
+			<p>In order to use these Python scripts you have to download the following two files: <a
+					z2:href="@{/client-api/python/PDBRedoAPIAuth.py}">PDBRedoAPIAuth.py</a> and <a
+					z2:href="@{/client-api/python/pdb-redo.py}">pdb-redo.py</a>
+			</p>
+
+			<p>Likewise there are Perl versions of these scripts, albeit these are a bit more limited.
+				The files you need are 
+				<a z2:href="@{/client-api/perl/lib/PDBRedo/Api.pm}">lib/PDBRedo/Api.pm</a> and
+				<a z2:href="@{/client-api/perl/pdb-redo.pl}">pdb-redo.pl</a>. Note that the <em>Api.pm</em>
+				needs to be placed in directory called lib/PDBRedo located relative from the directory containing
+				the <em>pdb-redo.pl</em> file.
+				
+			</p>
+
 		</article>
 
 		<article>
@@ -38,11 +69,13 @@
 			<dl>
 				<dt><code><stong>GET</stong> https://pdb-redo.eu/api/run</code></dt>
 				<dd>
-					<p>This call will return a <em>JSON</em> array of <a href="#JobInfo">JobInfo</a> objects for the jobs that are currently known.</p>
+					<p>This call will return a <em>JSON</em> array of <a href="#JobInfo">JobInfo</a> objects for the
+						jobs that are currently known.</p>
 				</dd>
 
 				<dt><code><strong>POST</strong> https://pdb-redo.eu/api/run</code></dt>
-				<dd><p>This call will create a new job. The body of the request can contain these parameters:</p>
+				<dd>
+					<p>This call will create a new job. The body of the request can contain these parameters:</p>
 
 					<dl class="container mt-3">
 						<dt>mtz-file</dt>
@@ -68,13 +101,15 @@
 				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}</code></dt>
 
 				<dd>
-					<p>This call will return the <a href="#JobInfo">JobInfo</a> object for the job with the specified ID.</p>
+					<p>This call will return the <a href="#JobInfo">JobInfo</a> object for the job with the specified
+						ID.</p>
 				</dd>
 
 				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}/output</code></dt>
 
 				<dd>
-					<p>This call will return an array of strings, specifying the output files for the job with the specified ID.</p>
+					<p>This call will return an array of strings, specifying the output files for the job with the
+						specified ID.</p>
 				</dd>
 
 				<dt><code><strong>GET</strong> https://pdb-redo.eu/api/run/{id}/output/{file}</code></dt>
@@ -93,7 +128,8 @@
 				<dt><code><strong>DELETE</strong> https://pdb-redo.eu/api/run/{id}</code></dt>
 
 				<dd>
-					<p>This call will delete all files associated with the job with the specified ID from the server.</p>
+					<p>This call will delete all files associated with the job with the specified ID from the server.
+					</p>
 				</dd>
 			</dl>
 
@@ -128,9 +164,11 @@
 						<dd>always take an updated model from the re-refinement for the rebuilding steps. Only use this
 							option when all else fails</dd>
 						<dt>tighter</dt>
-						<dd>try tighter restraints than usual, the value should be an positive integer that indicates the increase in tightness</dd>
+						<dd>try tighter restraints than usual, the value should be an positive integer that indicates
+							the increase in tightness</dd>
 						<dt>looser</dt>
-						<dd>try looser restraints than usual, the value should be an positive integer that indicates the increase in looseness</dd>
+						<dd>try looser restraints than usual, the value should be an positive integer that indicates the
+							increase in looseness</dd>
 						<dt>noloops</dt>
 						<dd>do not try to complete loops</dd>
 						<dt>nofixdmc</dt>
