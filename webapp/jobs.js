@@ -1,30 +1,4 @@
-function submitJob(form, e) {
-	e.preventDefault();
-
-	const data = new FormData(form);
-
-	fetch(form.action, {
-		method: "POST",
-		body: data
-	}).then(response => {
-		if (response.ok)
-			window.location = "job";
-		else
-			throw "Server replied with an error";
-	}).catch(err => {
-		console.log(err);
-		alert("Failed to submit job: " + err);
-	});
-}
-
 window.addEventListener('load', () => {
-
-	const form = document.forms['job-form'];
-
-	const submit = form.querySelector('button[type="submit"]');
-	submit.addEventListener('click', (e) => submitJob(form, e));
-	form.addEventListener('submit', (e) => submitJob(form, e));
-
 	const table = document.querySelector('#jobs-table');
 	if (table) {
 

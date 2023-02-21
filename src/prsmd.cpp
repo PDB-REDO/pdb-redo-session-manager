@@ -347,7 +347,7 @@ class JobController : public zh::html_controller
 
 		auto r = RunService::instance().submit(credentials["username"].as<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
-		return zh::reply::stock_reply(zh::ok);
+		return zh::reply::redirect("/job", zh::see_other);
 	}
 
 	zh::reply getOutputFile(const zh::scope &scope, unsigned long job_id, const std::string &file)
@@ -446,7 +446,6 @@ class RootController : public zh::html_controller
 
 		mount("{others,schema}/**", &RootController::handle_others);
 
-		// map_post("job-entry", &RootController::handle_entry, "token-id", "token-secret", "job-id");
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
 	}
 
@@ -722,7 +721,7 @@ zh::reply DbController::handle_get(const zh::scope &scope, const std::string &pd
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
 	
-	return zh::reply::redirect(pdbID);
+	return zh::reply::redirect(pdbID, zh::see_other);
 }
 
 zh::reply DbController::handle_show(const zh::scope &scope, const std::string &pdbID)

@@ -71,9 +71,6 @@
 
 			<div z2:if="${#security.authorized}" class="mt-5">
 				<h5>Submit a job</h5>
-
-				<script z2:src="@{/scripts/jobs.js}"></script>
-
 				<form z2:replace="~{jobs::submit-form}"></form>
 			</div>
 		</article>
