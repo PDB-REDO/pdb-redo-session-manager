@@ -433,8 +433,8 @@ class JobController : public zh::html_controller
 class RootController : public zh::html_controller
 {
   public:
-	RootController(fs::path others_dir)
-		: m_others(others_dir)
+	RootController(fs::path pdb_db_dir)
+		: m_db_dir(pdb_db_dir)
 	{
 		map_get("", "index");
 		map_get("about", "about");
@@ -444,7 +444,7 @@ class RootController : public zh::html_controller
 
 		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
 
-		mount("others/**", &RootController::handle_others);
+		mount("{others,schema}/**", &RootController::handle_others);
 
 		// map_post("job-entry", &RootController::handle_entry, "token-id", "token-secret", "job-id");
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
@@ -456,11 +456,11 @@ class RootController : public zh::html_controller
 	// For the 'others' directory
 	void handle_others(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 	{
-		m_others.handle_file(request, scope, reply);
+		m_db_dir.handle_file(request, scope, reply);
 	}
 
   private:
-	zh::file_based_html_template_processor m_others;
+	zh::file_based_html_template_processor m_db_dir;
 };
 
 zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
