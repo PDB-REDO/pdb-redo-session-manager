@@ -433,7 +433,8 @@ class JobController : public zh::html_controller
 class RootController : public zh::html_controller
 {
   public:
-	RootController()
+	RootController(fs::path others_dir)
+		: m_others(others_dir)
 	{
 		map_get("", "index");
 		map_get("about", "about");
@@ -443,12 +444,23 @@ class RootController : public zh::html_controller
 
 		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
 
+		mount("others/**", &RootController::handle_others);
+
 		// map_post("job-entry", &RootController::handle_entry, "token-id", "token-secret", "job-id");
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
 	}
 
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
 	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
+
+	// For the 'others' directory
+	void handle_others(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+	{
+		m_others.handle_file(request, scope, reply);
+	}
+
+  private:
+	zh::file_based_html_template_processor m_others;
 };
 
 zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
@@ -898,7 +910,7 @@ Command should be either:
 		if (config.has("context"))
 			context = config.get<std::string>("context");
 
-		zh::daemon server([secret, context]()
+		zh::daemon server([secret, context, &config]()
 			{
 			auto sc = new zh::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
@@ -932,7 +944,7 @@ Command should be either:
 			s->set_template_processor(new zeep::http::rsrc_based_html_template_processor());
 #endif
 
-			s->add_controller(new RootController());
+			s->add_controller(new RootController(config.get("pdb-redo-db-dir")));
 			s->add_controller(new UserHTMLController());
 			s->add_controller(new AdminController());
 			s->add_controller(new DbController());
