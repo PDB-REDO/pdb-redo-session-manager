@@ -916,7 +916,7 @@ Command should be either:
 			sc->add_rule("/admin", { "ADMIN" });
 			sc->add_rule("/admin/**", { "ADMIN" });
 			sc->add_rule("/{job,tokens}", { "USER" });
-			sc->add_rule("/job/**", { "USER" });
+			sc->add_rule("/{job,others}/**", { "USER" });
 
 			sc->add_rule("/{change-password,update-info,token,delete,ccp4-token-request}", { "USER" });
 
