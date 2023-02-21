@@ -21,10 +21,7 @@ module.exports = (env) => {
 			jobs: SCRIPTS + 'jobs.js',
 			'pdb-redo-result': SCRIPTS + 'pdb-redo-result.js',
 			'pdb-redo-result-loader': SCRIPTS + 'pdb-redo-result-loader.js',
-			request: SCRIPTS + "request.js",
 			tokens: SCRIPTS + "tokens.js",
-			"test-api": SCRIPTS + "test-api.js",
-
 
 			'web-component-style': { import: SCRIPTS + 'web-component-style.scss' }
 		},

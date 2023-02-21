@@ -138,9 +138,7 @@ set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-result-loader.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/ramaplot.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/request.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/tokens.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/test-api.js
 	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
 )
 

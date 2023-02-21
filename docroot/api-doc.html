@@ -15,13 +15,21 @@
 	<div class="container site-content">
 
 		<article>
+			<h2>Scripting PDB-REDO</h2>
 
-			<h2>PDB-REDO API</h2>
-
-			<p>The PDB-REDO service offers an API to submit and retrieve jobs. The service is a REST based service.
+			<p>The PDB-REDO service offers an <a href="#API">API</a> to submit and retrieve jobs. The service is a REST based service.
 				In order to access this service you will have to create an API token first. You can do that at the
 				<a z2:href="@{/token}">https://pdb-redo.eu/token</a> page.
 			</p>
+
+			<p>You can write your own client code to access this API, but you can also use the basic Python script that is located in
+				the github repository for this server.
+			</p>
+		</article>
+
+		<article>
+
+			<h2 id="API">PDB-REDO API</h2>
 
 			<p>The API offers a simple CRUD interface to Create, Retrieve, Update and Delete jobs that are named
 				<em>runs</em> in this API.

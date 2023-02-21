@@ -1,4 +1,4 @@
-import { PDBRedoApiRequest } from './request';
+import { PDBRedoRequest } from './PDBRedoRequest';
 import { createBoxPlot } from "./boxplot";
 import { RamachandranPlot } from './ramaplot';
 
@@ -137,7 +137,7 @@ class PDBRedoResult extends HTMLElement {
 	}
 
 	reloadJobData() {
-		fetch(new PDBRedoApiRequest(`${this.url}/api/run/${this.jobID}/output/data.json`, {
+		fetch(new PDBRedoRequest(`${this.url}/api/run/${this.jobID}/output/data.json`, {
 			token: {
 				id: this.tokenID,
 				secret: this.tokenSecret,
