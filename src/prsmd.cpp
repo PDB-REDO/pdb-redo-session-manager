@@ -164,31 +164,34 @@ json create_entry_data(json &data, const fs::path &dir, const std::vector<std::s
 	};
 
 	auto &link = entry["link"];
-	for (auto file : files)
+	for (fs::path file : files)
 	{
-		if (zeep::ends_with(file, "final.pdb"))
+		if (file.empty() or file.begin()->string() == "attic")
+			continue;
+
+		if (zeep::ends_with(file.string(), "final.pdb"))
 			link["final_pdb"] = dir / file;
-		else if (zeep::ends_with(file, "final.cif") or zeep::ends_with(file, "final.cif.gz"))
+		else if (zeep::ends_with(file.string(), "final.cif") or zeep::ends_with(file.string(), "final.cif.gz"))
 			link["final_cif"] = dir / file;
-		else if (zeep::ends_with(file, "final.mtz") or zeep::ends_with(file, "final.mtz.gz"))
+		else if (zeep::ends_with(file.string(), "final.mtz") or zeep::ends_with(file.string(), "final.mtz.gz"))
 			link["final_mtz"] = dir / file;
-		else if (zeep::ends_with(file, "besttls.pdb.gz"))
+		else if (zeep::ends_with(file.string(), "besttls.pdb.gz"))
 			link["besttls_pdb"] = dir / file;
-		else if (zeep::ends_with(file, "besttls.mtz.gz"))
+		else if (zeep::ends_with(file.string(), "besttls.mtz.gz"))
 			link["besttls_mtz"] = dir / file;
-		else if (zeep::ends_with(file, ".refmac"))
+		else if (zeep::ends_with(file.string(), ".refmac"))
 			link["refmac_settings"] = dir / file;
-		else if (zeep::ends_with(file, "homology.rest"))
+		else if (zeep::ends_with(file.string(), "homology.rest"))
 			link["homology_rest"] = dir / file;
-		else if (zeep::ends_with(file, "hbond.rest"))
+		else if (zeep::ends_with(file.string(), "hbond.rest"))
 			link["hbond_rest"] = dir / file;
-		else if (zeep::ends_with(file, "metal.rest"))
+		else if (zeep::ends_with(file.string(), "metal.rest"))
 			link["metal_rest"] = dir / file;
-		else if (zeep::ends_with(file, "nucleic.rest"))
+		else if (zeep::ends_with(file.string(), "nucleic.rest"))
 			link["nucleic_rest"] = dir / file;
-		else if (zeep::ends_with(file, "wo/pdbout.txt"))
+		else if (zeep::ends_with(file.string(), "wo/pdbout.txt"))
 			link["wo"] = dir / file;
-		else if (zeep::ends_with(file, "wf/pdbout.txt"))
+		else if (zeep::ends_with(file.string(), "wf/pdbout.txt"))
 			link["wf"] = dir / file;
 		else if (file == pdbID + ".log")
 			link["log"] = dir / file;
