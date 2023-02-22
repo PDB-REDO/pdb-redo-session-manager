@@ -106,7 +106,7 @@ void DataService::deleteUpdateRequest(int id)
 	tx.commit();
 }
 
-std::vector<UpdateRequest> DataService::get_all_update_requests()
+std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 {
 	std::lock_guard lock(m_mutex);
 

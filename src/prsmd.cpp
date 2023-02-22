@@ -480,6 +480,8 @@ class RootController : public zh::html_controller
 		mount("{others,schema}/**", &RootController::handle_others);
 
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
+
+		map_get("nextUpdateRequest", &RootController::nextUpdateRequest);
 	}
 
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
@@ -492,6 +494,8 @@ class RootController : public zh::html_controller
 	}
 
 	void handle_client_api_file(const zh::request& request, const zh::scope& scope, zh::reply& reply);
+
+	zh::reply nextUpdateRequest(const zh::scope &scope);
 
   private:
 	zh::file_based_html_template_processor m_db_dir;
@@ -547,6 +551,18 @@ void RootController::handle_client_api_file(const zh::request& request, const zh
 	
 	reply = zh::reply::stock_reply(zh::ok);
 	reply.set_content(new mrsrc::istream(data), "text/plain");
+}
+
+zh::reply RootController::nextUpdateRequest(const zh::scope &scope)
+{
+	std::ostringstream os;
+
+	for (auto ur : DataService::instance().getAllUpdateRequests())
+		os << ur.pdb_id << std::endl;
+
+	zh::reply result(zh::ok);
+	result.set_content(os.str(), "text/plain");
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -605,7 +621,7 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 	else if (active == "updates")
 	{
 		json updates;
-		auto ur = DataService::instance().get_all_update_requests();
+		auto ur = DataService::instance().getAllUpdateRequests();
 		to_element(updates, ur);
 		sub.put("updates", updates);
 	}

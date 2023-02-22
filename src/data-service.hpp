@@ -82,7 +82,7 @@ class DataService
 
 	float version() const;
 
-	std::vector<UpdateRequest> get_all_update_requests();
+	std::vector<UpdateRequest> getAllUpdateRequests();
 
 	std::string getWhyNot(const std::string &pdbID);
 
