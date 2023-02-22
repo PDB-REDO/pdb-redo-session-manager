@@ -15,7 +15,7 @@
 
 <body class="site">
 
-	<nav z2:replace="~{menu :: navbar('job')}" />
+	<nav z2:replace="~{menu :: navbar('job')}"></nav>
 
 	<main class="container site-content">
 
@@ -58,7 +58,7 @@
 			<h2>These are your stored jobs</h2>
 
 			<div class="alert alert-secondary" role="alert">
-				Please note that they will be automatically deleted in 21 days.
+				Please note that jobs will be automatically deleted in 21 days.
 			</div>
 			<table class="table table-hover" id="jobs-table">
 				<caption></caption>
@@ -72,8 +72,7 @@
 						<th></th>
 					</tr>
 
-					<tr z2:each="run: ${runs}" z2:classappend="${run.status == 'ended' or run.status == 'stopped'} ? 'done' : 'not-done'"
-						z2:data-job="${run.id}">
+					<tr z2:each="run: ${runs}" z2:data-job="${run.id}" class="job-row" z2:data-status="${run.status}">
 
 						<td z2:text="${run.id}">ID xx</td>
 
@@ -131,7 +130,7 @@
 		</article>
 	</main>
 
-	<footer z2:replace="~{footer::content}" />
+	<footer z2:replace="~{footer::content}"></footer>
 </body>
 
 </html>

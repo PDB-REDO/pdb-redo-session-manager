@@ -87,7 +87,7 @@
 						<th class="sortable">Status</th>
 						<th></th>
 					</tr>
-					<tr class="sorted run-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|" z2:classappend="${run.status == 'ended'} ? 'done' : 'not-done'">
+					<tr class="sorted job-row" z2:each="run, i : ${runs}" z2:data-run-id="|${run.user}-${run.id}|">
 						<td z2:text="${i.count}"></td>
 						<td z2:text="${run.user}"></td>
 						<td z2:text="${run.id}"></td>

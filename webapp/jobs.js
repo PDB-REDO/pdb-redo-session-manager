@@ -2,10 +2,17 @@ window.addEventListener('load', () => {
 	const table = document.querySelector('#jobs-table');
 	if (table) {
 
-		const rows = table.querySelectorAll("tr.done");
+		const jobIDs = [];
+
+		const rows = table.querySelectorAll("tr.job-row");
 		Array.from(rows).forEach(tr => {
+			const jobID = tr.dataset.job;
+			const status = tr.dataset.status;
+
+			if (status == 'started' || status == 'registered' || status == 'starting' || status == 'queued' || status == 'running')
+				jobIDs.push(jobID);
+
 			tr.addEventListener('click', (e) => {
-				const jobID = tr.dataset.job;
 				window.location = `job/result/${jobID}`;
 			})
 		});
@@ -37,5 +44,24 @@ window.addEventListener('load', () => {
 					}
 				});
 			});
+
+		if (jobIDs.length > 0) {
+			const url = encodeURI(`job/status?ids=[${jobIDs.join(",")}]`);
+
+			setInterval(() => {
+				fetch(url, { credentials: 'include' })
+					.then(r => {
+						if (r.ok)
+							return r.json();
+						throw 'no data';
+					}).then(r => {
+						
+						if (r.findIndex((s) => s == 'stopped' || s == 'ended') != -1)
+							window.location.reload();
+
+					}).catch(err => console.log(err));
+			}, 15000);
+
+		}
 	}
 });

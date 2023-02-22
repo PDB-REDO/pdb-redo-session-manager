@@ -78,7 +78,7 @@ window.addEventListener('load', () => {
 	const tabel = document.querySelector('table');
 	new SortableTable(tabel);
 
-	[...document.querySelectorAll('tr.run-row')]
+	[...document.querySelectorAll('tr.job-row')]
 		.forEach(tr => {
 			tr.addEventListener('click', (e) => {
 				e.preventDefault();
@@ -97,6 +97,6 @@ window.addEventListener('load', () => {
 				if (confirm(`Are you sure you want to delete row ${btn.dataset.nr}?`))
 					window.location = `admin/delete/${tab}/${btn.dataset.id}`;
 			});
-		})
+		});
 });
 

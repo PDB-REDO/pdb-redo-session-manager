@@ -312,6 +312,8 @@ class JobController : public zh::html_controller
 		map_get("result/{job-id}", &JobController::getResult, "job-id");
 		map_get("entry/{job-id}", &JobController::getEntry, "job-id");
 		map_delete("{job-id}", &JobController::deleteJob, "job-id");
+
+		map_get("status", &JobController::getStatus, "ids");
 	}
 
 	zh::reply getJobListing(const zh::scope &scope)
@@ -437,6 +439,23 @@ class JobController : public zh::html_controller
 		RunService::instance().deleteRun(credentials["username"].as<std::string>(), job_id);
 
 		return zh::reply::stock_reply(zh::ok);
+	}
+
+	zh::reply getStatus(const zh::scope &scope, std::vector<unsigned long> job_ids)
+	{
+		auto credentials = scope.get_credentials();
+		auto username = credentials["username"].as<std::string>();
+
+		zeep::json::element status;
+		for (auto job_id : job_ids)
+		{
+			auto r = RunService::instance().getRun(username, job_id);
+			status.emplace_back(r.status);
+		}
+
+		zh::reply reply(zh::ok);
+		reply.set_content(status);
+		return reply;
 	}
 };
 
