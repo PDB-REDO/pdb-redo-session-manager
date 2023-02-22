@@ -59,14 +59,3 @@ ALTER TABLE
 
 ALTER TABLE
 	redo.update_request OWNER TO "pdbAdmin";
-
-insert into
-	redo.user (name, institution, email, password, created)
-values
-	(
-		'maarten',
-		'NKI',
-		'maarten@hekkelman.net',
-		'!NMqfP62tAQY/HNZYSAJZNBEFVJ3Uo/eY0AeI4Z9SudYh3jz5WUxvMPGYBV55Pb1F',
-		'2018-11-06 21:06:31.673'
-	)
