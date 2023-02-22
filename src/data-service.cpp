@@ -120,12 +120,10 @@ std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 
 	tx.commit();
 
-	auto pdbRedoVersion = version();
-
 	for (auto &req : result)
 	{
 		auto data = getData(req.pdb_id);
-		auto upToDate = data and data["properties"] and data["properties"]["VERSION"].as<float>() >= pdbRedoVersion;
+		auto upToDate = data and data["properties"] and data["properties"]["VERSION"].as<float>() >= req.version;
 
 		if (not upToDate)	// this entry is still not up-to-date
 			continue;
