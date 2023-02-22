@@ -98,7 +98,7 @@ pkg_check_modules(CRYPTO libcrypto IMPORTED_TARGET)
 
 find_program(YARN yarn REQUIRED)
 
-find_package(zeep 6 REQUIRED)
+find_package(zeep 6.0.1 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 
