@@ -16,11 +16,17 @@
 
 	<main class="container site-content">
 
-		<div class="alert alert-warning" role="alert">
-			Your job failed, see the error log below.
-		</div>
+		<z2:block z2:switch="${status}">
+			<div z2:case="'stopped'" class="alert alert-warning" role="alert">
+				Your job failed, see the error log below.
+			</div>
+	
+			<div z2:case="*" class="alert alert-info" role="alert">
+				Your job is currently has the status <span z2:text="${status}"></span>
+			</div>
+		</z2:block>
 
-		<pre z2:text="${error-log}"></pre>
+		<pre z2:text="${log}"></pre>
 	</main>
 
 	<footer z2:replace="~{footer::content}"></footer>

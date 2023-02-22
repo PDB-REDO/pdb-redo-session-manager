@@ -405,19 +405,18 @@ class JobController : public zh::html_controller
 
 		sub.put("job-id", job_id);
 
-		if (r.status == RunStatus::STOPPED)
-		{
-			auto f = r.getResultFile("process.log");
-			std::ifstream in(f);
-			std::stringstream content;
-			content << in.rdbuf();
-
-			sub.put("error-log", content.str());
-
-			return get_template_processor().create_reply_from_template("job-error", sub);
-		}
-		else
+		if (r.status == RunStatus::ENDED)
 			return get_template_processor().create_reply_from_template("job-result", sub);
+
+		auto f = r.getResultFile("process.log");
+		std::ifstream in(f);
+		std::stringstream content;
+		content << in.rdbuf();
+
+		sub.put("log", content.str());
+		sub.put("status", r.status);
+
+		return get_template_processor().create_reply_from_template("job-error", sub);
 	}
 
 	zh::reply getEntry(const zh::scope &scope, unsigned long job_id)
