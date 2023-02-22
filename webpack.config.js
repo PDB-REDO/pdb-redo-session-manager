@@ -83,9 +83,8 @@ module.exports = (env) => {
 		webpackConf.plugins.push(
 			new CleanWebpackPlugin({
 				cleanOnceBeforeBuildPatterns: [
-					'scripts/**/*',
-					'fonts/**/*',
-					'css/**'
+					'scripts',
+					'fonts'
 				]
 			}));
 

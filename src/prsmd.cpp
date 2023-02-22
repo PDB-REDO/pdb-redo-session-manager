@@ -685,12 +685,14 @@ class DbController : public zh::html_controller
 		map_get("{id}", &DbController::handle_show, "id");
 	}
 
-	zh::reply handle_get(const zh::scope &scope, const std::string &pdbID);
-	zh::reply handle_entry(const zh::scope &scope, const std::string &pdbID);
-	zh::reply handle_show(const zh::scope &scope, const std::string &pdbID);
+	zh::reply handle_get(const zh::scope &scope, std::string pdbID);
+	zh::reply handle_entry(const zh::scope &scope, std::string pdbID);
+	zh::reply handle_show(const zh::scope &scope, std::string pdbID);
 
-	zh::reply handle_update(const zh::scope &scope, const std::string &pdbID)
+	zh::reply handle_update(const zh::scope &scope, std::string pdbID)
 	{
+		zeep::to_lower(pdbID);
+
 		try
 		{
 			auto credentials = scope.get_credentials();
@@ -708,8 +710,10 @@ class DbController : public zh::html_controller
 		}
 	}
 
-	zh::reply handle_zipped(const zh::scope &scope, const std::string &pdbID)
+	zh::reply handle_zipped(const zh::scope &scope, std::string pdbID)
 	{
+		zeep::to_lower(pdbID);
+
 		const auto &[is, name] = DataService::instance().getZipFile(pdbID);
 
 		zh::reply rep{ zh::ok };
@@ -719,8 +723,10 @@ class DbController : public zh::html_controller
 		return rep;
 	}
 
-	zh::reply handle_file(const zh::scope &scope, const std::string &pdbID, const std::string &file)
+	zh::reply handle_file(const zh::scope &scope, std::string pdbID, const std::string &file)
 	{
+		zeep::to_lower(pdbID);
+
 		auto f = DataService::instance().getFile(pdbID, file);
 
 		std::error_code ec;
@@ -734,16 +740,19 @@ class DbController : public zh::html_controller
 	}
 };
 
-zh::reply DbController::handle_get(const zh::scope &scope, const std::string &pdbID)
+zh::reply DbController::handle_get(const zh::scope &scope, std::string pdbID)
 {
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
 	
+	zeep::to_lower(pdbID);
 	return zh::reply::redirect(pdbID, zh::see_other);
 }
 
-zh::reply DbController::handle_show(const zh::scope &scope, const std::string &pdbID)
+zh::reply DbController::handle_show(const zh::scope &scope, std::string pdbID)
 {
+	zeep::to_lower(pdbID);
+
 	zh::scope sub(scope);
 
 	auto pdbRedoVersion = DataService::instance().version();
@@ -781,8 +790,10 @@ zh::reply DbController::handle_show(const zh::scope &scope, const std::string &p
 	return get_template_processor().create_reply_from_template("why-not", sub);
 }
 
-zh::reply DbController::handle_entry(const zh::scope &scope, const std::string &pdbID)
+zh::reply DbController::handle_entry(const zh::scope &scope, std::string pdbID)
 {
+	zeep::to_lower(pdbID);
+
 	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
 	std::ifstream dataJson(dataJsonFile);
 
@@ -1000,7 +1011,7 @@ Command should be either:
 			if (config.has("no-daemon"))
 				result = server.run_foreground(address, port);
 			else
-				result = server.start(address, port, 2, 1, user);
+				result = server.start(address, port, 8, 8, user);
 		}
 		else if (command == "stop")
 			result = server.stop();
