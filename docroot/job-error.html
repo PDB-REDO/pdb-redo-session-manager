@@ -1,0 +1,29 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO Job Result</title>
+</head>
+
+<body class="site">
+
+	<nav z2:replace="~{menu :: navbar('job')}"></nav>
+
+	<main class="container site-content">
+
+		<div class="alert alert-warning" role="alert">
+			Your job failed, see the error log below.
+		</div>
+
+		<pre z2:text="${error-log}"></pre>
+	</main>
+
+	<footer z2:replace="~{footer::content}"></footer>
+</body>
+
+</html>

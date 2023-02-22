@@ -26,20 +26,18 @@
 				You can use the form below to create a new pair. For more information and
 				example scripts see the <a z2:href="@{/api-doc}">API documentation page</a>.
 			</p>
-			<!-- URL to GitHub may change -->
-
-			<form z2:action="@{/token}" style="max-width: 30em;" method="post">
-				<div class="input-group input-group-sm mb-3">
-					<span class="input-group-text" id="name-fld">Name</span>
-					<input type="text" class="form-control" placeholder="name for your token" aria-label="Name"
-						aria-describedby="name-fld" name="name" />
-					<button class="btn btn-secondary" type="submit" id="button-addon2">Create</button>
-				</div>
-			</form>
-
 		</article>
 
-		<article>
+		<form class="mt-5" z2:action="@{/token}" style="max-width: 30em;" method="post">
+			<div class="input-group input-group-sm mb-3">
+				<span class="input-group-text" id="name-fld">Name</span>
+				<input type="text" class="form-control" placeholder="name for your token" aria-label="Name"
+					aria-describedby="name-fld" name="name" />
+				<button class="btn btn-secondary" type="submit" id="button-addon2">Create</button>
+			</div>
+		</form>
+
+		<article class="mt-5">
 			<h2>Current API Tokens</h2>
 
 			<table class="table table-striped table-sm mt-3">

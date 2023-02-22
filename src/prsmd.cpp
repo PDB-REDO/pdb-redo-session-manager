@@ -403,7 +403,19 @@ class JobController : public zh::html_controller
 
 		sub.put("job-id", job_id);
 
-		return get_template_processor().create_reply_from_template("job-result", sub);
+		if (r.status == RunStatus::STOPPED)
+		{
+			auto f = r.getResultFile("process.log");
+			std::ifstream in(f);
+			std::stringstream content;
+			content << in.rdbuf();
+
+			sub.put("error-log", content.str());
+
+			return get_template_processor().create_reply_from_template("job-error", sub);
+		}
+		else
+			return get_template_processor().create_reply_from_template("job-result", sub);
 	}
 
 	zh::reply getEntry(const zh::scope &scope, unsigned long job_id)
