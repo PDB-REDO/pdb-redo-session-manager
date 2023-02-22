@@ -31,7 +31,7 @@
 			</p>
 
 			<pre><code>
-$ python ./pdb-redo.py submit --xyzin=1cbs.cif --hklin=1cbs_map.mtz --token-id=1 --token-secret=123456789a
+$ python ./pdb-redo.py submit --xyzin=1cbs.cif --hklin=1cbs.mtz --token-id=1 --token-secret=123456789a
 Job submitted with id 17
 $ python ./pdb-redo.py status --job-id=17 --token-id=1 --token-secret=123456789a
 Job status is running
@@ -89,7 +89,7 @@ pdb-redo-result-17.zip  ...</code></pre>
 
 						<dt>pdb-file</dt>
 						<dd>A file containing the coordinates of the atoms. This file should preferrably be in mmCIF
-							format, but the legacy PDB format is also supported, albeit it limited.</dd>
+							format, but the legacy PDB format is also supported, albeit limited.</dd>
 
 						<dt>restraints-file</dt>
 						<dd>A file containing additional restraint information. This parameter is optional.</dd>
@@ -151,70 +151,77 @@ pdb-redo-result-17.zip  ...</code></pre>
 						otherwise specified.</p>
 
 					<dl class="container mt-3">
-						<dt>nohyd</dt>
-						<dd>do not add hydrogens (in riding postions) during refinement</dd>
-						<dt>legacy</dt>
-						<dd>for legacy PDB entries. R-factor is not checked and the number of refinement cycles is
-							increased (a lot)</dd>
-						<dt>notls</dt>
-						<dd>no TLS refinement is performed</dd>
-						<dt>notlsupdate</dt>
-						<dd>use TLS, but do not update the tensors in the final refinement</dd>
-						<dt>noncs</dt>
-						<dd>no NCS restraints are applied</dd>
-						<dt>nojelly</dt>
-						<dd>switch off jelly body refinement</dd>
-						<dt>notwin</dt>
-						<dd>no detwinning is performed</dd>
-						<dt>newmodel</dt>
-						<dd>always take an updated model from the re-refinement for the rebuilding steps. Only use this
-							option when all else fails</dd>
-						<dt>tighter</dt>
-						<dd>try tighter restraints than usual, the value should be an positive integer that indicates
-							the increase in tightness</dd>
-						<dt>looser</dt>
-						<dd>try looser restraints than usual, the value should be an positive integer that indicates the
-							increase in looseness</dd>
+					        <!--Model building paprameters-->
 						<dt>noloops</dt>
-						<dd>do not try to complete loops</dd>
+						<dd>Do not try to add missing loops.</dd>
 						<dt>nofixdmc</dt>
-						<dd>do not add missing backbone atoms</dd>
+						<dd>Do not add missing backbone atoms.</dd>
 						<dt>nopepflip</dt>
-						<dd>no peptide flips are performed</dd>
+						<dd>No peptide flips are performed.</dd>
 						<dt>noscbuild</dt>
-						<dd>side chains will not be rebuilt</dd>
+						<dd>Side chains will not be rebuilt.</dd>
 						<dt>nocentrifuge</dt>
-						<dd>waters with poor density will not be deleted</dd>
+						<dd>Waters with poor density will not be deleted.</dd>
 						<dt>nosugarbuild</dt>
-						<dd>no (re)building of carbohydrates</dd>
+						<dd>No (re)building of carbohydrates.</dd>
 						<dt>norebuild</dt>
-						<dd>all rebuilding steps are skipped</dd>
-						<dt>noanomalous</dt>
-						<dd>ignore all anomalous data if Fmean or Imean are available</dd>
-						<dt>fewrefs</dt>
-						<dd>deals with very small data sets by switching off R-free set sanity checks</dd>
-						<dt>crossval</dt>
-						<dd>performs (very lengthy) k-fold cross validation on the final results</dd>
-						<dt>intens</dt>
-						<dd>force the use of the intensities from the reflection file</dd>
-						<dt>noocc</dt>
-						<dd>do not refine occupancies</dd>
-						<dt>notruncate</dt>
-						<dd>do not use truncate to convert intensities to amplitudes</dd>
-						<dt>nosigma</dt>
-						<dd>do not use sigF or sigI for scaling etc.</dd>
+						<dd>All rebuilding steps are skipped.</dd>
+						<!--Restraint parameters-->
+						<dt>tighter</dt>
+						<dd>Try tighter restraints than usual, the value should be an <em>positive integer</em> that indicates
+							the increase in tightness.</dd>
+						<dt>looser</dt>
+						<dd>Try looser restraints than usual, the value should be an <em>positive integer</em> that indicates the
+							increase in looseness.</dd>
 						<dt>nometalrest</dt>
-						<dd>do not generate special metal restraints</dd>
+						<dd>Do not generate special metal restraints.</dd>
 						<dt>nohomology</dt>
-						<dd>do not use homology-based restraints</dd>
+						<dd>Do not use homology-based restraints.</dd>
 						<dt>homology</dt>
-						<dd>force homology-based restraints</dd>
+						<dd>Force homology-based restraints irrespective of data resolution.</dd>
 						<dt>hbondrest</dt>
-						<dd>use hydrogen bond restraints</dd>
+						<dd>Use hydrogen bond restraints.</dd>
+						<dt>noncs</dt>						
+						<dd>No NCS restraints are applied.</dd>
+						<dt>nojelly</dt>
+						<dd>Switch off jelly body refinement.</dd>
+						<!--Experiments-->						
 						<dt>paired</dt>
-						<dd>force paired refinement</dd>
+						<dd>Force paired refinement</dd>		
+						<dt>crossval</dt>
+						<dd>Performs (very lengthy) k-fold cross validation on the final results.</dd>						
+						<!--Other refinement parameters-->
 						<dt>isotropic</dt>
-						<dd>force isotropic B-factors</dd>
+						<dd>Force isotropic B-factors</dd>
+						<dt>notwin</dt>						
+						<dd>No detwinning is performed.</dd>	
+						<dt>notls</dt>
+						<dd>No TLS refinement is performed.</dd>
+						<dt>notlsupdate</dt>
+						<dd>Use TLS, but do not update the tensors in the final refinement.</dd>
+						<dt>noocc</dt>
+						<dd>Do not refine occupancies.</dd>
+						<dt>nohyd</dt>
+						<dd>Do not add hydrogens (in riding postions) during refinement.</dd>
+						<dt>legacy</dt>
+						<dd>For legacy PDB entries. The initial R-factor is not checked and the number of refinement cycles is
+							increased (a lot).</dd>
+						<dt>newmodel</dt>
+						<dd>Always take an updated model from the re-refinement for the rebuilding steps. Only use this
+							option when all else fails.</dd>
+                                                <!--Data treatment parameters-->
+						<dt>maxres</dt>
+						<dd>Cut the resolution at the given value. The value should be a <em>real number</em>.</dd>
+						<dt>noanomalous</dt>
+						<dd>Ignore all anomalous data if Fmean or Imean are available.</dd>
+						<dt>fewrefs</dt>
+						<dd>Deals with very small data sets by switching off R-free set sanity checks.</dd>
+						<dt>intens</dt>
+						<dd>Force the use of the intensities from the reflection file.</dd>
+						<dt>notruncate</dt>
+						<dd>Do not use truncate to convert intensities to amplitudes.</dd>
+						<dt>nosigma</dt>
+						<dd>Do not use sigF or sigI for scaling.</dd>
 					</dl>
 				</dd>
 			</dl>
