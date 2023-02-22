@@ -25,12 +25,12 @@
 			<form z2:fragment="submit-form" name="job-form" method="post" enctype="multipart/form-data" z2:action="@{/job}">
 				<div class="input-group input-group-sm mb-3">
 					<label class="input-group-text" for="input-group-mtz-file">MTZ file</label>
-					<input type="file" class="form-control" id="input-group-mtz-file" name="mtz" />
+					<input type="file" class="form-control" id="input-group-mtz-file" name="mtz" required="required" />
 				</div>
 
 				<div class="input-group input-group-sm mb-3">
 					<label class="input-group-text" for="input-group-pdb-file">Coordinates</label>
-					<input type="file" class="form-control" id="input-group-pdb-file" name="coords" />
+					<input type="file" class="form-control" id="input-group-pdb-file" name="coords" required="required" />
 				</div>
 
 				<div class="input-group input-group-sm mb-3">

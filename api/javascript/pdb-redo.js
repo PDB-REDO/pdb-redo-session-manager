@@ -25,8 +25,6 @@
  */
 
 import { PDBRedoApiRequest } from './PDBRedoRequest' ;
-import 'bootstrap';
-import bsCustomFileInput from 'bs-custom-file-input';
 
 class ApiTester {
 	constructor() {
