@@ -172,18 +172,25 @@
 					<tr>
 						<td class="c" colspan="2">
 							Re-refined and rebuilt structure
-							<br />
-							(
-							<a z2:href="@{/${entry.link['final_pdb']}}">PDB</a> |
-							<a z2:href="@{/${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a> |
-							<a z2:href="@{/${entry.link['final_mtz']}}">MTZ</a>)
+							<ul class="entry-file-list">
+								<li z2:if="${entry.link['final_pdb']}"><a z2:href="@{/${entry.link['final_pdb']}}">PDB</a></li>
+								<li z2:if="not ${entry.link['final_pdb']}">PDB</li>
+
+								<li z2:if="${entry.link['final_cif']}"><a z2:href="@{/${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a></li>
+								<li z2:if="${not entry.link['final_cif']}">mmCIF</li>
+
+								<li z2:if="${entry.link['final_mtz']}"><a z2:href="@{/${entry.link['final_mtz']}}">MTZ</a></li>
+								<li z2:if="${not entry.link['final_mtz']}">MTZ</li>
+							</ul>
 						</td>
 						<td class="c" colspan="2">
 							Re-refined (only) structure
-							<br />
-							(
-							<a z2:href="@{/${entry.link['besttls_pdb']}}">PDB</a> |
-							<a z2:href="@{/${entry.link['besttls_mtz']}}">MTZ</a>)
+							<ul class="entry-file-list">
+								<li z2:if="${entry.link['besttls_pdb']}"><a z2:href="@{/${entry.link['besttls_pdb']}}">PDB</a></li>
+								<li z2:if="${not entry.link['besttls_pdb']}">PDB</li>
+								<li z2:if="${entry.link['besttls_mtz']}"><a z2:href="@{/${entry.link['besttls_mtz']}}">MTZ</a></li>
+								<li z2:if="${not entry.link['besttls_mtz']}">MTZ</li>
+							</ul>
 						</td>
 						<td class="c" colspan="2">
 							<a z2:href="@{/${entry.link['alldata']}}">All files</a>

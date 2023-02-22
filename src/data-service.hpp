@@ -76,12 +76,6 @@ class DataService
   public:
 	static DataService &instance();
 
-	std::vector<std::string> getFileList(const std::string &pdbID);
-	std::filesystem::path getFile(const std::string &pdbID, const std::string &file);
-
-	std::tuple<std::istream *, std::string> getZipFile(const std::string &pdbID);
-	zeep::json::element getData(const std::string &pdbID);
-
 	UpdateStatus getUpdateStatus(const std::string &pdbID);
 	void requestUpdate(const std::string &pdbID, const User &user);
 	void deleteUpdateRequest(int id);
@@ -91,6 +85,14 @@ class DataService
 	std::vector<UpdateRequest> get_all_update_requests();
 
 	std::string getWhyNot(const std::string &pdbID);
+
+	// attic access
+	std::string getLatestAttic(const std::string &pdbID);
+
+	std::vector<std::string> getFileList(const std::string &pdbID, const std::optional<std::string> attic = {});
+	std::filesystem::path getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> attic = {});
+	std::tuple<std::istream *, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> attic = {});
+	zeep::json::element getData(const std::string &pdbID, const std::optional<std::string> attic = {});
 
   private:
 	DataService();

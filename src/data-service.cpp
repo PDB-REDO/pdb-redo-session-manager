@@ -67,90 +67,6 @@ DataService::DataService()
 		throw std::runtime_error("PDB-REDO data directory (" + m_data_dir.string() + ") does not exists");
 }
 
-std::vector<std::string> DataService::getFileList(const std::string &pdbID)
-{
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
-	if (not fs::exists(entry_dir))
-		throw zeep::http::not_found;
-
-	std::vector<std::string> result;
-	for (auto f : fs::recursive_directory_iterator(entry_dir))
-	{
-		if (not f.is_regular_file())
-			continue;
-
-		result.push_back(fs::relative(f.path(), entry_dir).string());
-	}
-
-	return result;
-}
-
-std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string& file)
-{
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
-	if (not fs::exists(entry_dir))
-		throw zeep::http::not_found;
-
-	fs::path result = entry_dir / file;
-
-	if (not fs::exists(result))
-		throw std::runtime_error("Result file does not exist");
-
-	return result;
-}
-
-zeep::json::element DataService::getData(const std::string &pdbID)
-{
-	zeep::json::element data;
-
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
-	if (fs::exists(entry_dir))
-	{
-		fs::path p = entry_dir / "data.json";
-
-		if (fs::exists(p))
-		{
-			std::ifstream file(p);
-			if (file.is_open())
-				zeep::json::parse_json(file, data);
-		}
-	}
-
-	return data;
-}
-
-std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID)
-{
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
-	if (not fs::exists(entry_dir))
-		throw zeep::http::not_found;
-
-	ZipWriter zw;
-
-	fs::path d(pdbID);
-
-	for (auto f : fs::directory_iterator(entry_dir))
-	{
-		if (f.path().filename() == "attic")
-			continue;
-		
-		if (f.is_regular_file())
-			zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
-		else if (f.is_directory())
-		{
-			for (auto fr : fs::directory_iterator(f.path()))
-			{
-				if (not fr.is_regular_file())
-					continue;
-				
-				zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
-			}
-		}
-	}
-
-	return { zw.finish(), pdbID + ".zip" };
-}
-
 UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 {
 	UpdateStatus status;
@@ -280,3 +196,129 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 	
 	return whynot;
 }
+
+std::string DataService::getLatestAttic(const std::string &pdbID)
+{
+	using namespace std::chrono;
+
+	std::string result;
+
+	auto attic_dir = m_data_dir / pdbID.substr(1, 2) / pdbID / "attic";
+
+	system_clock::time_point t{};
+
+	std::error_code ec;
+	if (fs::exists(attic_dir, ec))
+	{
+		for (auto di = fs::directory_iterator(attic_dir); di != fs::directory_iterator(); ++di)
+		{
+			auto dt = fs::last_write_time(di->path(), ec);
+		    auto dd = time_point_cast<system_clock::duration>(dt - decltype(dt)::clock::now() + system_clock::now());
+
+			if (t < dd)
+			{
+				t = dd;
+				result = di->path().filename().string();
+			}
+		}
+	}
+
+	return result;
+}
+
+std::vector<std::string> DataService::getFileList(const std::string &pdbID, const std::optional<std::string> attic)
+{
+	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	if (attic)
+		entry_dir /= fs::path("attic") / *attic;
+
+	if (not fs::exists(entry_dir))
+		throw zeep::http::not_found;
+
+	std::vector<std::string> result;
+	for (auto f : fs::recursive_directory_iterator(entry_dir))
+	{
+		if (not f.is_regular_file())
+			continue;
+
+		result.push_back(fs::relative(f.path(), entry_dir).string());
+	}
+
+	return result;
+}
+
+std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string& file, const std::optional<std::string> attic)
+{
+	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	if (attic)
+		entry_dir /= fs::path("attic") / *attic;
+
+	if (not fs::exists(entry_dir))
+		throw zeep::http::not_found;
+
+	fs::path result = entry_dir / file;
+
+	if (not fs::exists(result))
+		throw std::runtime_error("Result file does not exist");
+
+	return result;
+}
+
+zeep::json::element DataService::getData(const std::string &pdbID, const std::optional<std::string> attic)
+{
+	zeep::json::element data;
+
+	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	if (attic)
+		entry_dir /= fs::path("attic") / *attic;
+
+	if (fs::exists(entry_dir))
+	{
+		fs::path p = entry_dir / "data.json";
+
+		if (fs::exists(p))
+		{
+			std::ifstream file(p);
+			if (file.is_open())
+				zeep::json::parse_json(file, data);
+		}
+	}
+
+	return data;
+}
+
+std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> attic)
+{
+	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	if (attic)
+		entry_dir /= fs::path("attic") / *attic;
+
+	if (not fs::exists(entry_dir))
+		throw zeep::http::not_found;
+
+	ZipWriter zw;
+
+	fs::path d(pdbID);
+
+	for (auto f : fs::directory_iterator(entry_dir))
+	{
+		if (f.path().filename() == "attic")
+			continue;
+		
+		if (f.is_regular_file())
+			zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
+		else if (f.is_directory())
+		{
+			for (auto fr : fs::directory_iterator(f.path()))
+			{
+				if (not fr.is_regular_file())
+					continue;
+				
+				zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
+			}
+		}
+	}
+
+	return { zw.finish(), pdbID + ".zip" };
+}
+

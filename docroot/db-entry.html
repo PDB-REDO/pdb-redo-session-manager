@@ -28,7 +28,11 @@
 			<p>This entry was not found in PDB-REDO. The reason is <span z2:text="${whynot}"></span>.</p>
 		</article>
 
-		<div z2:if="${not entry.status.ok and not (entry.data.NOPDB or entry.data.NOSF) }"
+		<div z2:if="${attic}" class="alert alert-warning">
+			This is an obsolete entry, it comes from attic [[${attic}]].
+		</div>
+
+		<div z2:if="${not attic and not entry.status.ok and not (entry.data.NOPDB or entry.data.NOSF) }"
 				class="alert alert-secondary" role="alert">
 
 			<span z2:switch="${entry.status.version gt 0}">

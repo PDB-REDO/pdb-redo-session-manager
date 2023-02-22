@@ -168,9 +168,9 @@ json create_entry_data(json &data, const fs::path &dir, const std::vector<std::s
 	{
 		if (zeep::ends_with(file, "final.pdb"))
 			link["final_pdb"] = dir / file;
-		else if (zeep::ends_with(file, "final.cif"))
+		else if (zeep::ends_with(file, "final.cif") or zeep::ends_with(file, "final.cif.gz"))
 			link["final_cif"] = dir / file;
-		else if (zeep::ends_with(file, "final.mtz"))
+		else if (zeep::ends_with(file, "final.mtz") or zeep::ends_with(file, "final.mtz.gz"))
 			link["final_mtz"] = dir / file;
 		else if (zeep::ends_with(file, "besttls.pdb.gz"))
 			link["besttls_pdb"] = dir / file;
@@ -362,7 +362,7 @@ class JobController : public zh::html_controller
 		if (file == "zipped")
 		{
 			auto [f, name] = run.getZippedResultFile();
-			result.set_content(f, "text/plain");
+			result.set_content(f, "application/zip");
 			result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
 		}
 		else
@@ -373,7 +373,7 @@ class JobController : public zh::html_controller
 			if (not fs::exists(f, ec))
 				return zh::reply::stock_reply(zh::not_found);
 			
-			result.set_content(new std::ifstream(f), "text/plain");
+			result.set_content(new std::ifstream(f), "application/octet-stream");
 			result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		}
 
@@ -649,7 +649,7 @@ zh::reply AdminController::handle_get_job_file(const zh::scope &scope, const std
 	if (file == "zipped")
 	{
 		auto [f, name] = run.getZippedResultFile();
-		result.set_content(f, "text/plain");
+		result.set_content(f, "application/zip");
 		result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
 	}
 	else
@@ -660,7 +660,7 @@ zh::reply AdminController::handle_get_job_file(const zh::scope &scope, const std
 		if (not fs::exists(f, ec))
 			return zh::reply::stock_reply(zh::not_found);
 		
-		result.set_content(new std::ifstream(f), "text/plain");
+		result.set_content(new std::ifstream(f), "application/octet-stream");
 		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 	}
 
@@ -705,18 +705,22 @@ class DbController : public zh::html_controller
 	{
 		map_post("get", &DbController::handle_get, "pdb-id");
 
-		map_get("entry", &DbController::handle_entry, "pdb-id");
-		map_post("entry", &DbController::handle_entry, "pdb-id");
+		map_get("entry", &DbController::handle_entry, "pdb-id", "attic");
+		map_post("entry", &DbController::handle_entry, "pdb-id", "attic");
 
 		map_get("update/{id}", &DbController::handle_update, "id");
 
 		map_get("{id}/zipped", &DbController::handle_zipped, "id");
 		map_get("{id}/{file}", &DbController::handle_file, "id", "file");
+
+		map_get("{id}/attic/{attic}/zipped", &DbController::handle_zipped_attic, "id", "attic");
+		map_get("{id}/attic/{attic}/{file}", &DbController::handle_file_attic, "id", "file", "attic");
+
 		map_get("{id}", &DbController::handle_show, "id");
 	}
 
 	zh::reply handle_get(const zh::scope &scope, std::string pdbID);
-	zh::reply handle_entry(const zh::scope &scope, std::string pdbID);
+	zh::reply handle_entry(const zh::scope &scope, std::string pdbID, std::optional<std::string> attic);
 	zh::reply handle_show(const zh::scope &scope, std::string pdbID);
 
 	zh::reply handle_update(const zh::scope &scope, std::string pdbID)
@@ -764,7 +768,36 @@ class DbController : public zh::html_controller
 			return zh::reply::stock_reply(zh::not_found);
 		
 		zh::reply result(zh::ok);
-		result.set_content(new std::ifstream(f), "text/plain");
+		result.set_content(new std::ifstream(f), "application/octet-stream");
+		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		return result;
+	}
+
+	zh::reply handle_zipped_attic(const zh::scope &scope, std::string pdbID, const std::string &attic)
+	{
+		zeep::to_lower(pdbID);
+
+		const auto &[is, name] = DataService::instance().getZipFile(pdbID, attic);
+
+		zh::reply rep{ zh::ok };
+		rep.set_content(is, "application/zip");
+		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+
+		return rep;
+	}
+
+	zh::reply handle_file_attic(const zh::scope &scope, std::string pdbID, const std::string &file, const std::string &attic)
+	{
+		zeep::to_lower(pdbID);
+
+		auto f = DataService::instance().getFile(pdbID, file, attic);
+
+		std::error_code ec;
+		if (not fs::exists(f, ec))
+			return zh::reply::stock_reply(zh::not_found);
+		
+		zh::reply result(zh::ok);
+		result.set_content(new std::ifstream(f), "application/octet-stream");
 		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
@@ -781,50 +814,72 @@ zh::reply DbController::handle_get(const zh::scope &scope, std::string pdbID)
 
 zh::reply DbController::handle_show(const zh::scope &scope, std::string pdbID)
 {
+	auto &ds = DataService::instance();
+
 	zeep::to_lower(pdbID);
 
 	zh::scope sub(scope);
 
-	auto pdbRedoVersion = DataService::instance().version();
+	auto pdbRedoVersion = ds.version();
 
 	sub.put("pdb-id", pdbID);
 	sub.put("version", pdbRedoVersion);
 
 	try
 	{
-		auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
-		std::ifstream dataJson(dataJsonFile);
+		auto data = ds.getData(pdbID);
+		if (data)
+		{
+			auto entry = create_entry_data(data, "db/" + pdbID, ds.getFileList(pdbID));
 
-		zeep::json::element data;
-		zeep::json::parse_json(dataJson, data);
+			entry["id"] = pdbID;
+			entry["dbEntry"] = true;
 
-		auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().getFileList(pdbID));
+			auto status = ds.getUpdateStatus(pdbID);
+			to_element(entry["status"], status);
 
-		entry["id"] = pdbID;
-		entry["dbEntry"] = true;
+			sub.put("entry", entry);
 
-		auto status = DataService::instance().getUpdateStatus(pdbID);
-		to_element(entry["status"], status);
-
-		sub.put("entry", entry);
-
-		return get_template_processor().create_reply_from_template("db-entry", sub);
+			return get_template_processor().create_reply_from_template("db-entry", sub);
+		}
 	}
 	catch (...) {}
 
+	auto attic = ds.getLatestAttic(pdbID);
+	if (not attic.empty())
+	{
+		try
+		{
+			auto data = ds.getData(pdbID, attic);
+			auto entry = create_entry_data(data, "db/" + pdbID + "/attic/" + attic + '/', ds.getFileList(pdbID, attic));
+
+			entry["id"] = pdbID;
+			entry["dbEntry"] = true;
+
+			auto status = ds.getUpdateStatus(pdbID);
+			to_element(entry["status"], status);
+
+			sub.put("entry", entry);
+			sub.put("attic", attic);
+
+			return get_template_processor().create_reply_from_template("db-entry", sub);
+		}
+		catch (...) {}
+	}
+
 	// OK, that failed. Find out whynot
 
-	auto whynot = DataService::instance().getWhyNot(pdbID);
+	auto whynot = ds.getWhyNot(pdbID);
 	sub.put("whynot", whynot);
 
 	return get_template_processor().create_reply_from_template("why-not", sub);
 }
 
-zh::reply DbController::handle_entry(const zh::scope &scope, std::string pdbID)
+zh::reply DbController::handle_entry(const zh::scope &scope, std::string pdbID, std::optional<std::string> attic)
 {
 	zeep::to_lower(pdbID);
 
-	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json");
+	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json", attic);
 	std::ifstream dataJson(dataJsonFile);
 
 	zeep::json::element data;
