@@ -416,7 +416,8 @@ Run RunService::getRun(const std::string &username, unsigned long runID)
 		std::ostringstream s;
 		s << std::setw(10) << std::setfill('0') << runID;
 
-		result = Run::create(dir / s.str(), username);
+		if (fs::exists(dir / s.str()))
+			result = Run::create(dir / s.str(), username);
 	}
 
 	return result;

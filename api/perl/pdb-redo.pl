@@ -42,7 +42,7 @@ sub usage()
 	exit(0);
 }
 
-my $PDB_REDO_ADDRESS = 'https://services.pdb-redo.eu/';
+my $PDB_REDO_ADDRESS = 'https://pdb-redo.eu/';
 
 # The submit call
 

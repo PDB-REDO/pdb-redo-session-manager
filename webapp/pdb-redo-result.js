@@ -19,7 +19,7 @@ class PDBRedoResult extends HTMLElement {
 
 		this.data = null;
 		this.error = null;
-		this.url = 'https://services.pdb-redo.eu';
+		this.url = 'https://pdb-redo.eu';
 
 		// the shadow context
 		const shadow = this.attachShadow({ mode: 'open' });
@@ -150,7 +150,7 @@ class PDBRedoResult extends HTMLElement {
 		}).then(data => {
 			const fd = new FormData();
 			fd.append('data.json', JSON.stringify(data));
-			fd.append('link-url', `${this.url}/job/${this.jobID}/output/`);
+			// fd.append('link-url', `${this.url}/job/${this.jobID}/output/`);
 
 			fetch(`${this.url}/entry`, {
 				method: "POST",

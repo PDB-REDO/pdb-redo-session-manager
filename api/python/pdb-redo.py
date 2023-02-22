@@ -33,7 +33,7 @@ import sys
 import getpass
 
 # Due to a bug? in the server implementation, the :port is required here...
-PDBREDO_URI = 'https://services.pdb-redo.eu:443'
+PDBREDO_URI = 'https://pdb-redo.eu:443'
 
 PARAMETERS = {
     'nohyd', 'legacy', 'notls', 'notlsupdate', 'noncs', 'nojelly', 'notwin', 'newmodel', 'tighter', 'looser', 'noloops', 'nofixdmc',
