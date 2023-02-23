@@ -19,7 +19,9 @@ class PDBRedoResult extends HTMLElement {
 
 		this.data = null;
 		this.error = null;
-		this.url = 'https://pdb-redo.eu';
+
+		this.pdb_redo_url = 'https://pdb-redo.eu';
+		this.data_url = null;
 
 		// the shadow context
 		const shadow = this.attachShadow({ mode: 'open' });
@@ -40,7 +42,7 @@ class PDBRedoResult extends HTMLElement {
 	connectedCallback() {
 		const url = this.getAttribute('url');
 		if (url != null)
-			this.url = url.replace(/\/+$/, '');	// strip trailing slashes
+			this.data_url = url.replace(/\/+$/, '');	// strip trailing slashes
 
 		this.pdbID = this.getAttribute('pdb-id');
 
@@ -48,12 +50,7 @@ class PDBRedoResult extends HTMLElement {
 		this.tokenSecret = this.getAttribute('token-secret');
 		this.jobID = this.getAttribute('job-id');
 
-		if (this.pdbID != null)
-			this.reloadDBData();
-		else if (this.jobID != null && (this.tokenID == null || this.tokenSecret == null))
-			this.reloadJobData();
-		else
-			this.reloadRemoteData();
+		this.reload();
 	}
 
 	displayError(err) {
@@ -85,9 +82,16 @@ class PDBRedoResult extends HTMLElement {
 
 		let needReload = false;
 		switch (name) {
-			case 'url':
-				if (this.url !== newValue) {
-					this.url = newValue;
+			case 'data-url':
+				if (this.data_url !== newValue) {
+					this.data_url = newValue;
+					needReload = true;
+				}
+				break;
+
+			case 'pdb-redo-url':
+				if (this.data_url !== newValue) {
+					this.data_url = newValue;
 					needReload = true;
 				}
 				break;
@@ -100,18 +104,21 @@ class PDBRedoResult extends HTMLElement {
 				break;
 		}
 
-		if (needReload && this.url != null) {
-			if (this.pdbID != null)
-				this.reloadDBData();
-			else if (this.jobID)
-				this.reloadJobData();
-			else
-				this.reloadRemoteData();
-		}
+		if (needReload)
+			this.reload();
+	}
+
+	reload() {
+		if (this.pdbID != null)
+			this.reloadDBData();
+		else if (this.jobID != null && this.tokenID != null && this.tokenSecret != null)
+			this.reloadJobData();
+		else if (this.data_url != null)
+			this.reloadRemoteData();
 	}
 
 	reloadDBData() {
-		fetch(`${this.url}/db/entry?pdb-id=${this.pdbID}`, { method: "post" })
+		fetch(`${this.pdb_redo_url}/db/entry?pdb-id=${this.pdbID}`, { method: "post" })
 			.then(r => {
 				if (r.ok)
 					return r.text();
@@ -124,7 +131,7 @@ class PDBRedoResult extends HTMLElement {
 	}
 
 	reloadJobData() {
-		fetch(`${this.url}/job/entry/${this.jobID}`, { credentials: 'include' })
+		fetch(`${this.pdb_redo_url}/job/entry/${this.jobID}`, { credentials: 'include' })
 			.then(r => {
 				if (r.ok)
 					return r.text();
@@ -137,31 +144,27 @@ class PDBRedoResult extends HTMLElement {
 	}
 
 	reloadRemoteData() {
-		fetch(new PDBRedoRequest(`${this.url}/data.json`, {
-			token: {
-				id: this.tokenID,
-				secret: this.tokenSecret,
-			}
-		})).then(r => {
-			if (r.ok)
-				return r.json();
-			else
-				throw `Error fetching data, status code was ${r.status}`;
-		}).then(data => {
-			const fd = new FormData();
-			fd.append('data.json', JSON.stringify(data));
-			fd.append('link-url', this.url);
-
-			fetch("https://pdb-redo.eu/entry", {
-				method: "POST",
-				body: fd
-			}).then(r => {
+		fetch(`${this.data_url}/data.json`, { credentials: 'include' })
+			.then(r => {
 				if (r.ok)
-					return r.text();
+					return r.json();
 				else
 					throw `Error fetching data, status code was ${r.status}`;
-			}).then(r => this.putEntry(r));
-		})
+			}).then(data => {
+				const fd = new FormData();
+				fd.append('data.json', JSON.stringify(data));
+				fd.append('link-url', this.url);
+
+				fetch("https://pdb-redo.eu/entry", {
+					method: "POST",
+					body: fd
+				}).then(r => {
+					if (r.ok)
+						return r.text();
+					else
+						throw `Error fetching data, status code was ${r.status}`;
+				}).then(r => this.putEntry(r));
+			})
 			.catch(err => {
 				this.displayError(err);
 			});
@@ -197,7 +200,7 @@ class PDBRedoResult extends HTMLElement {
 				data.RFREE = data.RFCALUNB;
 			else
 				this.RFREE = data.RFCAL;
-			createBoxPlot(data, boxPlotTD, "https://pdb-redo.eu");
+			createBoxPlot(data, boxPlotTD, this.pdb_redo_url);
 		}
 
 		const ramaPlot = shadow.querySelector('ramachandran-plot');

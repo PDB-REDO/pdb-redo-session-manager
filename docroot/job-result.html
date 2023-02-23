@@ -8,15 +8,21 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
 	<title>PDB-REDO Job Result</title>
+
+	<script z2:src="@{/scripts/inline-entry.js}"></script>
 </head>
 
 <body class="site">
 
 	<nav z2:replace="~{menu :: navbar('job')}"></nav>
 
+	<template id="entry-content">
+		<div z2:replace="~{entry :: tables}"></div>
+	</template>
+
 	<main class="container site-content">
 
-		<pdb-redo-result z2:job-id='${job-id}' z2:url="@{/}">
+		<pdb-redo-result z2:job-id='${job-id}'>
 			<!-- Placeholders to improve time to first paint -->
 			<h1>PDB-REDO results for job <span z2:text="${job-id}"></span></h1>
 

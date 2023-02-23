@@ -409,7 +409,14 @@ class JobController : public zh::html_controller
 		sub.put("job-id", job_id);
 
 		if (r.status == RunStatus::ENDED)
+		{
+			auto entry = create_entry_data(r, "job/output/" + std::to_string(job_id));
+
+			zh::scope sub(scope);
+			sub.put("entry", entry);
+
 			return get_template_processor().create_reply_from_template("job-result", sub);
+		}
 
 		auto f = r.getResultFile("process.log");
 		std::ifstream in(f);
