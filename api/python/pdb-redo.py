@@ -32,8 +32,8 @@ import time
 import sys
 import getpass
 
-# Due to a bug? in the server implementation, the :port is required here...
-PDBREDO_URI = 'https://pdb-redo.eu:443'
+# The default server
+PDBREDO_URI = 'https://pdb-redo.eu'
 
 PARAMETERS = {
     'nohyd', 'legacy', 'notls', 'notlsupdate', 'noncs', 'nojelly', 'notwin', 'newmodel', 'tighter', 'looser', 'noloops', 'nofixdmc',
