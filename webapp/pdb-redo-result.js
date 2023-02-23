@@ -1,4 +1,3 @@
-import { PDBRedoRequest } from './PDBRedoRequest';
 import { createBoxPlot } from "./boxplot";
 import { RamachandranPlot } from './ramaplot';
 
@@ -22,6 +21,7 @@ class PDBRedoResult extends HTMLElement {
 
 		this.pdb_redo_url = 'https://pdb-redo.eu';
 		this.data_url = null;
+		this.include_credentials = false;
 
 		// the shadow context
 		const shadow = this.attachShadow({ mode: 'open' });
@@ -35,14 +35,18 @@ class PDBRedoResult extends HTMLElement {
 		// const style = document.createElement('style');
 		// shadow.appendChild(style);
 		shadow.appendChild(div);
-
-		// style.innerHTML = pdb_redo_style;
 	}
 
 	connectedCallback() {
-		const url = this.getAttribute('url');
-		if (url != null)
-			this.data_url = url.replace(/\/+$/, '');	// strip trailing slashes
+		const data_url = this.getAttribute('data-url');
+		if (data_url != null)
+			this.data_url = data_url.replace(/\/+$/, '');	// strip trailing slashes
+		
+		const pdb_url = this.getAttribute('pdb-redo-url');
+		if (pdb_url != null)
+			this.pdb_redo_url = pdb_url.replace(/\/+$/, '');	// strip trailing slashes
+
+		this.include_credentials = this.getAttribute('include-credentials') != null;
 
 		this.pdbID = this.getAttribute('pdb-id');
 
@@ -75,7 +79,6 @@ class PDBRedoResult extends HTMLElement {
 		shadow.appendChild(alert);
 
 		const style = shadow.querySelector('style');
-		style.innerHTML = pdb_redo_style;
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
@@ -111,8 +114,6 @@ class PDBRedoResult extends HTMLElement {
 	reload() {
 		if (this.pdbID != null)
 			this.reloadDBData();
-		else if (this.jobID != null && this.tokenID != null && this.tokenSecret != null)
-			this.reloadJobData();
 		else if (this.data_url != null)
 			this.reloadRemoteData();
 	}
@@ -130,21 +131,12 @@ class PDBRedoResult extends HTMLElement {
 			});
 	}
 
-	reloadJobData() {
-		fetch(`${this.pdb_redo_url}/job/entry/${this.jobID}`, { credentials: 'include' })
-			.then(r => {
-				if (r.ok)
-					return r.text();
-				else
-					throw `Error fetching data, status code was ${r.status}`;
-			}).then(r => this.putEntry(r))
-			.catch(err => {
-				this.displayError(err);
-			});
-	}
-
 	reloadRemoteData() {
-		fetch(`${this.data_url}/data.json`, { credentials: 'include' })
+		const options = {};
+		if (this.include_credentials)
+			options.credentials = 'include';
+
+		fetch(`${this.data_url}/data.json`, options)
 			.then(r => {
 				if (r.ok)
 					return r.json();
@@ -153,9 +145,9 @@ class PDBRedoResult extends HTMLElement {
 			}).then(data => {
 				const fd = new FormData();
 				fd.append('data.json', JSON.stringify(data));
-				fd.append('link-url', this.url);
+				fd.append('link-url', this.data_url);
 
-				fetch("https://pdb-redo.eu/entry", {
+				fetch(`${this.pdb_redo_url}/entry`, {
 					method: "POST",
 					body: fd
 				}).then(r => {
