@@ -38,7 +38,7 @@ PDBREDO_URI = 'https://pdb-redo.eu'
 PARAMETERS = {
     'nohyd', 'legacy', 'notls', 'notlsupdate', 'noncs', 'nojelly', 'notwin', 'newmodel', 'tighter', 'looser', 'noloops', 'nofixdmc',
     'nopepflip', 'noscbuild', 'nocentrifuge', 'nosugarbuild', 'norebuild', 'noanomalous', 'fewrefs', 'crossval', 'intens', 'noocc',
-    'notruncate', 'nosigma', 'nometalrest', 'nohomology', 'homology', 'hbondrest', 'paired', 'isotropic'
+    'notruncate', 'nosigma', 'nometalrest', 'nohomology', 'homology', 'hbondrest', 'paired', 'isotropic', 'nonucrest'
 }
 
 # This script implements these 'commands':
@@ -216,6 +216,8 @@ parser_submit.add_argument(
     '--homology',		help='force homology-based restraints', action='store_true')
 parser_submit.add_argument(
     '--hbondrest',		help='use hydrogen bond restraints', action='store_true')
+parser_submit.add_argument(
+    '--nonucrest',              help='do not nucleic acid restraints', action='store_true')
 parser_submit.add_argument(
     '--paired',			help='force paired refinement', action='store_true')
 parser_submit.add_argument(
