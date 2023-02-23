@@ -84,7 +84,7 @@ window.addEventListener('load', () => {
 				e.preventDefault();
 
 				const [_, user, id] = tr.dataset.runId.match(/^(.+?)-(\d+)$/);
-				window.location = `admin/job/${user}/${id}`;
+				window.open(`admin/job/${user}/${id}`);
 			});
 		});
 
