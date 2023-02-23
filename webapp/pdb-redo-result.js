@@ -48,14 +48,12 @@ class PDBRedoResult extends HTMLElement {
 		this.tokenSecret = this.getAttribute('token-secret');
 		this.jobID = this.getAttribute('job-id');
 
-		if (this.url != null) {
-			if (this.pdbID != null)
-				this.reloadDBData();
-			else if (this.jobID != null && (this.tokenID == null || this.tokenSecret == null))
-				this.reloadLocalJobData();
-			else if (this.tokenID != null && this.tokenSecret != null && this.jobID != null)
-				this.reloadJobData();
-		}
+		if (this.pdbID != null)
+			this.reloadDBData();
+		else if (this.jobID != null && (this.tokenID == null || this.tokenSecret == null))
+			this.reloadJobData();
+		else
+			this.reloadRemoteData();
 	}
 
 	displayError(err) {
@@ -105,8 +103,10 @@ class PDBRedoResult extends HTMLElement {
 		if (needReload && this.url != null) {
 			if (this.pdbID != null)
 				this.reloadDBData();
-			else
+			else if (this.jobID)
 				this.reloadJobData();
+			else
+				this.reloadRemoteData();
 		}
 	}
 
@@ -123,7 +123,7 @@ class PDBRedoResult extends HTMLElement {
 			});
 	}
 
-	reloadLocalJobData() {
+	reloadJobData() {
 		fetch(`${this.url}/job/entry/${this.jobID}`, { credentials: 'include' })
 			.then(r => {
 				if (r.ok)
@@ -136,8 +136,8 @@ class PDBRedoResult extends HTMLElement {
 			});
 	}
 
-	reloadJobData() {
-		fetch(new PDBRedoRequest(`${this.url}/api/run/${this.jobID}/output/data.json`, {
+	reloadRemoteData() {
+		fetch(new PDBRedoRequest(`${this.url}/data.json`, {
 			token: {
 				id: this.tokenID,
 				secret: this.tokenSecret,
@@ -150,9 +150,9 @@ class PDBRedoResult extends HTMLElement {
 		}).then(data => {
 			const fd = new FormData();
 			fd.append('data.json', JSON.stringify(data));
-			// fd.append('link-url', `${this.url}/job/${this.jobID}/output/`);
+			fd.append('link-url', this.url);
 
-			fetch(`${this.url}/entry`, {
+			fetch("https://pdb-redo.eu/entry", {
 				method: "POST",
 				body: fd
 			}).then(r => {
@@ -197,7 +197,7 @@ class PDBRedoResult extends HTMLElement {
 				data.RFREE = data.RFCALUNB;
 			else
 				this.RFREE = data.RFCAL;
-			createBoxPlot(data, boxPlotTD, this.url);
+			createBoxPlot(data, boxPlotTD, "https://pdb-redo.eu");
 		}
 
 		const ramaPlot = shadow.querySelector('ramachandran-plot');

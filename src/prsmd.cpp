@@ -516,26 +516,26 @@ zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json:
 	entry["data"] = std::move(data["properties"]);
 	entry["rama-angles"] = std::move(data["rama-angles"]);
 
-	// if (data_link.has_value())
-	// {
-	// 	auto &link = entry["link"];
-	// 	zeep::http::uri db(*data_link);
+	if (data_link.has_value())
+	{
+		auto &link = entry["link"];
+		std::string db = *data_link + "/";
 
-	// 	link["final_pdb"] = (db / (pdbID + "_final.pdb")).string();
-	// 	link["final_cif"] = (db / (pdbID + "_final.cif")).string();
-	// 	link["final_mtz"] = (db / (pdbID + "_final.mtz")).string();
-	// 	link["besttls_pdb"] = (db / (pdbID + "_besttls.pdb.gz")).string();
-	// 	link["besttls_mtz"] = (db / (pdbID + "_besttls.mtz.gz")).string();
-	// 	link["refmac_settings"] = (db / (pdbID + ".refmac")).string();
-	// 	link["homology_rest"] = (db / "homology.rest").string();
-	// 	link["hbond_rest"] = (db / "hbond.rest").string();
-	// 	link["metal_rest"] = (db / "metal.rest").string();
-	// 	link["nucleic_rest"] = (db / "nucleic.rest").string();
-	// 	link["wo"] = (db / "wo/pdbout.txt").string();
-	// 	link["wf"] = (db / "wf/pdbout.txt").string();
+		link["final_pdb"] = db + (pdbID + "_final.pdb");
+		link["final_cif"] = db + (pdbID + "_final.cif");
+		link["final_mtz"] = db + (pdbID + "_final.mtz");
+		link["besttls_pdb"] = db + (pdbID + "_besttls.pdb.gz");
+		link["besttls_mtz"] = db + (pdbID + "_besttls.mtz.gz");
+		link["refmac_settings"] = db + (pdbID + ".refmac");
+		link["homology_rest"] = db + "homology.rest";
+		link["hbond_rest"] = db + "hbond.rest";
+		link["metal_rest"] = db + "metal.rest";
+		link["nucleic_rest"] = db + "nucleic.rest";
+		link["wo"] = db + "wo/pdbout.txt";
+		link["wf"] = db + "wf/pdbout.txt";
 
-	// 	link["alldata"] = (db / "zipped").string();
-	// }
+		link["alldata"] = db + "zipped";
+	}
 
 	zh::scope sub(scope);
 	sub.put("entry", entry);
