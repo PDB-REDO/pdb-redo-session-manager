@@ -155,11 +155,15 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 				pathPart = fs::path("/") / uri.get_path() / fs::path(pathPart).relative_path();
 			}
 
+			std::string host = req.get_header("X-Forwarded-Host");
+			if (host.empty())
+				host = req.get_header("host");			
+
 			std::ostringstream ss;
 			ss << req.get_method() << std::endl
 				<< pathPart << std::endl
 				<< ps.str() << std::endl
-				<< req.get_header("host") << std::endl
+				<< host << std::endl
 				<< contentHash;
 
 			auto canonicalRequest = ss.str();
