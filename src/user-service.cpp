@@ -433,11 +433,8 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		pqxx::transaction tx(prsm_db_connection::instance());
 		auto r = tx.exec0(
 			R"(UPDATE redo.user
-				SET password = )" +
-			tx.quote(newPasswordHash) + R"(,
-					updated = CURRENT_TIMESTAMP
-				WHERE name = )" +
-			tx.quote(username));
+				SET password = )" + tx.quote(newPasswordHash) + R"(
+				WHERE name = )" + tx.quote(username));
 
 		// --------------------------------------------------------------------
 
