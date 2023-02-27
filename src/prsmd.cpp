@@ -783,13 +783,19 @@ class DbController : public zh::html_controller
 		return rep;
 	}
 
-	zh::reply handle_file(const zh::scope &scope, std::string pdbID, const std::string &file)
+	zh::reply handle_file(const zh::scope &scope, std::string pdbID, std::string file)
 	{
 		zeep::to_lower(pdbID);
 
 		auto f = DataService::instance().getFile(pdbID, file);
 
 		std::error_code ec;
+		if (not fs::exists(f, ec))
+		{
+			zeep::to_lower(file);
+			f = DataService::instance().getFile(pdbID, file);
+		}
+
 		if (not fs::exists(f, ec))
 			return zh::reply::stock_reply(zh::not_found);
 		

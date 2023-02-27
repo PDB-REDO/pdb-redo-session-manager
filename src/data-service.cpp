@@ -254,12 +254,7 @@ std::filesystem::path DataService::getFile(const std::string &pdbID, const std::
 	if (not fs::exists(entry_dir))
 		throw zeep::http::not_found;
 
-	fs::path result = entry_dir / file;
-
-	if (not fs::exists(result))
-		throw std::runtime_error("Result file does not exist");
-
-	return result;
+	return entry_dir / file;
 }
 
 zeep::json::element DataService::getData(const std::string &pdbID, const std::optional<std::string> attic)
