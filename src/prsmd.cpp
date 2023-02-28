@@ -410,7 +410,7 @@ class JobController : public zh::html_controller
 
 		if (r.status == RunStatus::ENDED)
 		{
-			auto entry = create_entry_data(r, "job/output/" + std::to_string(job_id));
+			auto entry = create_entry_data(r, "/job/output/" + std::to_string(job_id));
 
 			zh::scope sub(scope);
 			sub.put("entry", entry);
@@ -434,7 +434,7 @@ class JobController : public zh::html_controller
 		auto credentials = scope.get_credentials();
 		auto r = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
 
-		auto entry = create_entry_data(r, "job/output/" + std::to_string(job_id));
+		auto entry = create_entry_data(r, "/job/output/" + std::to_string(job_id));
 
 		zh::scope sub(scope);
 		sub.put("entry", entry);
@@ -645,7 +645,7 @@ zh::reply AdminController::job(const zh::scope &scope, const std::string &user, 
 
 	if (run.status == RunStatus::ENDED)
 	{
-		auto entry = create_entry_data(run, "admin/job/" + user + '/' + std::to_string(job_id) + "/output/");
+		auto entry = create_entry_data(run, "/admin/job/" + user + '/' + std::to_string(job_id) + "/output/");
 
 		zh::scope sub(scope);
 		sub.put("entry", entry);
@@ -862,7 +862,7 @@ zh::reply DbController::handle_show(const zh::scope &scope, std::string pdbID)
 		auto data = ds.getData(pdbID);
 		if (data)
 		{
-			auto entry = create_entry_data(data, "db/" + pdbID, ds.getFileList(pdbID));
+			auto entry = create_entry_data(data, "/db/" + pdbID, ds.getFileList(pdbID));
 
 			entry["id"] = pdbID;
 			entry["dbEntry"] = true;
@@ -883,7 +883,7 @@ zh::reply DbController::handle_show(const zh::scope &scope, std::string pdbID)
 		try
 		{
 			auto data = ds.getData(pdbID, attic);
-			auto entry = create_entry_data(data, "db/" + pdbID + "/attic/" + attic + '/', ds.getFileList(pdbID, attic));
+			auto entry = create_entry_data(data, "/db/" + pdbID + "/attic/" + attic + '/', ds.getFileList(pdbID, attic));
 
 			entry["id"] = pdbID;
 			entry["dbEntry"] = true;
@@ -917,7 +917,7 @@ zh::reply DbController::handle_entry(const zh::scope &scope, std::string pdbID, 
 	zeep::json::element data;
 	zeep::json::parse_json(dataJson, data);
 
-	auto entry = create_entry_data(data, "db/" + pdbID, DataService::instance().getFileList(pdbID));
+	auto entry = create_entry_data(data, "/db/" + pdbID, DataService::instance().getFileList(pdbID));
 
 	zh::scope sub(scope);
 	sub.put("entry", entry);
