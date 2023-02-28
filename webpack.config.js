@@ -82,10 +82,7 @@ module.exports = (env) => {
 
 		webpackConf.plugins.push(
 			new CleanWebpackPlugin({
-				cleanOnceBeforeBuildPatterns: [
-					'scripts',
-					'fonts'
-				]
+				verbose: true
 			}));
 
 		webpackConf.optimization.minimizer.push(

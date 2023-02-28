@@ -144,17 +144,15 @@ set(webpack_input
 
 set(webpack_output ${CMAKE_CURRENT_SOURCE_DIR}/docroot/scripts/index.js)
 
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/docroot/scripts/index.js
-	BYPRODUCTS 
+add_custom_command(OUTPUT ${webpack_output}
 	DEPENDS ${webpack_input}
 	COMMAND ${YARN} run $<IF:$<CONFIG:Debug>,build,build-production>
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	VERBATIM)
 
-add_custom_target(webpack DEPENDS ${webpack_output})
+add_custom_target(generate_webpack DEPENDS ${webpack_output})
 
-add_dependencies(prsmd webpack)
+add_dependencies(prsmd generate_webpack)
 
 mrc_target_resources(prsmd
 	${PROJECT_SOURCE_DIR}/docroot/

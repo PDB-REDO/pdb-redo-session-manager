@@ -34,7 +34,7 @@
 						This entry was created with PDB-REDO version <span
 							z2:text="${entry.data.VERSION}"></span>.
 						<span z2:if="${not entry.dbEntry and entry.link['log']}">Download the full log file <a
-								z2:href="@{/${entry.link['log']}}">here</a>.
+								z2:href="@{${entry.link['log']}}">here</a>.
 						</span>
 					</td>
 
@@ -173,27 +173,27 @@
 						<td class="c" colspan="2">
 							Re-refined and rebuilt structure
 							<ul class="entry-file-list">
-								<li z2:if="${entry.link['final_pdb']}"><a z2:href="@{/${entry.link['final_pdb']}}">PDB</a></li>
+								<li z2:if="${entry.link['final_pdb']}"><a z2:href="@{${entry.link['final_pdb']}}">PDB</a></li>
 								<li z2:if="not ${entry.link['final_pdb']}">PDB</li>
 
-								<li z2:if="${entry.link['final_cif']}"><a z2:href="@{/${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a></li>
+								<li z2:if="${entry.link['final_cif']}"><a z2:href="@{${entry.link['final_cif']}}" id="final-mmcif-link">mmCIF</a></li>
 								<li z2:if="${not entry.link['final_cif']}">mmCIF</li>
 
-								<li z2:if="${entry.link['final_mtz']}"><a z2:href="@{/${entry.link['final_mtz']}}">MTZ</a></li>
+								<li z2:if="${entry.link['final_mtz']}"><a z2:href="@{${entry.link['final_mtz']}}">MTZ</a></li>
 								<li z2:if="${not entry.link['final_mtz']}">MTZ</li>
 							</ul>
 						</td>
 						<td class="c" colspan="2">
 							Re-refined (only) structure
 							<ul class="entry-file-list">
-								<li z2:if="${entry.link['besttls_pdb']}"><a z2:href="@{/${entry.link['besttls_pdb']}}">PDB</a></li>
+								<li z2:if="${entry.link['besttls_pdb']}"><a z2:href="@{${entry.link['besttls_pdb']}}">PDB</a></li>
 								<li z2:if="${not entry.link['besttls_pdb']}">PDB</li>
-								<li z2:if="${entry.link['besttls_mtz']}"><a z2:href="@{/${entry.link['besttls_mtz']}}">MTZ</a></li>
+								<li z2:if="${entry.link['besttls_mtz']}"><a z2:href="@{${entry.link['besttls_mtz']}}">MTZ</a></li>
 								<li z2:if="${not entry.link['besttls_mtz']}">MTZ</li>
 							</ul>
 						</td>
 						<td class="c" colspan="2">
-							<a z2:href="@{/${entry.link['alldata']}}">All files</a>
+							<a z2:href="@{${entry.link['alldata']}}">All files</a>
 							<br />
 							(compressed)
 						</td>
@@ -208,19 +208,19 @@
 						<td class="c" colspan="8">
 							<list class="refmaclinks no-list">
 								<li z2:if="${entry.link['refmac_settings']}"><a
-										z2:href="@{/${entry.link['refmac_settings']}}">Refinement
+										z2:href="@{${entry.link['refmac_settings']}}">Refinement
 										settings</a></li>
 								<li z2:if="${entry.link['homology_rest']}"><a
-										z2:href="@{/${entry.link['homology_rest']}}">Homology
+										z2:href="@{${entry.link['homology_rest']}}">Homology
 										restraints</a></li>
 								<li z2:if="${entry.link['hbond_rest']}"><a
-										z2:href="@{/${entry.link['hbond_rest']}}">H-bond
+										z2:href="@{${entry.link['hbond_rest']}}">H-bond
 										restraints</a></li>
 								<li z2:if="${entry.link['metal_rest']}"><a
-										z2:href="@{/${entry.link['metal_rest']}}">Metal restraints</a>
+										z2:href="@{${entry.link['metal_rest']}}">Metal restraints</a>
 								</li>
 								<li z2:if="${entry.link['nucleic_rest']}"><a
-										z2:href="@{/${entry.link['nucleic_rest']}}">DNA/RNA
+										z2:href="@{${entry.link['nucleic_rest']}}">DNA/RNA
 										restraints</a></li>
 							</list>
 						</td>
@@ -462,11 +462,11 @@
 				<tr z2:if="${entry.link['wo'] or entry.link['wf']}">
 					<td class="label">WHAT_CHECK</td>
 					<td class="ar">
-						<a z2:if="${entry.link['wo']}" z2:href="@{/${entry.link['wo']}}">Report</a>
+						<a z2:if="${entry.link['wo']}" z2:href="@{${entry.link['wo']}}">Report</a>
 						<span z2:if="${not entry.link['wo']}">No Report</span>
 					</td>
 					<td class="ar">
-						<a z2:if="${entry.link['wf']}" z2:href="@{/${entry.link['wf']}}">Report</a>
+						<a z2:if="${entry.link['wf']}" z2:href="@{${entry.link['wf']}}">Report</a>
 						<span z2:if="${not entry.link['wf']}">No Report</span>
 					</td>
 				</tr>
