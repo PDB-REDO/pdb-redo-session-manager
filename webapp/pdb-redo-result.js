@@ -29,6 +29,7 @@ class PDBRedoResult extends HTMLElement {
 		const link = document.createElement('link');
 		link.setAttribute('href', `${this.pdbRedoBaseURI}/css/web-component-style.css`);
 		link.setAttribute('rel', 'stylesheet');
+		link.setAttribute('crossorigin', 'anonymous');
 		shadow.appendChild(link);
 
 		const div = document.createElement('div');

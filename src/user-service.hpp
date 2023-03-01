@@ -179,4 +179,6 @@ class UserHTMLController : public zeep::http::login_controller
 	zeep::http::reply getTokens(const zeep::http::scope &scope);
 	zeep::http::reply createToken(const zeep::http::scope &scope, std::string name);
 	zeep::http::reply deleteToken(const zeep::http::scope &scope, unsigned long id);
+
+	zeep::http::reply requestToken(const zeep::http::scope &scope, std::string name);
 };

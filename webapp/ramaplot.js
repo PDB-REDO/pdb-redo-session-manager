@@ -153,13 +153,13 @@ export class RamachandranPlot extends LitElement {
 
 	render() {
 		return html`
-			<link rel="stylesheet" href="${new URL('css/w3.css', this.pdbRedoBaseURI)}">
+			<link rel="stylesheet" href="${new URL('css/w3.css', this.pdbRedoBaseURI)}" crossorigin='anonymous'>
 			<!-- template content -->
 			<div class="${this.noshadow ? '' : 'w3-card'}" style="width: ${this.width + 32}px">
 				${this.noheader ? '' : html`
 					<header class="w3-container">
 						<h3><a href="https://pdb-redo.eu">
-							<img src="${new URL('images/PDB_logo_rect_small.svg', this.pdbRedoBaseURI)}" alt="PDB-REDO"/></a>
+							<img crossorigin='anonymous' src="${new URL('images/PDB_logo_rect_small.svg', this.pdbRedoBaseURI)}" alt="PDB-REDO"/></a>
 							Kleywegt-like plot for ${this.pdbID}
 						</h3>
 					</header>`
@@ -215,7 +215,7 @@ export class RamachandranPlot extends LitElement {
 						</tr>
 						<tr>
 							<td>
-								<img src="${new URL(this.show['preferred'] ? 'images/checkbox-checked.svg' : 'images/checkbox-unchecked.svg', this.pdbRedoBaseURI)}"
+								<img crossorigin='anonymous' src="${new URL(this.show['preferred'] ? 'images/checkbox-checked.svg' : 'images/checkbox-unchecked.svg', this.pdbRedoBaseURI)}"
 									 data-target="preferred" @click="${this.toggleChecbox}"/>
 							</td>
 							<td>Preferred regions</td>
@@ -224,7 +224,7 @@ export class RamachandranPlot extends LitElement {
 						</tr>
 						<tr>
 							<td>
-								<img src="${new URL(this.show['allowed'] ? 'images/checkbox-checked.svg' : 'images/checkbox-unchecked.svg', this.pdbRedoBaseURI)}"
+								<img crossorigin='anonymous' src="${new URL(this.show['allowed'] ? 'images/checkbox-checked.svg' : 'images/checkbox-unchecked.svg', this.pdbRedoBaseURI)}"
 									data-target="allowed" @click="${this.toggleChecbox}"/>
 							</td>
 							<td>Allowed regions</td>
@@ -233,7 +233,7 @@ export class RamachandranPlot extends LitElement {
 						</tr>
 						<tr>
 							<td>
-								<img src="${new URL(this.show['outlier'] ? 'images/checkbox-checked.svg' : 'images/checkbox-unchecked.svg', this.pdbRedoBaseURI)}"
+								<img crossorigin='anonymous' src="${new URL(this.show['outlier'] ? 'images/checkbox-checked.svg' : 'images/checkbox-unchecked.svg', this.pdbRedoBaseURI)}"
 									data-target="outlier" @click="${this.toggleChecbox}"/>
 							</td>
 							<td>Outliers</td>
@@ -555,6 +555,7 @@ export class RamachandranPlot extends LitElement {
 
 			img.onload = () => this.images[id].img_loaded = true;
 
+			img.crossOrigin = 'anonymous';
 			img.src = new URL(`images/${bg.img + RamaSubset[id].img}.png`, this.pdbRedoBaseURI);
 		});
 	}

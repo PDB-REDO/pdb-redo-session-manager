@@ -27,7 +27,8 @@ module.exports = (env) => {
 		},
 
 		output: {
-			path: DEST
+			path: DEST,
+			crossOriginLoading: 'anonymous'
 		},
 
 		module: {
@@ -74,7 +75,9 @@ module.exports = (env) => {
 			})
 		],
 
-		optimization: { minimizer: [] }
+		optimization: { minimizer: [] },
+
+		target: 'web'
 	};
 
 	if (PRODUCTION) {

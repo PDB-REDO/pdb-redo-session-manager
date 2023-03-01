@@ -38,7 +38,8 @@ class CCP4TokenDialog extends Dialog {
 		const uri = this.form.elements['cburl'].value;
 		const reqid = this.form.elements['reqid'].value;
 
-		fetch(`token?name=${reqid}`, {
+		fetch(`token-request?name=${reqid}`, {
+			method: 'post',
 			credentials: 'include'
 		}).then(r => {
 			if (!r.ok)
@@ -58,7 +59,7 @@ class CCP4TokenDialog extends Dialog {
 			const f2 = document.createElement('input');
 			f2.type = 'hidden';
 			f2.name = 'token-secret';
-			f2.value = r.token;
+			f2.value = r.secret;
 			form.appendChild(f2);
 
 			const f3 = document.createElement('input');

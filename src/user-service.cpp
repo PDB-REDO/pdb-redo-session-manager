@@ -621,7 +621,10 @@ UserHTMLController::UserHTMLController()
 	map_get("token", &UserHTMLController::getTokens);
 	map_delete("token", &UserHTMLController::deleteToken, "id");
 	map_post("token", &UserHTMLController::createToken, "name");
+
+	map_post("token-request", &UserHTMLController::requestToken, "name");
 }
+
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
 {
@@ -957,4 +960,25 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 	TokenService::instance().create(name, username);
 
 	return zeep::http::reply::redirect("/token", zeep::http::see_other);
+}
+
+zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scope, std::string name)
+{
+	auto credentials = scope.get_credentials();
+	if (not credentials)
+		throw zeep::http::unauthorized;
+
+	auto username = credentials["username"].as<std::string>();
+
+	if (name.empty())
+		name = "<untitled>";
+
+	auto token = TokenService::instance().create(name, username);
+	zeep::json::element e;
+	to_element(e, token);
+
+	zeep::http::reply reply(zeep::http::ok);
+	reply.set_content(e);
+
+	return reply;
 }
