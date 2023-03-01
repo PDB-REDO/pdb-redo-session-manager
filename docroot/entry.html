@@ -122,7 +122,7 @@
 						<span
 							z2:text="${data.RFREE != null ? #numbers.formatDecimal(data.RFREE, 1, 4) : 'N/A'}" />
 						<span class="warning" z2:if="${data.RFREE == 'N/A'}">
-							<img z2:src="@{/images/waarschuwing.svg}" />
+							<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
 							<span class="warningtext">
 								R-free could not be extracted from the coordinate file
 							</span>
@@ -147,7 +147,7 @@
 		data.NTSTCNT + ' (' + #numbers.formatDecimal(100.0 * data.NTSTCNT / data.NREFCNT, 1, 1) + '%)'
 	}" />
 						<span class="warning" z2:if="${data.TSTCNT != data.NTSTCNT}">
-							<img z2:src="@{/images/waarschuwing.svg}" />
+							<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
 							<span class="warningtext">
 								New test set, PDB-REDO compensated for this
 							</span>
@@ -157,7 +157,7 @@
 					<td class="ar">
 						<span z2:text="${data.ISTWIN != null ? data.ISTWIN : 'N/A'}" />
 						<span class="warning" z2:if="${data.ISTWIN and data.FALSETWIN}">
-							<img z2:src="@{/images/waarschuwing.svg}" />
+							<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
 							<span class="warningtext">
 								Data treated as twinned, but there may be other (symmetry) issues
 							</span>
@@ -283,7 +283,7 @@
 								<span
 									z2:text="${data.RFCALUNB != null ? #numbers.formatDecimal(data.RFCALUNB, 1, 4) : 'N/A'}" />
 								<span class="warning">
-									<img z2:src="@{/images/waarschuwing.svg}" />
+									<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
 									<span class="warningtext">R-free was considered biased, the
 										estimated unbiased R-free was used</span>
 								</span>
