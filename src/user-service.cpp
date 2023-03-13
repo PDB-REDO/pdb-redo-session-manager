@@ -628,11 +628,11 @@ UserHTMLController::UserHTMLController()
 
 zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
 {
-	std::string uri = get_prefixless_path(req);
+	auto uri = get_prefixless_path(req);
 
 	zeep::http::scope scope(m_server, req);
 
-	scope.put("baseuri", uri);
+	scope.put("baseuri", uri.string());
 	scope.put("dialog", "login");
 
 	auto &tp = m_server->get_template_processor();
@@ -666,11 +666,11 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 	{
 		auto &req = scope.get_request();
 		zeep::http::scope sub(scope);
-		std::string uri = get_prefixless_path(req);
+		auto uri = get_prefixless_path(req);
 
 		zeep::http::scope scope(m_server, req);
 
-		scope.put("baseuri", uri);
+		scope.put("baseuri", uri.string());
 		scope.put("dialog", "register");
 
 		auto &tp = m_server->get_template_processor();
@@ -716,7 +716,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 			gdpr_field->set_attribute("checked", "checked");
 
 		for (auto i_uri : doc.find("//input[@name='uri']"))
-			i_uri->set_attribute("value", uri);
+			i_uri->set_attribute("value", uri.string());
 
 		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
 		rep.set_content(doc);
@@ -782,9 +782,9 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	auto &req = scope.get_request();
 	zeep::http::scope sub(scope);
-	std::string uri = get_prefixless_path(req);
+	auto uri = get_prefixless_path(req);
 
-	sub.put("baseuri", uri);
+	sub.put("baseuri", uri.string());
 	sub.put("dialog", "change");
 
 	auto &tp = m_server->get_template_processor();
@@ -811,7 +811,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 		new_pw_2_field->set_attribute("class", new_pw_2_field->get_attribute("class") + " is-invalid");
 
 	for (auto i_uri : doc.find("//input[@name='uri']"))
-		i_uri->set_attribute("value", uri);
+		i_uri->set_attribute("value", uri.string());
 
 	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
 	rep.set_content(doc);
@@ -851,9 +851,9 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 
 	auto &req = scope.get_request();
 	zeep::http::scope sub(scope);
-	std::string uri = get_prefixless_path(req);
+	auto uri = get_prefixless_path(req);
 
-	sub.put("baseuri", uri);
+	sub.put("baseuri", uri.string());
 	sub.put("dialog", "update");
 
 	auto &tp = m_server->get_template_processor();
@@ -878,7 +878,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 		emailFld->set_attribute("class", emailFld->get_attribute("class") + " is-invalid");
 
 	for (auto i_uri : doc.find("//input[@name='uri']"))
-		i_uri->set_attribute("value", uri);
+		i_uri->set_attribute("value", uri.string());
 
 	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
 	rep.set_content(doc);
