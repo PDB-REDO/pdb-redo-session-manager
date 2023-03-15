@@ -30,7 +30,7 @@
 		"terser-webpack-plugin": "^5.2.5",
 		"ts-loader": "^9.2.6",
 		"uglifyjs-webpack-plugin": "^2.2.0",
-		"webpack": "^5.60.0",
+		"webpack": "^5.76.0",
 		"webpack-cli": "^5.0.1"
 	},
 	"dependencies": {
