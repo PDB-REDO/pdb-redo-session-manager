@@ -531,8 +531,8 @@ zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json:
 		link["final_pdb"] = db + (pdbID + "_final.pdb");
 		link["final_cif"] = db + (pdbID + "_final.cif");
 		link["final_mtz"] = db + (pdbID + "_final.mtz");
-		link["besttls_pdb"] = db + (pdbID + "_besttls.pdb.gz");
-		link["besttls_mtz"] = db + (pdbID + "_besttls.mtz.gz");
+		link["besttls_pdb"] = db + (pdbID + "_besttls.pdb");
+		link["besttls_mtz"] = db + (pdbID + "_besttls.mtz");
 		link["refmac_settings"] = db + (pdbID + ".refmac");
 		link["homology_rest"] = db + "homology.rest";
 		link["hbond_rest"] = db + "hbond.rest";
@@ -541,7 +541,7 @@ zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json:
 		link["wo"] = db + "wo/pdbout.txt";
 		link["wf"] = db + "wf/pdbout.txt";
 
-		link["alldata"] = db + "zipped";
+		// link["alldata"] = db + "zipped";
 	}
 
 	zh::scope sub(scope);
