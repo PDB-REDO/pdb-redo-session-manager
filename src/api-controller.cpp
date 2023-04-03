@@ -143,17 +143,7 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 
 			auto contentHash = zeep::encode_base64(zeep::sha256(req.get_payload()));
 
-			auto pathPart = req.get_uri();
-			auto pqs = pathPart.find('?');
-			if (pqs != std::string::npos)
-				pathPart.erase(pqs, std::string::npos);
-
-			// Correct for a potential context
-			if (not m_server->get_context_name().empty())
-			{
-				zeep::http::uri uri(m_server->get_context_name());
-				pathPart = fs::path("/") / uri.get_path() / fs::path(pathPart).relative_path();
-			}
+			auto pathPart = zeep::http::uri(req.get_uri().get_path().string(), m_server->get_context_name());
 
 			std::string host = req.get_header("X-Forwarded-Host");
 			if (host.empty())
@@ -161,7 +151,7 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 
 			std::ostringstream ss;
 			ss << req.get_method() << std::endl
-				<< pathPart << std::endl
+				<< pathPart.get_path() << std::endl
 				<< ps.str() << std::endl
 				<< host << std::endl
 				<< contentHash;
