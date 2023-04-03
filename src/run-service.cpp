@@ -293,6 +293,8 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 {
 	using namespace std::literals;
 
+	const std::regex rx("[-a-zA-Z0-9+_().]+");
+
 	// create user directory first, if needed
 	auto userDir = m_runsdir / user;
 	if (not fs::exists(userDir))
@@ -332,7 +334,7 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 
 		gxrio::istream in(&sb);
 
-		fs::path input = file.filename.empty() ? "input."s + type : file.filename;
+		fs::path input = std::regex_match(file.filename, rx) ? file.filename : "input."s + type;
 
 		if (input.extension() == ".gz")
 			input = input.stem();
