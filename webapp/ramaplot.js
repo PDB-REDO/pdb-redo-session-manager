@@ -190,7 +190,7 @@ export class RamachandranPlot extends LitElement {
 					<table class="w3-table-all ${this.noshadow ? '' : 'w3-card'} w3-small w3-margin-bottom">
 						<tr>
 							<th colspan="2">Description</th>
-							<th>PDB
+							<th>Original
 								<svg width='20' height='16' viewBox='0 0 20 16'>
 									<circle class="orig-label" cx='12' cy='8' r='6'/>
 								</svg>

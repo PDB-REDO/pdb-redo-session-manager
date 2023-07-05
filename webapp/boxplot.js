@@ -225,7 +225,7 @@ function BoxPlot(width, height, title, yLabel, data, range) {
 function createBoxPlots(e, s, td) {
 
 	const dataRFree = [
-		new Data('PDB', s.map(d => 100 * d.RFREE), 100 * e.RFREE, 'blue', 100 * e.SIGRFCAL),
+		new Data('Original', s.map(d => 100 * d.RFREE), 100 * e.RFREE, 'blue', 100 * e.SIGRFCAL),
 		new Data('PDB-REDO', s.map(d => 100 * d.RFFIN), 100 * e.RFFIN, 'orange', 100 * e.SIGRFFIN)
 	];
 	const range = dataRFree.map(d => d.range)
@@ -236,12 +236,12 @@ function createBoxPlots(e, s, td) {
 
 	if (e.OZRAMA != null && e.FZRAMA != null && e.FCHI12 != null && e.OSCHI12 != null) {
 		const dataRama = [
-			new Data('PDB', s.map(d => d.OZRAMA), e.OZRAMA, 'blue', e.OSZRAMA),
+			new Data('Original', s.map(d => d.OZRAMA), e.OZRAMA, 'blue', e.OSZRAMA),
 			new Data('PDB-REDO', s.map(d => d.FZRAMA), e.FZRAMA, 'orange', e.FSZRAMA)
 		];
 
 		const dataRota = [
-			new Data('PDB', s.map(d => d.OCHI12), e.OCHI12, 'blue', e.OSCHI12),
+			new Data('Original', s.map(d => d.OCHI12), e.OCHI12, 'blue', e.OSCHI12),
 			new Data('PDB-REDO', s.map(d => d.FCHI12), e.FCHI12, 'orange', e.FSCHI12)
 		];
 
