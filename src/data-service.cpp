@@ -168,7 +168,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 	{
 		getline(whyNotFile, whynot);
 
-		if (whynot.starts_with("COMMENT: "))
+		if (zeep::starts_with(whynot, "COMMENT: "))
 			whynot.erase(0, 9);
 	}
 	else

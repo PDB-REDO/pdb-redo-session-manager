@@ -40,7 +40,7 @@ include(FindPkgConfig)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Filesystem REQUIRED)
@@ -90,11 +90,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 find_package(LibArchive REQUIRED)
-
-set(ENV{PKG_CONFIG_PATH} "$ENV{HOME}/.local/lib/pkgconfig/")
-pkg_check_modules(PKG_PQ libpqxx>=7.2 libpq IMPORTED_TARGET REQUIRED)
-pkg_check_modules(SSL libssl IMPORTED_TARGET)
-pkg_check_modules(CRYPTO libcrypto IMPORTED_TARGET)
+find_package(libpqxx 7.8 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
@@ -160,9 +156,7 @@ mrc_target_resources(prsmd
 	${PROJECT_SOURCE_DIR}/api/)
 
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd
-	zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio
-	PkgConfig::PKG_PQ PkgConfig::SSL PkgConfig::CRYPTO mailio)
+target_link_libraries(prsmd mailio zeep::zeep LibArchive::LibArchive libmcfp::libmcfp gxrio::gxrio libpqxx::pqxx)
 
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}

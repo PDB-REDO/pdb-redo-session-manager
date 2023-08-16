@@ -2,11 +2,11 @@
 
 CREATE SCHEMA IF NOT EXISTS redo AUTHORIZATION "pdbAdmin";
 
-DROP TABLE IF EXISTS redo.token;
-DROP TABLE IF EXISTS redo.update_request;
-DROP TABLE IF EXISTS redo.user;
+-- DROP TABLE IF EXISTS redo.token;
+-- DROP TABLE IF EXISTS redo.update_request;
+-- DROP TABLE IF EXISTS redo.user;
 
-CREATE TABLE redo.user (
+CREATE TABLE IF NOT EXISTS redo.user (
 	id serial primary key,
 	name varchar NOT NULL UNIQUE,
 	institution varchar NOT NULL,
@@ -22,18 +22,17 @@ CREATE TABLE redo.user (
 	UNIQUE(name, email)
 );
 
-CREATE
-OR REPLACE FUNCTION update_modified_column() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION update_modified_column() RETURNS TRIGGER AS $$
 BEGIN NEW.modified = now();
 	RETURN NEW;
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_user_modtime BEFORE
+CREATE OR REPLACE TRIGGER update_user_modtime BEFORE
 UPDATE OF name, institution, email, password
 	ON redo.user FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 
-CREATE TABLE redo.token (
+CREATE TABLE IF NOT EXISTS redo.token (
 	id serial primary key,
 	user_id bigint references redo.user on delete cascade deferrable initially deferred,
 	name varchar NOT NULL,
@@ -42,7 +41,7 @@ CREATE TABLE redo.token (
 	expires timestamp with time zone default CURRENT_TIMESTAMP + interval '1 year' not null
 );
 
-CREATE TABLE redo.update_request (
+CREATE TABLE IF NOT EXISTS redo.update_request (
 	id serial primary key,
 	pdb_id varchar(8) not null,
 	created timestamp with time zone default CURRENT_TIMESTAMP not null,
