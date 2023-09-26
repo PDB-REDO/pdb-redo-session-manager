@@ -84,6 +84,7 @@ class DataService
 
 	std::vector<UpdateRequest> getAllUpdateRequests();
 
+	bool exists(const std::string &pdbID) const;
 	std::string getWhyNot(const std::string &pdbID);
 
 	// attic access

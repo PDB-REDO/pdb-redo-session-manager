@@ -839,6 +839,10 @@ zh::reply DbController::handle_get(const zh::scope &scope, std::string pdbID)
 {
 	if (pdbID.empty())
 		throw std::runtime_error("Please specify a valid PDB ID");
+
+	const std::regex rx(R"([0-9][0-9a-z]{3,7})");
+	if (not std::regex_match(pdbID, rx))
+		throw zh::not_found;
 	
 	zeep::to_lower(pdbID);
 	return zh::reply::redirect(pdbID, zh::see_other);
