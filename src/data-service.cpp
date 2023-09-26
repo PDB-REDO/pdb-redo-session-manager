@@ -159,6 +159,14 @@ float DataService::version() const
 	return result;
 }
 
+bool DataService::exists(const std::string &pdbID) const
+{
+	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+
+	std::error_code ec;
+	return fs::is_directory(entry_dir, ec);
+}
+
 std::string DataService::getWhyNot(const std::string &pdbID)
 {
 	std::string whynot("The PDB-REDO entry is being created");
@@ -168,7 +176,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 	{
 		getline(whyNotFile, whynot);
 
-		if (whynot.starts_with("COMMENT: "))
+		if (zeep::starts_with(whynot, "COMMENT: "))
 			whynot.erase(0, 9);
 	}
 	else
