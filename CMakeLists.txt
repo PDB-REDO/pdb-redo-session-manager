@@ -34,7 +34,6 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
-include(Dart)
 include(FindFilesystem)
 include(FindPkgConfig)
 include(GenerateExportHeader)
@@ -94,7 +93,7 @@ find_package(libpqxx 7.8 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
-find_package(zeep 6.0.1 REQUIRED)
+find_package(zeep 6.0.8 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 

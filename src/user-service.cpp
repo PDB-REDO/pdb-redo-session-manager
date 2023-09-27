@@ -168,7 +168,7 @@ bool isValidPassword(const std::string &password)
 
 // --------------------------------------------------------------------
 
-std::unique_ptr<UserService> UserService::sInstance;
+std::unique_ptr<UserService> UserService::s_instance;
 
 // --------------------------------------------------------------------
 
@@ -186,14 +186,14 @@ UserService::UserService(const std::string &admins)
 
 void UserService::init(const std::string &admins)
 {
-	assert(not sInstance);
-	sInstance.reset(new UserService(admins));
+	assert(not s_instance);
+	s_instance.reset(new UserService(admins));
 }
 
 UserService &UserService::instance()
 {
-	assert(sInstance);
-	return *sInstance;
+	assert(s_instance);
+	return *s_instance;
 }
 
 User UserService::getUser(unsigned long id) const

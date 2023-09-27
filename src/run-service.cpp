@@ -258,7 +258,7 @@ std::tuple<std::istream *, std::string> Run::getZippedResultFile()
 
 // --------------------------------------------------------------------
 
-std::unique_ptr<RunService> RunService::sInstance;
+std::unique_ptr<RunService> RunService::s_instance;
 
 RunService::RunService(const std::string &runsDir)
 	: m_runsdir(runsDir)
@@ -277,15 +277,15 @@ RunService::RunService(const std::string &runsDir)
 
 void RunService::init(const std::string &runsDir)
 {
-	assert(not sInstance);
+	assert(not s_instance);
 
-	sInstance.reset(new RunService(runsDir));
+	s_instance.reset(new RunService(runsDir));
 }
 
 RunService &RunService::instance()
 {
-	assert(sInstance);
-	return *sInstance;
+	assert(s_instance);
+	return *s_instance;
 }
 
 Run RunService::submit(const std::string &user, const zh::file_param &pdb, const zh::file_param &mtz,

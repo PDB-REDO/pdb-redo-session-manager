@@ -67,18 +67,18 @@ class TokenService
   public:
 	static void init()
 	{
-		sInstance = new TokenService();
+		s_instance = new TokenService();
 	}
 
 	static TokenService &instance()
 	{
-		return *sInstance;
+		return *s_instance;
 	}
 
 	void stop()
 	{
-		delete sInstance;
-		sInstance = nullptr;
+		delete s_instance;
+		s_instance = nullptr;
 	}
 
 	Token create(const std::string &name, const std::string &user);
@@ -103,5 +103,5 @@ class TokenService
 	std::mutex m_cv_m;
 	std::thread m_clean;
 
-	static TokenService *sInstance;
+	static TokenService *s_instance;
 };

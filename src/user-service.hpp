@@ -145,7 +145,7 @@ class UserService : public zeep::http::user_service
 
 	std::string generatePassword() const;
 
-	static std::unique_ptr<UserService> sInstance;
+	static std::unique_ptr<UserService> s_instance;
 	std::vector<std::string> m_admins;
 };
 
