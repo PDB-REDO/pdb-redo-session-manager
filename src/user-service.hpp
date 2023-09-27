@@ -162,6 +162,8 @@ class UserHTMLController : public zeep::http::login_controller
 	zeep::http::reply post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
 		const std::string &email, const std::string &password, const std::string &password2, std::optional<std::string> accept_gdpr);
 
+	zeep::http::reply get_is_valid_password(const zeep::http::scope &scope, const std::string &password);
+
 	zeep::http::reply get_reset_pw(const zeep::http::scope &scope);
 	zeep::http::reply post_reset_pw(const zeep::http::scope &scope, const std::string &username, const std::string &email);
 

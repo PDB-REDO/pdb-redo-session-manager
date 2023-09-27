@@ -742,6 +742,14 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 	return reply;
 }
 
+zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope &scope, const std::string &password)
+{
+	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::ok);
+	zeep::json::element e = isValidPassword(password);
+	rep.set_content(e);
+	return rep;
+}
+
 zeep::http::reply UserHTMLController::get_reset_pw(const zeep::http::scope &scope)
 {
 	zeep::http::scope sub(scope);
