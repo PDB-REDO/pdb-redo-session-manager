@@ -67,7 +67,7 @@ Token &Token::operator=(const pqxx::row &row)
 
 // --------------------------------------------------------------------
 
-TokenService *TokenService::sInstance = nullptr;
+TokenService *TokenService::s_instance = nullptr;
 
 TokenService::TokenService()
 	: m_clean(std::bind(&TokenService::runCleanThread, this))

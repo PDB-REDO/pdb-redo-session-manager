@@ -835,14 +835,11 @@ class DbController : public zh::html_controller
 	}
 };
 
-zh::reply DbController::handle_get(const zh::scope &scope, std::string pdbID)
+zh::reply DbController::	handle_get(const zh::scope &scope, std::string pdbID)
 {
-	if (pdbID.empty())
-		throw std::runtime_error("Please specify a valid PDB ID");
-
 	const std::regex rx(R"([0-9][0-9a-z]{3,7})");
 	if (not std::regex_match(pdbID, rx))
-		throw zh::not_found;
+		throw zh::unprocessable_entity;
 	
 	zeep::to_lower(pdbID);
 	return zh::reply::redirect(pdbID, zh::see_other);
@@ -928,6 +925,40 @@ zh::reply DbController::handle_entry(const zh::scope &scope, std::string pdbID, 
 
 	return get_template_processor().create_reply_from_template("entry::tables", sub);
 }
+
+// --------------------------------------------------------------------
+
+class pdb_entry_error_handler : public zh::error_handler
+{
+  public:
+
+	bool create_error_reply(const zeep::http::request& req, std::exception_ptr eptr, zeep::http::reply& reply)
+	{
+		bool result = false;
+
+		try
+		{
+			std::rethrow_exception(eptr);
+		}
+		catch (const zh::status_type &err)
+		{
+			if (err == zh::unprocessable_entity)
+			{
+				auto pdb_id = req.get_parameter("pdb-id");
+				zh::scope scope(m_server, req);
+				scope.put("pdb-id", pdb_id);
+				reply = m_server->get_template_processor().create_reply_from_template("entry-not-found", scope);
+				reply.set_status(zh::unprocessable_entity);
+				result = true;
+			}
+		}
+		catch (...)
+		{
+		}
+		
+		return result;
+	}
+};
 
 // --------------------------------------------------------------------
 
@@ -1086,6 +1117,7 @@ Command should be either:
 				s->set_context_name(context);
 
 			s->add_error_handler(new prsm_db_error_handler());
+			s->add_error_handler(new pdb_entry_error_handler());
 
 #ifndef NDEBUG
 			s->set_template_processor(new zeep::http::file_based_html_template_processor("docroot"));

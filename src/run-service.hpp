@@ -172,6 +172,6 @@ class RunService
 
 	RunService(const std::string& runsDir);
 
-	static std::unique_ptr<RunService> sInstance;
+	static std::unique_ptr<RunService> s_instance;
 	std::filesystem::path m_runsdir;
 };
