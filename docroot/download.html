@@ -54,11 +54,13 @@
 					electron
 					density maps.
 				</li>
-				<li><code>wget https://pdb-redo.eu/db/9xyz.zip</code> downloads all files of a PDB-REDO entry.</li>
+				<li><code>wget https://pdb-redo.eu/db/9xyz/zipped</code> downloads all files of a PDB-REDO entry.</li>
 			</ul>
 
 			<h2>Download entire PDB-REDO databank using <code>rsync</code>:</h2>
 			<ul>
+				<li><code>rsync -av --exclude=attic rsync://rsync.pdb-redo.eu/pdb-redo/ pdb-redo/</code> downloads the current entries.
+                                </li>
 				<li><code>rsync -av rsync://rsync.pdb-redo.eu/pdb-redo/ pdb-redo/</code> downloads the entire archive.
 				</li>
 			</ul>
