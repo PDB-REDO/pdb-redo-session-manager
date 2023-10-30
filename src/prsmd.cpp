@@ -835,9 +835,9 @@ class DbController : public zh::html_controller
 	}
 };
 
-zh::reply DbController::	handle_get(const zh::scope &scope, std::string pdbID)
+zh::reply DbController::handle_get(const zh::scope &scope, std::string pdbID)
 {
-	const std::regex rx(R"([0-9][0-9a-z]{3,7})");
+	const std::regex rx(R"([0-9][0-9a-z]{3,7})", std::regex::icase);
 	if (not std::regex_match(pdbID, rx))
 		throw zh::unprocessable_entity;
 	
