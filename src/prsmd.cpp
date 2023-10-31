@@ -152,6 +152,47 @@ class entry_class_expression_object : public zh::expression_utility_object<entry
 
 // --------------------------------------------------------------------
 
+class version_format_expression_object : public zh::expression_utility_object<version_format_expression_object>
+{
+  public:
+	static constexpr const char *name() { return "version"; }
+
+	virtual zh::object evaluate(const zh::scope &scope, const std::string &methodName,
+		const std::vector<zh::object> &parameters) const
+	{
+		zh::object result;
+
+		try
+		{
+			if (methodName == "format" and parameters.size() == 1 and parameters[0].is_number())
+			{
+				double d;
+				if (parameters[0].is_number_int())
+					d = static_cast<double>(parameters[0].as<int64_t>());
+				else
+					d = parameters[0].as<double>();
+
+				char b[32];
+
+				auto r = std::to_chars(b, b + sizeof(b), d, std::chars_format::fixed, 2);
+				if (r.ec == std::errc())
+					result = std::string{b, r.ptr};
+				else
+					result = std::make_error_code(r.ec).message();
+			}
+		}
+		catch (const std::exception &ex)
+		{
+			std::cerr << ex.what() << std::endl;
+		}
+
+		return result;
+	}
+
+} s_version_format_expression_object;
+
+// --------------------------------------------------------------------
+
 json create_entry_data(json &data, const fs::path &dir, const std::vector<std::string> &files)
 {
 	auto pdbID = data["pdbid"].as<std::string>();

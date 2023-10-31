@@ -36,7 +36,7 @@
 				class="alert alert-secondary" role="alert">
 
 			<span z2:switch="${entry.status.version gt 0}">
-				<span z2:case="${true}" z2:text="|Update to version ${entry.status.version} is pending.|"></span>
+				<span z2:case="${true}" z2:text="|Update to version ${#version.format(entry.status.version)} is pending.|"></span>
 				<span z2:case="*">
 					This entry is not up to date with the most recent version of PDB-REDO.
 					<a z2:if="${#security.authorized}"
