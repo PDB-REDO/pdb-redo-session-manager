@@ -32,7 +32,7 @@
 				<tr>
 					<td>
 						This entry was created with PDB-REDO version <span
-							z2:text="${entry.data.VERSION}"></span>.
+							z2:text="${#numbers.formatDecimal(entry.data.VERSION, 1, 2)}"></span>.
 						<span z2:if="${not entry.dbEntry and entry.link['log']}">Download the full log file <a
 								z2:href="@{${entry.link['log']}}">here</a>.
 						</span>
