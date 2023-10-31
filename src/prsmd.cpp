@@ -172,6 +172,7 @@ class version_format_expression_object : public zh::expression_utility_object<ve
 				else
 					d = parameters[0].as<double>();
 
+#if __cpp_lib_to_chars >= 201611L
 				char b[32];
 
 				auto r = std::to_chars(b, b + sizeof(b), d, std::chars_format::fixed, 2);
@@ -179,6 +180,11 @@ class version_format_expression_object : public zh::expression_utility_object<ve
 					result = std::string{b, r.ptr};
 				else
 					result = std::make_error_code(r.ec).message();
+#else
+				std::ostringstream os;
+				os << std::fixed << std::setprecision(2) << d;
+				result = os.str();
+#endif
 			}
 		}
 		catch (const std::exception &ex)
