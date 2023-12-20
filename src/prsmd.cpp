@@ -786,6 +786,11 @@ class DbController : public zh::html_controller
 		map_get("{id}/zipped", &DbController::handle_zipped, "id");
 		map_get("{id}/{file}", &DbController::handle_file, "id", "file");
 
+		// since the uri class was added to libzeep:
+		map_get("{id}/wo/{file}", &DbController::handle_file_wo, "id", "file");
+		map_get("{id}/wf/{file}", &DbController::handle_file_wf, "id", "file");
+		map_get("{id}/wc/{file}", &DbController::handle_file_wc, "id", "file");
+
 		map_get("{id}/attic/{attic}/zipped", &DbController::handle_zipped_attic, "id", "attic");
 		map_get("{id}/attic/{attic}/{file}", &DbController::handle_file_attic, "id", "file", "attic");
 
@@ -828,6 +833,21 @@ class DbController : public zh::html_controller
 		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 		return rep;
+	}
+
+	zh::reply handle_file_wo(const zh::scope &scope, std::string pdbID, std::string file)
+	{
+		return handle_file(scope, pdbID, fs::path("wo") / file);
+	}
+
+	zh::reply handle_file_wf(const zh::scope &scope, std::string pdbID, std::string file)
+	{
+		return handle_file(scope, pdbID, fs::path("wf") / file);
+	}
+
+	zh::reply handle_file_wc(const zh::scope &scope, std::string pdbID, std::string file)
+	{
+		return handle_file(scope, pdbID, fs::path("wc") / file);
 	}
 
 	zh::reply handle_file(const zh::scope &scope, std::string pdbID, std::string file)
