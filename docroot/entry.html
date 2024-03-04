@@ -153,6 +153,18 @@
 							</span>
 						</span>
 					</td>
+				</tr>
+				<tr>
+					<td class="label">Twin</td>
+					<td class="ar">
+						<span z2:text="${data.ISTWIN != null ? data.ISTWIN : 'N/A'}" />
+						<span class="warning" z2:if="${data.ISTWIN and data.FALSETWIN}">
+							<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
+							<span class="warningtext">
+								Data treated as twinned, but there may be other (symmetry) issues
+							</span>
+						</span>
+					</td>
 					<td class="label">Radiation damage</td>
 					<td class="ar">
 						<span z2:text="${data.PBNET != null ? data.PBNET : 'N/A'}"></span>
@@ -163,18 +175,6 @@
 							</span>
 							<span z2:if="${not entry.dbEntry}" class="warningtext">
 								Data shows severe radiation damage, consider reprocessing your data
-							</span>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<td class="label">Twin</td>
-					<td class="ar">
-						<span z2:text="${data.ISTWIN != null ? data.ISTWIN : 'N/A'}" />
-						<span class="warning" z2:if="${data.ISTWIN and data.FALSETWIN}">
-							<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
-							<span class="warningtext">
-								Data treated as twinned, but there may be other (symmetry) issues
 							</span>
 						</span>
 					</td>
