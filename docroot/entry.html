@@ -153,6 +153,21 @@
 							</span>
 						</span>
 					</td>
+					<td class="label">Radiation damage</td>
+					<td class="ar">
+						<span z2:text="${data.PBNET != null ? data.PBNET : 'N/A'}"></span>
+						<span class="warning" z2:if="${data.PBNET >= 95}">
+							<img crossorigin="anonymous" z2:src="@{/images/waarschuwing.svg}" />
+							<span z2:if="${entry.dbEntry}" class="warningtext">
+								Data shows severe radiation damage
+							</span>
+							<span z2:if="${not entry.dbEntry}" class="warningtext">
+								Data shows severe radiation damage, consider reprocessing your data
+							</span>
+						</span>
+					</td>
+				</tr>
+				<tr>
 					<td class="label">Twin</td>
 					<td class="ar">
 						<span z2:text="${data.ISTWIN != null ? data.ISTWIN : 'N/A'}" />
