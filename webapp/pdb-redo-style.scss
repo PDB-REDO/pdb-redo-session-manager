@@ -90,6 +90,12 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 	}
 }
 
+// PDB ID
+
+.pdb_id {
+	margin-bottom: 1.5rem;
+}
+
 // for the pdb-redo header
 
 header {
