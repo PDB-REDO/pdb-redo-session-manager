@@ -21,7 +21,7 @@
 
 		<div class="result">
 			<table>
-				<caption>PDB-REDO results</caption>
+				<caption>PDB-REDO results<span z2:if="${entry.dbEntry}" z2:text="| for PDB entry ${entry.id}|"></span></caption>
 				
 				<tr z2:if="${entry.data.TITLE}">
 					<td>
