@@ -160,11 +160,3 @@ target_link_libraries(prsmd mailio zeep::zeep LibArchive::LibArchive libmcfp::li
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}
 )
-
-# # manual
-
-# install(FILES doc/prsmd.1 DESTINATION ${CMAKE_INSTALL_DATADIR}/man/man1)
-
-# manual
-
-# install(FILES doc/prsmd.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
