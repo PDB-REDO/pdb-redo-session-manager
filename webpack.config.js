@@ -47,7 +47,7 @@ module.exports = (env) => {
 				{
 					test: /\.(sa|sc|c)ss$/i,
 					use: [
-						MiniCssExtractPlugin.loader,
+						PRODUCTION ? MiniCssExtractPlugin.loader : "style-loader",
 						"css-loader",
 						"postcss-loader",
 						"sass-loader"
@@ -69,12 +69,6 @@ module.exports = (env) => {
 			extensions: ['.js', '.scss'],
 		},
 
-		plugins: [
-			new MiniCssExtractPlugin({
-				filename: "../css/[name].css"
-			})
-		],
-
 		optimization: { minimizer: [] },
 
 		target: 'web'
@@ -86,16 +80,18 @@ module.exports = (env) => {
 		webpackConf.plugins.push(
 			new CleanWebpackPlugin({
 				verbose: true
-			}));
-
-		webpackConf.optimization.minimizer.push(
-			new TerserPlugin({ /* additional options here */ }),
-			new UglifyJsPlugin({ parallel: 4 })
+			}),
+			new MiniCssExtractPlugin({})
 		);
+
+		// webpackConf.optimization.minimizer.push(
+		// 	new TerserPlugin({ /* additional options here */ }),
+		// 	new UglifyJsPlugin({ parallel: 4 })
+		// );
 	} else {
 		webpackConf.mode = "development";
 		webpackConf.devtool = 'source-map';
-		webpackConf.plugins.push(new webpack.optimize.AggressiveMergingPlugin())
+		// webpackConf.plugins.push(new webpack.optimize.AggressiveMergingPlugin())
 	}
 
 	return webpackConf;
