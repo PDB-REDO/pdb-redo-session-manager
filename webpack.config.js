@@ -71,6 +71,8 @@ module.exports = (env) => {
 
 		optimization: { minimizer: [] },
 
+		plugins: [],
+
 		target: 'web'
 	};
 
