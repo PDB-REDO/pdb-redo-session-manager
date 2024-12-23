@@ -31,6 +31,8 @@
 
 #include <zeep/http/uri.hpp>
 
+#include <boost/asio/deadline_timer.hpp>
+
 #include <mailio/message.hpp>
 #include <mailio/smtp.hpp>
 

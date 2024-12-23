@@ -33,7 +33,20 @@
 					<td>
 						This entry was created with PDB-REDO version <span
 							z2:text="${#version.format(entry.data.VERSION)}"></span>.
-						<span z2:if="${not entry.dbEntry and entry.link['log']}">Download the full log file <a
+
+							<z2:block z2:switch="${entry.versions.data.foldit_used ? 1 : entry.versions.data.coordinates_revision_major_mmCIF ? 2 : 3}" z2:with="v=${entry.versions.data}">
+								<span z2:case="1"
+									z2:text="|using Foldit model ${entry.versions.data.foldit_id} from player ${v.foldit_player}|">
+								</span>
+								<span z2:case="2"
+									z2:text="|using the deposited PDB model version ${v.coordinates_revision_major_mmCIF}.${v.coordinates_revision_minor_mmCIF}|">
+								</span>
+								<span z2:case="*"
+									z2:text="|using the deposited PDB model|">
+								</span>
+							</z2:block>
+
+							<span z2:if="${not entry.dbEntry and entry.link['log']}">Download the full log file <a
 								z2:href="@{${entry.link['log']}}">here</a>.
 						</span>
 					</td>

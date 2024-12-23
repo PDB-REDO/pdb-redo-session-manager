@@ -39,7 +39,7 @@ include(FindPkgConfig)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Filesystem REQUIRED)
@@ -93,7 +93,7 @@ find_package(libpqxx 7.8 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
-find_package(zeep 6.0.8 REQUIRED)
+find_package(zeep 6.0.17 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 
