@@ -38,7 +38,7 @@
 
 #include "mrsrc.hpp"
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <cassert>
 #include <iostream>

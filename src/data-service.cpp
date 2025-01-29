@@ -30,7 +30,7 @@
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <zeep/http/reply.hpp>
 

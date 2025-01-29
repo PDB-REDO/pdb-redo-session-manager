@@ -49,7 +49,7 @@
 
 #include <pqxx/pqxx>
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
