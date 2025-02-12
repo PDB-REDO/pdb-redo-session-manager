@@ -21,7 +21,7 @@ module.exports = (env) => {
 			tokens: path.resolve(SCRIPTS, "tokens.js"),
 
 			w3: path.resolve(SCRIPTS, "w3.css"),
-			'web-component-style': { import: path.resolve(SCRIPTS, 'web-component-style.scss') }
+			'web-component-style': path.resolve(SCRIPTS, 'web-component-style.scss')
 		},
 
 		output: {
