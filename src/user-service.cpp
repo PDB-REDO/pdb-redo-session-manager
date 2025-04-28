@@ -31,6 +31,12 @@
 
 #include <zeep/http/uri.hpp>
 
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <mailio/message.hpp>
 #include <mailio/smtp.hpp>
 
