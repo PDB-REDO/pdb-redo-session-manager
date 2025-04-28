@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2023 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,10 +27,10 @@
 #include "data-service.hpp"
 
 #include "https-client.hpp"
-#include "zip-support.hpp"
 #include "prsm-db-connection.hpp"
+#include "zip-support.hpp"
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <zeep/http/reply.hpp>
 
@@ -78,12 +78,19 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 		status.ok = v >= version();
 	}
 
-	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT MAX(version) FROM redo.update_request WHERE pdb_id = )" + tx.quote(pdbID));
-	tx.commit();
+	try
+	{
+		pqxx::transaction tx(prsm_db_connection::instance());
+		auto r = tx.exec1(R"(SELECT MAX(version) FROM redo.update_request WHERE pdb_id = )" + tx.quote(pdbID));
+		tx.commit();
 
-	if (not r[0].is_null())
-		status.pendingVersion = r[0].as<float>();
+		if (not r[0].is_null())
+			status.pendingVersion = r[0].as<float>();
+	}
+	catch (const std::exception &ex)
+	{
+		std::cerr << ex.what() << '\n';
+	}
 
 	return status;
 }
@@ -93,9 +100,8 @@ void DataService::requestUpdate(const std::string &pdbID, const User &user)
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec0(R"(
 		INSERT INTO redo.update_request(pdb_id, user_id, version)
-		     VALUES ()" + tx.quote(pdbID) + ", "
-			 	        + tx.quote(user.id) + ", "
-						+ tx.quote(version()) + R"())");
+		     VALUES ()" +
+					  tx.quote(pdbID) + ", " + tx.quote(user.id) + ", " + tx.quote(version()) + R"())");
 	tx.commit();
 }
 
@@ -125,7 +131,7 @@ std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 		auto data = getData(req.pdb_id);
 		auto upToDate = data and data["properties"] and data["properties"]["VERSION"].as<float>() >= req.version;
 
-		if (not upToDate)	// this entry is still not up-to-date
+		if (not upToDate) // this entry is still not up-to-date
 			continue;
 
 		pqxx::transaction tx1(prsm_db_connection::instance());
@@ -135,7 +141,9 @@ std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 		req.id = 0;
 	}
 
-	result.erase(std::remove_if(result.begin(), result.end(), [](UpdateRequest &r) { return r.id == 0; }), result.end());
+	result.erase(std::remove_if(result.begin(), result.end(), [](UpdateRequest &r)
+					 { return r.id == 0; }),
+		result.end());
 
 	return result;
 }
@@ -155,7 +163,7 @@ float DataService::version() const
 		// if (r.ec != std::errc())
 		// 	std::cerr << "Error converting version from redo-version.txt" << std::endl;
 	}
-	
+
 	return result;
 }
 
@@ -186,7 +194,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 		auto uri = config.get("ebi-coord-template");
 		for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
 			uri.replace(i, 5, pdbID);
-		
+
 		if (not head_request(uri))
 			whynot = "PDB Entry does not exist";
 		else
@@ -199,7 +207,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 				whynot = "No reflection data available";
 		}
 	}
-	
+
 	return whynot;
 }
 
@@ -219,7 +227,7 @@ std::string DataService::getLatestAttic(const std::string &pdbID)
 		for (auto di = fs::directory_iterator(attic_dir); di != fs::directory_iterator(); ++di)
 		{
 			auto dt = fs::last_write_time(di->path(), ec);
-		    auto dd = time_point_cast<system_clock::duration>(dt - decltype(dt)::clock::now() + system_clock::now());
+			auto dd = time_point_cast<system_clock::duration>(dt - decltype(dt)::clock::now() + system_clock::now());
 
 			if (t < dd)
 			{
@@ -253,7 +261,7 @@ std::vector<std::string> DataService::getFileList(const std::string &pdbID, cons
 	return result;
 }
 
-std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string& file, const std::optional<std::string> attic)
+std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> attic)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (attic)
@@ -283,6 +291,14 @@ zeep::json::element DataService::getData(const std::string &pdbID, const std::op
 			if (file.is_open())
 				zeep::json::parse_json(file, data);
 		}
+
+		p = entry_dir / "versions.json";
+		if (fs::exists(p))
+		{
+			std::ifstream file(p);
+			if (file.is_open())
+				zeep::json::parse_json(file, data["_versions"]);
+		}
 	}
 
 	return data;
@@ -305,7 +321,7 @@ std::tuple<std::istream *, std::string> DataService::getZipFile(const std::strin
 	{
 		if (f.path().filename() == "attic")
 			continue;
-		
+
 		if (f.is_regular_file())
 			zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
 		else if (f.is_directory())
@@ -314,7 +330,7 @@ std::tuple<std::istream *, std::string> DataService::getZipFile(const std::strin
 			{
 				if (not fr.is_regular_file())
 					continue;
-				
+
 				zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
 			}
 		}
@@ -322,4 +338,3 @@ std::tuple<std::istream *, std::string> DataService::getZipFile(const std::strin
 
 	return { zw.finish(), pdbID + ".zip" };
 }
-

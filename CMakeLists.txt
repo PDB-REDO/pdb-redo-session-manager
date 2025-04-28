@@ -93,7 +93,7 @@ find_package(libpqxx 7.8 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
-find_package(zeep 6.0.8 REQUIRED)
+find_package(zeep 6.0.17 REQUIRED)
 find_package(libmcfp REQUIRED)
 find_package(gxrio REQUIRED)
 
@@ -160,11 +160,3 @@ target_link_libraries(prsmd mailio zeep::zeep LibArchive::LibArchive libmcfp::li
 install(TARGETS prsmd
     RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR}
 )
-
-# # manual
-
-# install(FILES doc/prsmd.1 DESTINATION ${CMAKE_INSTALL_DATADIR}/man/man1)
-
-# manual
-
-# install(FILES doc/prsmd.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)

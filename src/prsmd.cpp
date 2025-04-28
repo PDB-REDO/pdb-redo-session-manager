@@ -49,7 +49,7 @@
 
 #include <pqxx/pqxx>
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
@@ -207,6 +207,7 @@ json create_entry_data(json &data, const fs::path &dir, const std::vector<std::s
 		{ "id", data["pdbid"] },
 		{ "dbEntry", false },
 		{ "data", std::move(data["properties"]) },
+		{ "versions", std::move(data["_versions"]) },
 		{ "rama-angles", std::move(data["rama-angles"]) }
 	};
 
