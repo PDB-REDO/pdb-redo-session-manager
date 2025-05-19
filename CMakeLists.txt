@@ -59,7 +59,8 @@ find_package(Threads)
 
 find_package(LibArchive REQUIRED)
 
-find_package(Boost 1.83 QUIET COMPONENTS python)
+find_package(Boost 1.74 QUIET)
+find_package(nlohmann_json REQUIRED)
 
 if(NOT Boost_FOUND)
 	# boost is a huge project and directly downloading the 'alternate release'
@@ -71,17 +72,15 @@ if(NOT Boost_FOUND)
 		URL_HASH SHA256=2e64e5d79a738d0fa6fb546c6e5c2bd28f88d268a2a080546f74e5ff98f29d0e
 		OPTIONS
 		"BOOST_ENABLE_CMAKE ON"
-		"BOOST_INCLUDE_LIBRARIES python"
-		"BOOST_ENABLE_PYTHON ON"
 		"CMAKE_POSITION_INDEPENDENT_CODE ON"
 	)
 endif()
 
-CPMAddPackage(NAME nlohmann_json
-	GITHUB_REPOSITORY nlohmann/json
-	VERSION 3.12.0
-	OPTIONS "JSON_BuildTests OFF"
-	EXCLUDE_FROM_ALL YES)
+# CPMAddPackage(NAME nlohmann_json
+# 	GITHUB_REPOSITORY nlohmann/json
+# 	VERSION 3.12.0
+# 	OPTIONS "JSON_BuildTests OFF"
+# 	EXCLUDE_FROM_ALL YES)
 
 CPMAddPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
@@ -120,7 +119,9 @@ CPMAddPackage(NAME mailio
 CPMAddPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
 	GIT_TAG 8a5faf9
-	EXCLUDE_FROM_ALL YES)
+	EXCLUDE_FROM_ALL YES
+	OPTIONS
+	"ZEEP_USE_BOOST_ASIO YES")
 
 find_program(YARN yarn REQUIRED)
 
