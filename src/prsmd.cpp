@@ -43,7 +43,6 @@
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/login-controller.hpp>
-#include <zeep/http/rest-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/uri.hpp>
 
@@ -54,7 +53,7 @@
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
 
-using json = zeep::json::element;
+using json = zeep::el::object;
 
 // --------------------------------------------------------------------
 
@@ -76,8 +75,8 @@ class entry_class_expression_object : public zh::expression_utility_object<entry
 
 				if (parameters.front().is_number() and parameters.back().is_number())
 				{
-					double o = parameters.front().as<double>();
-					double f = parameters.back().as<double>();
+					double o = parameters.front().get<double>();
+					double f = parameters.back().get<double>();
 
 					if (o > 1.0)
 					{
@@ -96,8 +95,8 @@ class entry_class_expression_object : public zh::expression_utility_object<entry
 
 				if (parameters.front().is_number() and parameters.back().is_number())
 				{
-					double o = parameters.front().as<double>();
-					double f = parameters.back().as<double>();
+					double o = parameters.front().get<double>();
+					double f = parameters.back().get<double>();
 
 					if (f == 100 || f > o)
 						result = "better";
@@ -113,14 +112,14 @@ class entry_class_expression_object : public zh::expression_utility_object<entry
 
 				if (data["RFFIN"].is_number() and data["SIGRFCAL"].is_number())
 				{
-					auto rffin = data["RFFIN"].as<double>();
-					auto sigrfcal = data["SIGRFCAL"].as<double>();
+					auto rffin = data["RFFIN"].get<double>();
+					auto sigrfcal = data["SIGRFCAL"].get<double>();
 
 					if (data["RFREE"].is_null() or data["ZCALERR"] == true or data["TSTCNT"] != data["NTSTCNT"])
 					{
 						if (data["RFCALUNB"].is_number())
 						{
-							auto rfcalunb = data["RFCALUNB"].as<double>();
+							auto rfcalunb = data["RFCALUNB"].get<double>();
 
 							if (rffin < (rfcalunb - 2.6 * sigrfcal))
 								result = "better";
@@ -130,7 +129,7 @@ class entry_class_expression_object : public zh::expression_utility_object<entry
 					}
 					else if (data["RFCAL"].is_number())
 					{
-						double rfcal = data["RFCAL"].as<double>();
+						double rfcal = data["RFCAL"].get<double>();
 
 						if (rffin < (rfcal - 2.6 * sigrfcal))
 							result = "better";
@@ -168,9 +167,9 @@ class version_format_expression_object : public zh::expression_utility_object<ve
 			{
 				double d;
 				if (parameters[0].is_number_int())
-					d = static_cast<double>(parameters[0].as<int64_t>());
+					d = static_cast<double>(parameters[0].get<int64_t>());
 				else
-					d = parameters[0].as<double>();
+					d = parameters[0].get<double>();
 
 #if __cpp_lib_to_chars >= 201611L
 				char b[32];
@@ -201,9 +200,9 @@ class version_format_expression_object : public zh::expression_utility_object<ve
 
 json create_entry_data(json &data, const fs::path &dir, const std::vector<std::string> &files)
 {
-	auto pdbID = data["pdbid"].as<std::string>();
+	auto pdbID = data["pdbid"].get<std::string>();
 
-	zeep::json::element entry{
+	zeep::el::object entry{
 		{ "id", data["pdbid"] },
 		{ "dbEntry", false },
 		{ "data", std::move(data["properties"]) },
@@ -258,8 +257,7 @@ json create_entry_data(Run &run, const fs::path &basePath)
 	if (not dataJson.is_open())
 		throw zeep::http::not_found;
 
-	zeep::json::element data;
-	zeep::json::parse_json(dataJson, data);
+	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
 	return create_entry_data(data, basePath, run.getResultFileList());
 }
@@ -280,21 +278,21 @@ struct Stats
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("RFREE", RFREE)
-		   & zeep::make_nvp("RFFIN", RFFIN)
-		   & zeep::make_nvp("OZRAMA", OZRAMA)
-		   & zeep::make_nvp("FZRAMA", FZRAMA)
-		   & zeep::make_nvp("OCHI12", OCHI12)
-		   & zeep::make_nvp("FCHI12", FCHI12)
-		   & zeep::make_nvp("URESO", URESO);
+		ar & mxml::name_value_pair("RFREE", RFREE)
+		   & mxml::name_value_pair("RFFIN", RFFIN)
+		   & mxml::name_value_pair("OZRAMA", OZRAMA)
+		   & mxml::name_value_pair("FZRAMA", FZRAMA)
+		   & mxml::name_value_pair("OCHI12", OCHI12)
+		   & mxml::name_value_pair("FCHI12", FCHI12)
+		   & mxml::name_value_pair("URESO", URESO);
 	}
 };
 
-class GFXRESTController : public zeep::http::rest_controller
+class GFXRESTController : public zeep::http::controller
 {
   public:
 	GFXRESTController()
-		: zh::rest_controller("gfx")
+		: zh::controller("gfx")
 	{
 		map_get_request("statistics-for-box-plot", &GFXRESTController::get_statistics_for_box_plot, "ureso");
 	}
@@ -378,12 +376,8 @@ class JobController : public zh::html_controller
 		std::error_code ec;
 		json runs;
 
-		for (auto &run : RunService::instance().getRunsForUser(credentials["username"].as<std::string>()))
-		{
-			json run_j;
-			to_element(run_j, run);
-			runs.emplace_back(std::move(run_j));
-		}
+		for (auto &run : RunService::instance().getRunsForUser(credentials["username"].get<std::string>()))
+			runs.emplace_back(zeep::el::to_object(run));
 		sub.put("runs", std::move(runs));
 
 		return get_template_processor().create_reply_from_template("jobs", sub);
@@ -394,11 +388,11 @@ class JobController : public zh::html_controller
 	{
 		auto credentials = scope.get_credentials();
 
-		zeep::json::element params;
+		zeep::el::object params;
 		if (pairedRefinement)
 			params["paired"] = true;
 
-		auto r = RunService::instance().submit(credentials["username"].as<std::string>(), coordinates, diffractionData, restraints, sequence, params);
+		auto r = RunService::instance().submit(credentials["username"].get<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
 		return zh::reply::redirect("/job", zh::see_other);
 	}
@@ -406,7 +400,7 @@ class JobController : public zh::html_controller
 	zh::reply getOutputFile(const zh::scope &scope, unsigned long job_id, const std::string &file)
 	{
 		auto credentials = scope.get_credentials();
-		auto run = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
+		auto run = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id);
 
 		zh::reply result(zh::ok);
 
@@ -435,7 +429,7 @@ class JobController : public zh::html_controller
 	{
 		auto credentials = scope.get_credentials();
 
-		auto f = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id).getImageFile();
+		auto f = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id).getImageFile();
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
@@ -450,7 +444,7 @@ class JobController : public zh::html_controller
 	{
 		auto credentials = scope.get_credentials();
 
-		auto r = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
+		auto r = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id);
 
 		zh::scope sub(scope);
 
@@ -472,7 +466,7 @@ class JobController : public zh::html_controller
 		content << in.rdbuf();
 
 		sub.put("log", content.str());
-		sub.put("status", r.status);
+		sub.put("status", zeep::el::to_object(r.status));
 
 		return get_template_processor().create_reply_from_template("job-error", sub);
 	}
@@ -480,7 +474,7 @@ class JobController : public zh::html_controller
 	zh::reply getEntry(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
-		auto r = RunService::instance().getRun(credentials["username"].as<std::string>(), job_id);
+		auto r = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id);
 
 		auto entry = create_entry_data(r, "/job/output/" + std::to_string(job_id));
 
@@ -493,7 +487,7 @@ class JobController : public zh::html_controller
 	zh::reply deleteJob(const zh::scope &scope, unsigned long job_id)
 	{
 		auto credentials = scope.get_credentials();
-		RunService::instance().deleteRun(credentials["username"].as<std::string>(), job_id);
+		RunService::instance().deleteRun(credentials["username"].get<std::string>(), job_id);
 
 		return zh::reply::stock_reply(zh::ok);
 	}
@@ -501,9 +495,9 @@ class JobController : public zh::html_controller
 	zh::reply getStatus(const zh::scope &scope, std::vector<unsigned long> job_ids)
 	{
 		auto credentials = scope.get_credentials();
-		auto username = credentials["username"].as<std::string>();
+		auto username = credentials["username"].get<std::string>();
 
-		zeep::json::element status;
+		zeep::el::object status;
 		for (auto job_id : job_ids)
 		{
 			auto r = RunService::instance().getRun(username, job_id);
@@ -518,22 +512,22 @@ class JobController : public zh::html_controller
 
 // --------------------------------------------------------------------
 
-class RootController : public zh::html_controller
+class RootController : public zh::html_controller_v1
 {
   public:
 	RootController(fs::path pdb_db_dir)
 		: m_db_dir(pdb_db_dir)
 	{
-		map_get("", "index");
-		map_get("about", "about");
-		map_get("privacy-policy", "gdpr");
-		map_get("download", "download");
-		map_get("license", "license");
-		map_get("api-doc", "api-doc");
+		map_get_simple("", "index");
+		map_get_simple("about", "about");
+		map_get_simple("privacy-policy", "gdpr");
+		map_get_simple("download", "download");
+		map_get_simple("license", "license");
+		map_get_simple("api-doc", "api-doc");
 
 		mount("client-api/**", &RootController::handle_client_api_file);
 
-		mount("{css,scripts,fonts,images}/", &RootController::handle_file);
+		map_get_file("{css,scripts,fonts,images}/");
 
 		mount("{others,schema}/**", &RootController::handle_others);
 
@@ -543,12 +537,12 @@ class RootController : public zh::html_controller
 	}
 
 	// zh::reply handle_entry(const zh::scope &scope, const std::string &tokenID, const std::string &tokenSecret, const std::string &jobID);
-	zh::reply handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &link_url);
+	zh::reply handle_entry(const zh::scope &scope, const zeep::el::object &data, const std::optional<std::string> &link_url);
 
 	// For the 'others' directory
 	void handle_others(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 	{
-		m_db_dir.handle_file(request, scope, reply);
+		reply = m_db_dir.create_reply_for_get_file(scope);
 	}
 
 	void handle_client_api_file(const zh::request& request, const zh::scope& scope, zh::reply& reply);
@@ -559,17 +553,17 @@ class RootController : public zh::html_controller
 	zh::file_based_html_template_processor m_db_dir;
 };
 
-zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json::element &data, const std::optional<std::string> &data_link)
+zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::el::object &data, const std::optional<std::string> &data_link)
 {
-	auto pdbID = data["pdbid"].as<std::string>();
+	auto pdbID = data["pdbid"].get<std::string>();
 
-	zeep::json::element entry{
+	zeep::el::object entry{
 		{ "id", data["pdbid"] },
 		{ "dbEntry", false }
 	};
 
-	entry["data"] = std::move(data["properties"]);
-	entry["rama-angles"] = std::move(data["rama-angles"]);
+	entry["data"] = data["properties"];
+	entry["rama-angles"] = data["rama-angles"];
 
 	if (data_link.has_value())
 	{
@@ -600,7 +594,7 @@ zh::reply RootController::handle_entry(const zh::scope &scope, const zeep::json:
 
 void RootController::handle_client_api_file(const zh::request& request, const zh::scope& scope, zh::reply& reply)
 {
-	fs::path file = fs::path(scope["baseuri"].as<std::string>()).lexically_relative("client-api");
+	fs::path file = fs::path(scope["baseuri"].get<std::string>()).lexically_relative("client-api");
 
 	mrsrc::rsrc data(file.string());
 
@@ -656,33 +650,13 @@ zh::reply AdminController::admin(const zh::scope &scope, std::optional<std::stri
 	sub.put("tab", active);
 
 	if (active == "tokens")
-	{
-		json tokens;
-		auto s = TokenService::instance().getAllTokens();
-		to_element(tokens, s);
-		sub.put("tokens", tokens);
-	}
+		sub.put("tokens", zeep::el::to_object(TokenService::instance().getAllTokens()));
 	else if (active == "users")
-	{
-		json users;
-		auto u = UserService::instance().getAllUsers();
-		to_element(users, u);
-		sub.put("users", users);
-	}
+		sub.put("users", zeep::el::to_object(UserService::instance().getAllUsers()));
 	else if (active == "jobs")
-	{
-		json runs;
-		auto r = RunService::instance().getAllRuns();
-		to_element(runs, r);
-		sub.put("runs", runs);
-	}
+		sub.put("runs", zeep::el::to_object(RunService::instance().getAllRuns()));
 	else if (active == "updates")
-	{
-		json updates;
-		auto ur = DataService::instance().getAllUpdateRequests();
-		to_element(updates, ur);
-		sub.put("updates", updates);
-	}
+		sub.put("updates", zeep::el::to_object(DataService::instance().getAllUpdateRequests()));
 
 	return get_template_processor().create_reply_from_template("admin", sub);
 }
@@ -747,7 +721,7 @@ zh::reply AdminController::handle_delete(const zh::scope &scope, const std::stri
 	{
 		auto &user_service = UserService::instance();
 		
-		auto me = user_service.getUser(scope.get_credentials()["username"].as<std::string>());
+		auto me = user_service.getUser(scope.get_credentials()["username"].get<std::string>());
 		if (me.id == id)
 			throw std::runtime_error("Are you serious, do you want to throw away yourself?");
 
@@ -785,7 +759,7 @@ class DbController : public zh::html_controller
 		map_get("update/{id}", &DbController::handle_update, "id");
 
 		map_get("{id}/zipped", &DbController::handle_zipped, "id");
-		map_get("{id}/{file}", &DbController::handle_file, "id", "file");
+		map_get("{id}/{file}", &DbController::handle_pdb_file, "id", "file");
 
 		// since the uri class was added to libzeep:
 		map_get("{id}/wo/{file}", &DbController::handle_file_wo, "id", "file");
@@ -812,7 +786,7 @@ class DbController : public zh::html_controller
 			if (not credentials)
 				throw std::runtime_error("You cannot request an update for this PDB-REDO entry since you are not logged in");
 			
-			User user = UserService::instance().getUser(credentials["username"].as<std::string>());
+			User user = UserService::instance().getUser(credentials["username"].get<std::string>());
 			DataService::instance().requestUpdate(pdbID, user);
 
 			return zh::reply::redirect("/db/" + pdbID);
@@ -838,20 +812,20 @@ class DbController : public zh::html_controller
 
 	zh::reply handle_file_wo(const zh::scope &scope, std::string pdbID, std::string file)
 	{
-		return handle_file(scope, pdbID, fs::path("wo") / file);
+		return handle_pdb_file(scope, pdbID, fs::path("wo") / file);
 	}
 
 	zh::reply handle_file_wf(const zh::scope &scope, std::string pdbID, std::string file)
 	{
-		return handle_file(scope, pdbID, fs::path("wf") / file);
+		return handle_pdb_file(scope, pdbID, fs::path("wf") / file);
 	}
 
 	zh::reply handle_file_wc(const zh::scope &scope, std::string pdbID, std::string file)
 	{
-		return handle_file(scope, pdbID, fs::path("wc") / file);
+		return handle_pdb_file(scope, pdbID, fs::path("wc") / file);
 	}
 
-	zh::reply handle_file(const zh::scope &scope, std::string pdbID, std::string file)
+	zh::reply handle_pdb_file(const zh::scope &scope, std::string pdbID, std::string file)
 	{
 		zeep::to_lower(pdbID);
 
@@ -935,9 +909,7 @@ zh::reply DbController::handle_show(const zh::scope &scope, std::string pdbID)
 
 			entry["id"] = pdbID;
 			entry["dbEntry"] = true;
-
-			auto status = ds.getUpdateStatus(pdbID);
-			to_element(entry["status"], status);
+			entry["status"] = zeep::el::to_object(ds.getUpdateStatus(pdbID));
 
 			sub.put("entry", entry);
 
@@ -956,9 +928,7 @@ zh::reply DbController::handle_show(const zh::scope &scope, std::string pdbID)
 
 			entry["id"] = pdbID;
 			entry["dbEntry"] = true;
-
-			auto status = ds.getUpdateStatus(pdbID);
-			to_element(entry["status"], status);
+			entry["status"] = zeep::el::to_object(ds.getUpdateStatus(pdbID));
 
 			sub.put("entry", entry);
 			sub.put("attic", attic);
@@ -983,8 +953,7 @@ zh::reply DbController::handle_entry(const zh::scope &scope, std::string pdbID, 
 	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json", attic);
 	std::ifstream dataJson(dataJsonFile);
 
-	zeep::json::element data;
-	zeep::json::parse_json(dataJson, data);
+	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
 	auto entry = create_entry_data(data, "/db/" + pdbID, DataService::instance().getFileList(pdbID));
 
@@ -1014,7 +983,8 @@ class pdb_entry_error_handler : public zh::error_handler
 			{
 				auto pdb_id = req.get_parameter("pdb-id");
 				zh::scope scope(m_server, req);
-				scope.put("pdb-id", pdb_id);
+				if (pdb_id.has_value())
+					scope.put("pdb-id", *pdb_id);
 				reply = m_server->get_template_processor().create_reply_from_template("entry-not-found", scope);
 				reply.set_status(zh::unprocessable_entity);
 				result = true;

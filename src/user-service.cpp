@@ -26,8 +26,8 @@
 
 #include "user-service.hpp"
 
-#include "token-service.hpp"
 #include "prsm-db-connection.hpp"
+#include "token-service.hpp"
 
 #include <zeep/http/uri.hpp>
 
@@ -62,44 +62,22 @@ std::regex kEmailRX(R"((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`
 
 User::User(const pqxx::row &row)
 {
-	id = row.at("id").as<unsigned long>();
-	name = row.at("name").as<std::string>();
-	email = row.at("email").as<std::string>();
-	institution = row.at("institution").as<std::string>();
-	password = row.at("password").as<std::string>();
-	created = parse_timestamp(row.at("created").as<std::string>());
+	id = row.at("id").get<unsigned long>().value_or(0);
+	name = row.at("name").get<std::string>().value_or("");
+	email = row.at("email").get<std::string>().value_or("");
+	institution = row.at("institution").get<std::string>().value_or("");
+	password = row.at("password").get<std::string>().value_or("");
+	created = parse_timestamp(row.at("created").get<std::string>().value_or(""));
 
-	if (not row.at("last_login").is_null())
-		lastLogin = parse_timestamp(row.at("last_login").as<std::string>());
+	if (auto v = row.at("last_login").get<std::string>(); v)
+		lastLogin = parse_timestamp(*v);
 
-	if (not row.at("last_job_date").is_null())
-		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
-	if (not row.at("last_job_nr").is_null())
-		lastJobNr = row.at("last_job_nr").as<int>();
-	if (not row.at("last_job_status").is_null())
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(row.at("last_job_status").as<std::string>());
-}
-
-User &User::operator=(const pqxx::row &row)
-{
-	id = row.at("id").as<unsigned long>();
-	name = row.at("name").as<std::string>();
-	email = row.at("email").as<std::string>();
-	institution = row.at("institution").as<std::string>();
-	password = row.at("password").as<std::string>();
-	created = parse_timestamp(row.at("created").as<std::string>());
-
-	if (not row.at("last_login").is_null())
-		lastLogin = parse_timestamp(row.at("last_login").as<std::string>());
-
-	if (not row.at("last_job_date").is_null())
-		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
-	if (not row.at("last_job_nr").is_null())
-		lastJobNr = row.at("last_job_nr").as<int>();
-	if (not row.at("last_job_status").is_null())
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(row.at("last_job_status").as<std::string>());
-
-	return *this;
+	if (auto v = row.at("last_job_date").get<std::string>(); v)
+		lastJobDate = parse_timestamp(*v);
+	if (auto v = row.at("last_job_nr").get<int>(); v)
+		lastJobNr = *v;
+	if (auto v = row.at("last_job_status").get<std::string>(); v)
+		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
 }
 
 // --------------------------------------------------------------------
@@ -205,7 +183,7 @@ User UserService::getUser(unsigned long id) const
 
 	tx.commit();
 
-	return User(r);
+	return r;
 }
 
 User UserService::getUser(const std::string &name) const
@@ -238,18 +216,16 @@ std::vector<User> UserService::getAllUsers() const
 
 uint32_t UserService::createRunID(const std::string &username)
 {
-	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(
-		R"(UPDATE redo.user
+	pqxx::work tx(prsm_db_connection::instance());
+
+	return tx.query_value<uint32_t>(
+				R"(UPDATE redo.user
 			  SET last_job_nr = last_job_nr + 1,
 				  last_job_date = CURRENT_TIMESTAMP
 		    WHERE name = )" +
 		tx.quote(username) + R"(
-		RETURNING last_job_nr)");
-
-	tx.commit();
-
-	return r[0].as<uint32_t>();
+		RETURNING last_job_nr)"
+	);
 }
 
 zeep::http::user_details UserService::load_user(const std::string &username) const
@@ -289,26 +265,24 @@ bool UserService::user_is_valid(const std::string &username) const
 
 	tx.commit();
 
-	return r[0].as<int>() == 1;
+	return r[0].get<int>() == 1;
 }
 
 uint32_t UserService::createUser(const User &user)
 {
-	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(
+	pqxx::work tx(prsm_db_connection::instance());
+
+	return tx.query_value<uint32_t>(
+		// clang-format off
 		R"(INSERT
 			 INTO redo.user (name, institution, email, password)
-		   VALUES (
-				 )" + tx.quote(user.name) + R"(,
-				 )" + tx.quote(user.institution) + R"(,
-				 )" + tx.quote(user.email) + R"(,
-				 )" + tx.quote(user.password) + R"(
-		   )
+		   VALUES ()"
+		   	+ tx.quote(user.name) + ","
+		   	+ tx.quote(user.institution) + ","
+		   	+ tx.quote(user.email) + ","
+			+ tx.quote(user.password) + R"()
 		RETURNING id)");
-
-	tx.commit();
-
-	return r[0].as<uint32_t>();
+		//clang-format on
 }
 
 void UserService::updateUser(const User &user)
@@ -371,7 +345,7 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 
 		tx.commit();
 
-		valid.validName = r[0].as<uint32_t>() == 0;
+		valid.validName = r[0].get<uint32_t>() == 0;
 	}
 
 	if (valid)
@@ -382,7 +356,7 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 
 		tx.commit();
 
-		valid.validEmail = r[0].as<uint32_t>() == 0;
+		valid.validEmail = r[0].get<uint32_t>() == 0;
 	}
 
 #ifndef NDEBUG
@@ -412,7 +386,7 @@ bool UserService::isValidEmailForUser(const User &user, const std::string &email
 
 			tx.commit();
 
-			result = r[0].as<uint32_t>() == 0;
+			result = r[0].get<uint32_t>() == 0;
 		}
 	}
 
@@ -442,8 +416,10 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		pqxx::transaction tx(prsm_db_connection::instance());
 		auto r = tx.exec0(
 			R"(UPDATE redo.user
-				SET password = )" + tx.quote(newPasswordHash) + R"(
-				WHERE name = )" + tx.quote(username));
+				SET password = )" +
+			tx.quote(newPasswordHash) + R"(
+				WHERE name = )" +
+			tx.quote(username));
 
 		// --------------------------------------------------------------------
 
@@ -634,8 +610,7 @@ UserHTMLController::UserHTMLController()
 	map_post("token-request", &UserHTMLController::requestToken, "name");
 }
 
-
-zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
+mxml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
 {
 	auto uri = get_prefixless_path(req);
 
@@ -646,7 +621,7 @@ zeep::xml::document UserHTMLController::load_login_form(const zeep::http::reques
 
 	auto &tp = m_server->get_template_processor();
 
-	zeep::xml::document doc;
+	mxml::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -684,7 +659,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 
 		auto &tp = m_server->get_template_processor();
 
-		zeep::xml::document doc;
+		mxml::document doc;
 		doc.set_preserve_cdata(true);
 
 		tp.load_template("index", doc);
@@ -747,7 +722,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope &scope, const std::string &password)
 {
 	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::ok);
-	zeep::json::element e = isValidPassword(password);
+	zeep::el::object e = isValidPassword(password);
 	rep.set_content(e);
 	return rep;
 }
@@ -780,7 +755,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	bool oldPWValid = false, newPWValid = isValidPassword(newPassword), newPW2Valid = newPassword == newPassword2;
 
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 	oldPWValid = m_server->get_security_context().verify_username_password(user.name, oldPassword);
 
 	if (oldPWValid and newPWValid and newPW2Valid)
@@ -794,7 +769,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 		userService.updateUser(user);
 
-		return create_redirect_for_request(scope.get_request());	
+		return create_redirect_for_request(scope.get_request());
 	}
 
 	auto &req = scope.get_request();
@@ -806,7 +781,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	auto &tp = m_server->get_template_processor();
 
-	zeep::xml::document doc;
+	mxml::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -838,7 +813,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &scope)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 
 	zeep::http::scope sub(scope);
 	sub.put("dialog", "update");
@@ -850,7 +825,7 @@ zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &s
 zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &scope, const std::string &institution, const std::string &email)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 
 	bool institutionValid = not institution.empty(), emailValid = userService.isValidEmailForUser(user, email);
 
@@ -863,7 +838,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 
 		userService.updateUser(user);
 
-		return create_redirect_for_request(scope.get_request());	
+		return create_redirect_for_request(scope.get_request());
 	}
 
 	auto &req = scope.get_request();
@@ -875,7 +850,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 
 	auto &tp = m_server->get_template_processor();
 
-	zeep::xml::document doc;
+	mxml::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -912,7 +887,7 @@ zeep::http::reply UserHTMLController::get_delete(const zeep::http::scope &scope)
 zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 
 	userService.deleteUser(user);
 
@@ -935,21 +910,19 @@ zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope
 
 zeep::http::reply UserHTMLController::getTokens(const zeep::http::scope &scope)
 {
-	auto username = scope.get_credentials()["username"].as<std::string>();
+	auto username = scope.get_credentials()["username"].get<std::string>();
 
 	zeep::http::scope sub(scope);
-	
+
 	auto s = TokenService::instance().getAllTokensForUser(username);
-	zeep::json::element e;
-	to_element(e, s);
-	sub.put("tokens", e);
+	sub.put("tokens", zeep::el::serializer<decltype(s)>::serialize(s));
 
 	return get_template_processor().create_reply_from_template("tokens", sub);
 }
 
 zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope, unsigned long id)
 {
-	auto username = scope.get_credentials()["username"].as<std::string>();
+	auto username = scope.get_credentials()["username"].get<std::string>();
 
 	zeep::http::scope sub(scope);
 
@@ -969,7 +942,7 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 	if (not credentials)
 		throw zeep::http::unauthorized;
 
-	auto username = credentials["username"].as<std::string>();
+	auto username = credentials["username"].get<std::string>();
 
 	if (name.empty())
 		name = "<untitled>";
@@ -985,17 +958,14 @@ zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scop
 	if (not credentials)
 		throw zeep::http::unauthorized;
 
-	auto username = credentials["username"].as<std::string>();
+	auto username = credentials["username"].get<std::string>();
 
 	if (name.empty())
 		name = "<untitled>";
 
 	auto token = TokenService::instance().create(name, username);
-	zeep::json::element e;
-	to_element(e, token);
-
 	zeep::http::reply reply(zeep::http::ok);
-	reply.set_content(e);
+	reply.set_content(zeep::el::serializer<Token>::serialize(token));
 
 	return reply;
 }

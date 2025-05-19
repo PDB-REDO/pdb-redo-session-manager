@@ -33,7 +33,7 @@
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
 
-using json = zeep::json::element;
+using json = zeep::el::object;
 
 // --------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ unsigned long thread_local APIRESTController_v2::s_token_id = 0;
 
 
 APIRESTController_v2::APIRESTController_v2()
-	: zh::rest_controller("api")
+	: zh::controller("api")
 {
 	// return a list of runs
 	map_get_request("run", &APIRESTController_v2::getAllRuns);
@@ -181,7 +181,7 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 			
 			s_token_id = stoi(credentials[0]);
 
-			result = zh::rest_controller::handle_request(req, rep);
+			result = zh::controller::handle_request(req, rep);
 		}
 		catch (const std::exception &e)
 		{

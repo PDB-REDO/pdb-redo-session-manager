@@ -26,12 +26,10 @@
 
 #pragma once
 
-#include <string>
+#include <zeep/http/request.hpp>
+
 #include <memory>
 #include <filesystem>
-
-#include <zeep/json/element.hpp>
-#include <zeep/http/request.hpp>
 
 enum class RunStatus
 {
@@ -58,10 +56,10 @@ struct DDataFit {
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("zdfree", zdfree)
-		   & zeep::make_nvp("range-lower", rangeLower)
-		   & zeep::make_nvp("range-upper", rangeUpper)
-		   & zeep::make_nvp("position", position);
+		ar & mxml::name_value_pair("zdfree", zdfree)
+		   & mxml::name_value_pair("range-lower", rangeLower)
+		   & mxml::name_value_pair("range-upper", rangeUpper)
+		   & mxml::name_value_pair("position", position);
 	}
 };
 
@@ -74,10 +72,10 @@ struct ProteinGeometry {
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("dzscore", dzscore)
-		   & zeep::make_nvp("range-lower", rangeLower)
-		   & zeep::make_nvp("range-upper", rangeUpper)
-		   & zeep::make_nvp("position", position);
+		ar & mxml::name_value_pair("dzscore", dzscore)
+		   & mxml::name_value_pair("range-lower", rangeLower)
+		   & mxml::name_value_pair("range-upper", rangeUpper)
+		   & mxml::name_value_pair("position", position);
 	}
 };
 
@@ -90,10 +88,10 @@ struct NucleicAcidGeometry {
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("drmsz", drmsz)
-		   & zeep::make_nvp("range-lower", rangeLower)
-		   & zeep::make_nvp("range-upper", rangeUpper)
-		   & zeep::make_nvp("position", position);
+		ar & mxml::name_value_pair("drmsz", drmsz)
+		   & mxml::name_value_pair("range-lower", rangeLower)
+		   & mxml::name_value_pair("range-upper", rangeUpper)
+		   & mxml::name_value_pair("position", position);
 	}
 };
 
@@ -106,9 +104,9 @@ struct Score
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("ddatafit", ddatafit)
-		   & zeep::make_nvp("geometry", proteinGeometry)
-		   & zeep::make_nvp("basePairs", nucleicAcidGeometry);
+		ar & mxml::name_value_pair("ddatafit", ddatafit)
+		   & mxml::name_value_pair("geometry", proteinGeometry)
+		   & mxml::name_value_pair("basePairs", nucleicAcidGeometry);
 	}
 };
 
@@ -135,14 +133,14 @@ struct Run
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("status", status)
-		   & zeep::make_nvp("has-image", has_image)
-		   & zeep::make_nvp("date", date)
-		   & zeep::make_nvp("started-date", started)
-		   & zeep::make_nvp("score", score)
-		   & zeep::make_nvp("input", input);
+		ar & mxml::name_value_pair("id", id)
+		   & mxml::name_value_pair("user", user)
+		   & mxml::name_value_pair("status", status)
+		   & mxml::name_value_pair("has-image", has_image)
+		   & mxml::name_value_pair("date", date)
+		   & mxml::name_value_pair("started-date", started)
+		   & mxml::name_value_pair("score", score)
+		   & mxml::name_value_pair("input", input);
 	}
 };
 
@@ -157,7 +155,7 @@ class RunService
 	RunService& operator=(const RunService&) = delete;
 
 	Run submit(const std::string& user, const zeep::http::file_param& pdb, const zeep::http::file_param& mtz,
-		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::json::element& params);
+		const zeep::http::file_param& restraints, const zeep::http::file_param& sequence, const zeep::el::object& params);
 
 	std::vector<Run> getRunsForUser(const std::string& username);
 	Run getRun(const std::string& username, unsigned long runID);

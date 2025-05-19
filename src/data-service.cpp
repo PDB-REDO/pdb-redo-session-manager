@@ -74,7 +74,7 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 	auto data = getData(pdbID);
 	if (data and data["properties"])
 	{
-		auto v = data["properties"]["VERSION"].as<float>();
+		auto v = data["properties"]["VERSION"].get<float>();
 		status.ok = v >= version();
 	}
 
@@ -85,7 +85,7 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 		tx.commit();
 
 		if (not r[0].is_null())
-			status.pendingVersion = r[0].as<float>();
+			status.pendingVersion = r[0].get<float>();
 	}
 	catch (const std::exception &ex)
 	{
@@ -129,7 +129,7 @@ std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 	for (auto &req : result)
 	{
 		auto data = getData(req.pdb_id);
-		auto upToDate = data and data["properties"] and data["properties"]["VERSION"].as<float>() >= req.version;
+		auto upToDate = data and data["properties"] and data["properties"]["VERSION"].get<float>() >= req.version;
 
 		if (not upToDate) // this entry is still not up-to-date
 			continue;
@@ -273,9 +273,9 @@ std::filesystem::path DataService::getFile(const std::string &pdbID, const std::
 	return entry_dir / file;
 }
 
-zeep::json::element DataService::getData(const std::string &pdbID, const std::optional<std::string> attic)
+zeep::el::object DataService::getData(const std::string &pdbID, const std::optional<std::string> attic)
 {
-	zeep::json::element data;
+	zeep::el::object data;
 
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (attic)
@@ -289,7 +289,7 @@ zeep::json::element DataService::getData(const std::string &pdbID, const std::op
 		{
 			std::ifstream file(p);
 			if (file.is_open())
-				zeep::json::parse_json(file, data);
+				data = zeep::el::object::parse_JSON(file);
 		}
 
 		p = entry_dir / "versions.json";
@@ -297,7 +297,7 @@ zeep::json::element DataService::getData(const std::string &pdbID, const std::op
 		{
 			std::ifstream file(p);
 			if (file.is_open())
-				zeep::json::parse_json(file, data["_versions"]);
+				data["_versions"] = zeep::el::object::parse_JSON(file);
 		}
 	}
 

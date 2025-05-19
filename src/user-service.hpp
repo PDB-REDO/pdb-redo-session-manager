@@ -30,8 +30,8 @@
 
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
-#include <zeep/nvp.hpp>
-#include <zeep/value-serializer.hpp>
+
+#include <mxml/serialize.hpp>
 
 #include <pqxx/pqxx>
 
@@ -60,24 +60,24 @@ struct User
 	{
 	}
 
+	User(const User &) = default;
 	User(const pqxx::row &row);
-	User &operator=(const pqxx::row &row);
 
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("name", name)
-		   & zeep::make_nvp("institution", institution)
-		   & zeep::make_nvp("email", email)
-		   & zeep::make_nvp("password", password)
-		   & zeep::make_nvp("created", created)
+		ar & mxml::name_value_pair("id", id)
+		   & mxml::name_value_pair("name", name)
+		   & mxml::name_value_pair("institution", institution)
+		   & mxml::name_value_pair("email", email)
+		   & mxml::name_value_pair("password", password)
+		   & mxml::name_value_pair("created", created)
 		   
-		   & zeep::make_nvp("last-login", lastLogin)
+		   & mxml::name_value_pair("last-login", lastLogin)
 
-		   & zeep::make_nvp("last-job-nr", lastJobNr)
-		   & zeep::make_nvp("last-job-date", lastJobDate)
-		   & zeep::make_nvp("last-job-status", lastJobStatus);
+		   & mxml::name_value_pair("last-job-nr", lastJobNr)
+		   & mxml::name_value_pair("last-job-date", lastJobDate)
+		   & mxml::name_value_pair("last-job-status", lastJobStatus);
 	}
 };
 
@@ -156,7 +156,7 @@ class UserHTMLController : public zeep::http::login_controller
   public:
 	UserHTMLController();
 
-	zeep::xml::document load_login_form(const zeep::http::request &req) const override;
+	mxml::document load_login_form(const zeep::http::request &req) const override;
 
 	zeep::http::reply get_register(const zeep::http::scope &scope);
 	zeep::http::reply post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,

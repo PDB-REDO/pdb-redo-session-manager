@@ -29,7 +29,7 @@
 #include "run-service.hpp"
 #include "token-service.hpp"
 
-#include <zeep/http/rest-controller.hpp>
+#include <zeep/http/controller.hpp>
 
 // --------------------------------------------------------------------
 
@@ -47,17 +47,17 @@ struct JobInfo
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("status", status)
-		   & zeep::make_nvp("date", date)
-		   & zeep::make_nvp("started-date", started)
-		   & zeep::make_nvp("score", score)
-		   & zeep::make_nvp("input", input);
+		ar & mxml::name_value_pair("id", id)
+		   & mxml::name_value_pair("status", status)
+		   & mxml::name_value_pair("date", date)
+		   & mxml::name_value_pair("started-date", started)
+		   & mxml::name_value_pair("score", score)
+		   & mxml::name_value_pair("input", input);
 	}
 };
 
 
-class APIRESTController_v2 : public zeep::http::rest_controller
+class APIRESTController_v2 : public zeep::http::controller
 {
   public:
 	APIRESTController_v2();
@@ -69,7 +69,7 @@ class APIRESTController_v2 : public zeep::http::rest_controller
 	std::vector<JobInfo> getAllRuns();
 
 	JobInfo createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
-		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::json::element &params);
+		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::el::object &params);
 
 	JobInfo getRun(unsigned long runID);
 
@@ -102,7 +102,7 @@ class APIRESTController_v1 : public APIRESTController_v2
 	std::vector<JobInfo> getAllRuns(unsigned long id);
 
 	JobInfo createJob(unsigned long tokenID, const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
-		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::json::element &params);
+		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::el::object &params);
 
 	JobInfo getRun(unsigned long tokenID, unsigned long runID);
 

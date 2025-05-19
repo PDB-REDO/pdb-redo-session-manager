@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <zeep/http/rest-controller.hpp>
+#include <zeep/http/controller.hpp>
 
 #include <pqxx/pqxx>
 
@@ -51,12 +51,12 @@ struct Token
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("name", name)
-		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("secret", secret)
-		   & zeep::make_nvp("created", created)
-		   & zeep::make_nvp("expires", expires);
+		ar & mxml::name_value_pair("id", id)
+		   & mxml::name_value_pair("name", name)
+		   & mxml::name_value_pair("user", user)
+		   & mxml::name_value_pair("secret", secret)
+		   & mxml::name_value_pair("created", created)
+		   & mxml::name_value_pair("expires", expires);
 	}
 };
 

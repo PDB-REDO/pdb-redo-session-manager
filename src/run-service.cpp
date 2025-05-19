@@ -31,7 +31,6 @@
 #include <stdexcept>
 
 #include <zeep/streambuf.hpp>
-#include <zeep/json/parser.hpp>
 
 #include "run-service.hpp"
 #include "user-service.hpp"
@@ -146,11 +145,9 @@ Run Run::create(const fs::path &dir, const std::string &username)
 	std::ifstream scoreFile(dir / "output" / "pdbe.json");
 	if (scoreFile.is_open())
 	{
-		zeep::json::element score;
-		zeep::json::parse_json(scoreFile, score);
+		zeep::el::object score = zeep::el::object::parse_JSON(scoreFile);
 
-		Score v;
-		from_element(score, v);
+		Score v = zeep::el::serializer<Score>::deserialize(score);
 
 		double range = v.ddatafit.rangeUpper - v.ddatafit.rangeLower;
 		double dDataFit = (v.ddatafit.zdfree - v.ddatafit.rangeLower) / range;
@@ -289,7 +286,7 @@ RunService &RunService::instance()
 }
 
 Run RunService::submit(const std::string &user, const zh::file_param &pdb, const zh::file_param &mtz,
-	const zh::file_param &restraints, const zh::file_param &sequence, const zeep::json::element &params)
+	const zh::file_param &restraints, const zh::file_param &sequence, const zeep::el::object &params)
 {
 	using namespace std::literals;
 

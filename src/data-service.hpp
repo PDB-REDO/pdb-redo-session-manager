@@ -28,7 +28,7 @@
 
 #include "user-service.hpp"
 
-#include <zeep/json/element.hpp>
+#include <zeep/el/object.hpp>
 
 #include <filesystem>
 #include <string>
@@ -48,11 +48,11 @@ struct UpdateRequest
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long v)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("pdb_id", pdb_id)
-		   & zeep::make_nvp("created", created)
-		   & zeep::make_nvp("version", version);
+		ar & mxml::name_value_pair("id", id)
+		   & mxml::name_value_pair("user", user)
+		   & mxml::name_value_pair("pdb_id", pdb_id)
+		   & mxml::name_value_pair("created", created)
+		   & mxml::name_value_pair("version", version);
 	}	
 };
 
@@ -66,8 +66,8 @@ struct UpdateStatus
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long version)
 	{
-		ar & zeep::make_nvp("ok", ok)
-		   & zeep::make_nvp("version", pendingVersion);
+		ar & mxml::name_value_pair("ok", ok)
+		   & mxml::name_value_pair("version", pendingVersion);
 	}
 };
 
@@ -93,7 +93,7 @@ class DataService
 	std::vector<std::string> getFileList(const std::string &pdbID, const std::optional<std::string> attic = {});
 	std::filesystem::path getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> attic = {});
 	std::tuple<std::istream *, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> attic = {});
-	zeep::json::element getData(const std::string &pdbID, const std::optional<std::string> attic = {});
+	zeep::el::object getData(const std::string &pdbID, const std::optional<std::string> attic = {});
 
   private:
 	DataService();

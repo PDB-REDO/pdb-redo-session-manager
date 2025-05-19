@@ -342,7 +342,7 @@ zh::reply simple_request(std::string url, std::vector<zeep::http::header> header
 	return send_request(req, host, port);
 }
 
-zeep::http::reply post_request(std::string url, std::vector<zeep::http::header> headers, zeep::json::element &&payload)
+zeep::http::reply post_request(std::string url, std::vector<zeep::http::header> headers, zeep::el::object &&payload)
 {
 	const std::regex rx(R"((https?)://([^:/]+)(?::(\d+))?/.+)");
 	std::smatch m;
@@ -365,7 +365,6 @@ zeep::http::reply post_request(std::string url, std::vector<zeep::http::header> 
 
 	std::ostringstream ss;
 	ss << payload;
-
 	req.set_content(ss.str(), "application/json");
 
 	return send_request(req, host, port);
