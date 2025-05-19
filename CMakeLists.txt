@@ -77,6 +77,12 @@ if(NOT Boost_FOUND)
 	)
 endif()
 
+CPMAddPackage(NAME nlohmann_json
+	GITHUB_REPOSITORY nlohmann/json
+	VERSION 3.12.0
+	OPTIONS "JSON_BuildTests OFF"
+	EXCLUDE_FROM_ALL YES)
+
 CPMAddPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
     GIT_TAG 7.10.1
