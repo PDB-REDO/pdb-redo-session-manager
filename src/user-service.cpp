@@ -218,7 +218,7 @@ uint32_t UserService::createRunID(const std::string &username)
 {
 	pqxx::work tx(prsm_db_connection::instance());
 
-	return tx.query_value<uint32_t>(
+	auto result = tx.query_value<uint32_t>(
 				R"(UPDATE redo.user
 			  SET last_job_nr = last_job_nr + 1,
 				  last_job_date = CURRENT_TIMESTAMP
@@ -226,6 +226,8 @@ uint32_t UserService::createRunID(const std::string &username)
 		tx.quote(username) + R"(
 		RETURNING last_job_nr)"
 	);
+	tx.commit();
+	return result;
 }
 
 zeep::http::user_details UserService::load_user(const std::string &username) const
@@ -272,7 +274,7 @@ uint32_t UserService::createUser(const User &user)
 {
 	pqxx::work tx(prsm_db_connection::instance());
 
-	return tx.query_value<uint32_t>(
+	auto result = tx.query_value<uint32_t>(
 		// clang-format off
 		R"(INSERT
 			 INTO redo.user (name, institution, email, password)
@@ -283,6 +285,8 @@ uint32_t UserService::createUser(const User &user)
 			+ tx.quote(user.password) + R"()
 		RETURNING id)");
 		//clang-format on
+	tx.commit();
+	return result;
 }
 
 void UserService::updateUser(const User &user)

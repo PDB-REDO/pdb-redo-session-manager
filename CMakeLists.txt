@@ -58,9 +58,13 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 find_package(LibArchive REQUIRED)
-find_package(libpqxx 7.8 REQUIRED)
 find_package(Boost 1.83 REQUIRED)
 
+CPMAddPackage(NAME libpqxx
+    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+    GIT_TAG 7.10.1
+    EXCLUDE_FROM_ALL YES)
+	
 CPMAddPackage(
 	NAME mrc
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/mrc.git

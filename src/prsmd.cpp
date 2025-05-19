@@ -354,7 +354,7 @@ class JobController : public zh::html_controller
 		: zh::html_controller("job")
 	{
 		map_get("", &JobController::getJobListing);
-		map_post("", &JobController::postJob, "mtz", "coords", "restraints", "sequence", "params");
+		map_post("", &JobController::postJob, "mtz", "coords", "restraints", "sequence", "paired-refinement");
 
 		map_get("output/{job-id}/{file}", &JobController::getOutputFile, "job-id", "file");
 		map_get("image/{job-id}", &JobController::getImageFile, "job-id");
