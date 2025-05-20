@@ -266,12 +266,6 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 		{ "PDB", pdb }, { "MTZ", mtz }, { "CIF", restraints }, { "SEQ", sequence }
 	};
 
-	std::ofstream info(runDir / "info.txt");
-
-	auto v_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	std::ostringstream ss;
-	info << std::put_time(std::localtime(&v_t), "[%F]");
-
 	for (auto &&[type, file] : files)
 	{
 		if (not file or file.length == 0)
@@ -292,22 +286,14 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 		std::ofstream out(dir / input, std::ios::binary);
 
 		out << in.rdbuf();
-
-		info << ':' << type << '=' << input;
 	}
 
 	// write parameters;
-
 	if (not params.is_null())
 	{
-		// backward compatible
-		info << ":PAIRED=" << (params["paired"] ? 1 : 0);
-
 		std::ofstream paramsFile(runDir / "params.json");
 		paramsFile << params;
 	}
-
-	info << std::endl;
 
 	// create a flag to start processing
 	std::ofstream start(runDir / "startingProcess.txt");
