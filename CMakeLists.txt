@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.31)
 
 # set the project name
-project(pdb-redo-session-manager VERSION 2.1.0 LANGUAGES CXX)
+project(prsmd VERSION 2.1.0 LANGUAGES CXX)
 
 cmake_policy(SET CMP0167 NEW)
 
