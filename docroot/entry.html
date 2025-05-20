@@ -455,7 +455,7 @@
 
 								</tr>
 
-								<tr>
+								<tr z2:if="data.OWBMPS or data.TOWBMPS or data.FWBMPS or data.TFWBMPS">
 									<td class="label">Bump severity</td>
 									<td class="ar">
 										<span class="raw-value"
@@ -470,6 +470,23 @@
 											z2:text="${data.TFWBMPS != null ? data.TFWBMPS : 'N/A'}" />
 									</td>
 								</tr>
+
+								<tr z2:if="data.OCLASH or data.TOCLASH or data.FCLASH or data.TFCLASH">
+									<td class="label">MolProbity Clashscore</td>
+									<td class="ar">
+										<span class="raw-value"
+											z2:text="${data.OCLASH != null ? #numbers.formatDecimal(data.OCLASH, 1, 3) : 'N/A'}" />
+										<span class="perc-value"
+											z2:text="${data.TOCLASH != null ? data.TOCLASH : 'N/A'}" />
+									</td>
+									<td class="ar" z2:classappend="${#entry.percClass(data.TOCLASH, data.TFCLASH)}">
+										<span class="raw-value"
+											z2:text="${data.FCLASH != null ? #numbers.formatDecimal(data.FCLASH, 1, 3) : 'N/A'}" />
+										<span class="perc-value"
+											z2:text="${data.TFCLASH != null ? data.TFCLASH : 'N/A'}" />
+									</td>
+								</tr>
+
 								<tr>
 									<td class="label">Hydrogen bond satisfaction</td>
 									<td class="ar">

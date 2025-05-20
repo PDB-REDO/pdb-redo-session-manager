@@ -224,9 +224,11 @@ std::vector<JobInfo> APIRESTController_v2::getAllRuns()
 }
 
 JobInfo APIRESTController_v2::createJob(const zh::file_param &diffractionData, const zh::file_param &coordinates,
-	const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
+	const zh::file_param &restraints, const zh::file_param &sequence, json params)
 {
 	auto token = getTokenForRequest();
+
+	params["api"] = true;
 
 	return RunService::instance().submit(token.user, coordinates, diffractionData, restraints, sequence, params);
 }

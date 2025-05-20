@@ -389,8 +389,8 @@ class JobController : public zh::html_controller
 		auto credentials = scope.get_credentials();
 
 		zeep::el::object params;
-		if (pairedRefinement)
-			params["paired"] = true;
+		params["paired"] = pairedRefinement;
+		params["api"] = false;
 
 		auto r = RunService::instance().submit(credentials["username"].get<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 

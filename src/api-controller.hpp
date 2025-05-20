@@ -69,7 +69,7 @@ class APIRESTController_v2 : public zeep::http::controller
 	std::vector<JobInfo> getAllRuns();
 
 	JobInfo createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
-		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::el::object &params);
+		const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, zeep::el::object params);
 
 	JobInfo getRun(unsigned long runID);
 
