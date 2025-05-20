@@ -57,30 +57,12 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
+find_package(nlohmann_json REQUIRED)
 find_package(LibArchive REQUIRED)
 
-find_package(Boost 1.74 QUIET)
+find_package(Boost 1.74 REQUIRED)
 find_package(nlohmann_json REQUIRED)
-
-if(NOT Boost_FOUND)
-	# boost is a huge project and directly downloading the 'alternate release'
-	# from github is much faster than recursively cloning the repo.
-	CPMAddPackage(
-		NAME Boost
-		VERSION 1.84.0
-		URL https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.xz
-		URL_HASH SHA256=2e64e5d79a738d0fa6fb546c6e5c2bd28f88d268a2a080546f74e5ff98f29d0e
-		OPTIONS
-		"BOOST_ENABLE_CMAKE ON"
-		"CMAKE_POSITION_INDEPENDENT_CODE ON"
-	)
-endif()
-
-# CPMAddPackage(NAME nlohmann_json
-# 	GITHUB_REPOSITORY nlohmann/json
-# 	VERSION 3.12.0
-# 	OPTIONS "JSON_BuildTests OFF"
-# 	EXCLUDE_FROM_ALL YES)
+find_package(mrc REQUIRED)
 
 CPMAddPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
@@ -88,19 +70,13 @@ CPMAddPackage(NAME libpqxx
     EXCLUDE_FROM_ALL YES)
 	
 CPMAddPackage(
-	NAME mrc
-	GIT_REPOSITORY https://forge.hekkelman.net/maarten/mrc.git
-	GIT_TAG v1.3.15
-	EXCLUDE_FROM_ALL YES
-	OPTIONS
-	"BUILD_TESTING NO")
-CPMAddPackage(
 	NAME mcfp
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/mcfp.git
 	GIT_TAG v1.4.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"BUILD_TESTING NO")
+
 CPMAddPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/gxrio.git
@@ -118,10 +94,8 @@ CPMAddPackage(NAME mailio
 	"MAILIO_BUILD_TESTS NO")
 CPMAddPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG 8a5faf9
-	EXCLUDE_FROM_ALL YES
-	OPTIONS
-	"ZEEP_USE_BOOST_ASIO YES")
+	GIT_TAG 7a74f6f
+	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)
 

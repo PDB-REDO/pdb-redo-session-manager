@@ -41,57 +41,6 @@ namespace zh = zeep::http;
 
 // --------------------------------------------------------------------
 
-std::string to_string(RunStatus status)
-{
-	switch (status)
-	{
-		case RunStatus::UNDEFINED:
-			return "undefined";
-		case RunStatus::REGISTERED:
-			return "registered";
-		case RunStatus::STARTING:
-			return "starting";
-		case RunStatus::QUEUED:
-			return "queued";
-		case RunStatus::RUNNING:
-			return "running";
-		case RunStatus::STOPPING:
-			return "stopping";
-		case RunStatus::STOPPED:
-			return "stopped";
-		case RunStatus::ENDED:
-			return "ended";
-		case RunStatus::DELETING:
-			return "deleting";
-	}
-	throw std::runtime_error("Invalid status value");
-}
-
-RunStatus from_string(const std::string &status)
-{
-	if (status == "undefined")
-		return RunStatus::UNDEFINED;
-	if (status == "registered")
-		return RunStatus::REGISTERED;
-	if (status == "starting")
-		return RunStatus::STARTING;
-	if (status == "queued")
-		return RunStatus::QUEUED;
-	if (status == "running")
-		return RunStatus::RUNNING;
-	if (status == "stopping")
-		return RunStatus::STOPPING;
-	if (status == "stopped")
-		return RunStatus::STOPPED;
-	if (status == "ended")
-		return RunStatus::ENDED;
-	if (status == "deleting")
-		return RunStatus::DELETING;
-	throw std::runtime_error("Invalid status");
-}
-
-// --------------------------------------------------------------------
-
 static const std::regex kRunDirNameRx(R"([0-9]{10})");
 
 // --------------------------------------------------------------------
@@ -260,6 +209,12 @@ std::unique_ptr<RunService> RunService::s_instance;
 RunService::RunService(const std::string &runsDir)
 	: m_runsdir(runsDir)
 {
+}
+
+void RunService::init(const std::string &runsDir)
+{
+	assert(not s_instance);
+
 	zeep::value_serializer<RunStatus>::instance("RunStatus")
 		("undefined", RunStatus::UNDEFINED)
 		("registered", RunStatus::REGISTERED)
@@ -270,11 +225,6 @@ RunService::RunService(const std::string &runsDir)
 		("stopped", RunStatus::STOPPED)
 		("ended", RunStatus::ENDED)
 		("deleting", RunStatus::DELETING);
-}
-
-void RunService::init(const std::string &runsDir)
-{
-	assert(not s_instance);
 
 	s_instance.reset(new RunService(runsDir));
 }

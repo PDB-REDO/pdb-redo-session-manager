@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2023 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -95,7 +95,7 @@ void TokenService::runCleanThread()
 			try
 			{
 				pqxx::transaction tx(prsm_db_connection::instance());
-				auto r = tx.exec0(R"(DELETE FROM redo.token WHERE CURRENT_TIMESTAMP > expires)");
+				tx.exec(R"(DELETE FROM redo.token WHERE CURRENT_TIMESTAMP > expires)").no_rows();
 				tx.commit();
 			}
 			catch (const std::exception &ex)
@@ -116,42 +116,41 @@ Token TokenService::create(const std::string &name, const std::string &user)
 
 	std::string secret = zeep::encode_base64url(zeep::random_hash());
 
-	auto r = tx.exec1(
+	auto r = tx.exec(
+				   // clang-format off
 		R"(INSERT INTO redo.token (user_id, name, secret)
 		   VALUES ()" + std::to_string(u.id) + ", " + tx.quote(name) + ", " + tx.quote(secret) + R"()
 		   RETURNING id, trim(both '"' from to_json(created)::text) AS created,
-			   trim(both '"' from to_json(expires)::text) AS expires)");
-
-	unsigned long tokenid = r[0].as<unsigned long>();
-	std::string created{ r[1].as<std::string>() };
-	std::string expires{ r[2].as<std::string>() };
+			   trim(both '"' from to_json(expires)::text) AS expires)")
+	             // clang-format on
+	             .one_row();
 
 	tx.commit();
 
 	return {
-		tokenid,
+		r["id"].as<long unsigned>(),
 		name,
 		user,
 		secret,
-		parse_timestamp(created),
-		parse_timestamp(expires)
+		parse_timestamp(r["created"].as<std::string>()),
+		parse_timestamp(r["expires"].as<std::string>())
 	};
 }
 
 Token TokenService::getTokenByID(unsigned long id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(
-		R"(SELECT a.id,
+	Token result(tx.exec(
+					   R"(SELECT a.id,
 				  a.name AS name,
 				  b.name AS user,
 				  a.secret,
 				  trim(both '"' from to_json(a.created)::text) AS created,
 				  trim(both '"' from to_json(a.expires)::text) AS expires
 		   FROM redo.token a LEFT JOIN redo.user b ON a.user_id = b.id
-		   WHERE a.id = )" + tx.quote(id));
-
-	Token result(r);
+		   WHERE a.id = )" +
+					   tx.quote(id))
+			.one_row());
 
 	tx.commit();
 
@@ -161,7 +160,7 @@ Token TokenService::getTokenByID(unsigned long id)
 void TokenService::deleteToken(unsigned long id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec0(R"(DELETE FROM redo.token WHERE id = )" + std::to_string(id));
+	tx.exec(R"(DELETE FROM redo.token WHERE id = )" + std::to_string(id)).no_rows();
 	tx.commit();
 }
 
@@ -202,7 +201,8 @@ std::vector<Token> TokenService::getAllTokensForUser(const std::string &username
 				  b.name AS user,
 				  a.secret
 			 FROM redo.token a, redo.user b
-			WHERE a.user_id = b.id AND b.name = )" + tx.quote(username) + R"(
+			WHERE a.user_id = b.id AND b.name = )" +
+		tx.quote(username) + R"(
 			ORDER BY a.created ASC)");
 
 	for (auto row : rows)

@@ -1202,7 +1202,7 @@ Command should be either:
 			if (config.has("no-daemon"))
 				result = server.run_foreground(address, port);
 			else
-				result = server.start(address, port, 8, 8, user);
+				result = server.start(address, port, 8, user);
 		}
 		else if (command == "stop")
 			result = server.stop();

@@ -78,14 +78,9 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 		status.ok = v >= version();
 	}
 
-	try
-	{
-		pqxx::transaction tx(prsm_db_connection::instance());
-		status.pendingVersion = tx.query_value<float>(R"(SELECT MAX(version) FROM redo.update_request WHERE pdb_id = )" + tx.quote(pdbID));
-	}
-	catch (const pqxx::unexpected_rows &ex)
-	{
-	}
+	pqxx::transaction tx(prsm_db_connection::instance());
+	auto row = tx.exec(R"(SELECT MAX(version) FROM redo.update_request WHERE pdb_id = )" + tx.quote(pdbID)).one_row();
+	status.pendingVersion = row[0].as<std::optional<float>>();
 
 	return status;
 }
@@ -93,7 +88,7 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 void DataService::requestUpdate(const std::string &pdbID, const User &user)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec(R"(
+	tx.exec(R"(
 		INSERT INTO redo.update_request(pdb_id, user_id, version)
 		     VALUES ()" +
 					 tx.quote(pdbID) + ", " + tx.quote(user.id) + ", " + tx.quote(version()) + R"())")
@@ -104,7 +99,7 @@ void DataService::requestUpdate(const std::string &pdbID, const User &user)
 void DataService::deleteUpdateRequest(int id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec(R"(DELETE FROM redo.update_request WHERE id = )" + tx.quote(id)).no_rows();
+	tx.exec(R"(DELETE FROM redo.update_request WHERE id = )" + tx.quote(id)).no_rows();
 	tx.commit();
 }
 
