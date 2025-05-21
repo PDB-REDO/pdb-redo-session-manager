@@ -266,7 +266,7 @@ uint32_t UserService::createUser(const User &user)
 {
 	pqxx::work tx(prsm_db_connection::instance());
 
-	return tx.query_value<uint32_t>(
+	auto result = tx.query_value<uint32_t>(
 		// clang-format off
 		R"(INSERT
 			 INTO redo.user (name, institution, email, password)
@@ -277,6 +277,8 @@ uint32_t UserService::createUser(const User &user)
 			+ tx.quote(user.password) + R"()
 		RETURNING id)");
 		//clang-format on
+	tx.commit();
+	return result;
 }
 
 void UserService::updateUser(const User &user)
@@ -403,6 +405,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 				WHERE name = )" +
 			tx.quote(username))
 			.no_rows();
+		tx.commit();
 
 		// --------------------------------------------------------------------
 
