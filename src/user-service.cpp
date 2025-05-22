@@ -405,7 +405,6 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 				WHERE name = )" +
 			tx.quote(username))
 			.no_rows();
-		tx.commit();
 
 		// --------------------------------------------------------------------
 
