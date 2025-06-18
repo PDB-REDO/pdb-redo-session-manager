@@ -67,34 +67,40 @@ find_package(mrc REQUIRED)
 CPMAddPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
     GIT_TAG 7.10.1
+	VERSION 7.10.1
     EXCLUDE_FROM_ALL YES)
 	
-CPMAddPackage(
+CPMFindPackage(
 	NAME mcfp
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/mcfp.git
 	GIT_TAG v1.4.2
+	VERSION 1.4.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"BUILD_TESTING NO")
 
-CPMAddPackage(
+CPMFindPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/gxrio.git
 	GIT_TAG v1.0.2
+	VERSION 1.0.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"BUILD_TESTING NO")
+
 CPMAddPackage(NAME mailio
 	GIT_REPOSITORY "https://github.com/karastojko/mailio.git"
-	GIT_TAG ca9b585
+	GIT_TAG c85e063
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"MAILIO_BUILD_DOCUMENTATION NO"
 	"MAILIO_BUILD_EXAMPLES NO"
 	"MAILIO_BUILD_TESTS NO")
-CPMAddPackage(NAME zeep
+
+CPMFindPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG 875eac2
+	GIT_TAG v7.0.3
+	VERSION 7.0.3
 	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)
@@ -156,7 +162,7 @@ mrc_target_resources(prsmd
 
 target_compile_definitions(prsmd PUBLIC WEBAPP_USES_RESOURCES=1)
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd mailio zeep::zeep LibArchive::LibArchive mcfp::mcfp gxrio::gxrio libpqxx::pqxx)
+target_link_libraries(prsmd mailio::mailio zeep::zeep LibArchive::LibArchive mcfp::mcfp gxrio::gxrio libpqxx::pqxx)
 
 install(TARGETS prsmd DESTINATION ${CMAKE_INSTALL_SBINDIR})
 
