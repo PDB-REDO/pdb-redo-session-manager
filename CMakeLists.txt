@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.31)
 
 # set the project name
-project(pdb-redo-session-manager VERSION 2.1.0 LANGUAGES CXX)
+project(prsmd VERSION 2.1.0 LANGUAGES CXX)
 
 cmake_policy(SET CMP0167 NEW)
 
@@ -57,40 +57,47 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
+find_package(nlohmann_json REQUIRED)
 find_package(LibArchive REQUIRED)
-find_package(libpqxx 7.8 REQUIRED)
-find_package(Boost 1.83 REQUIRED)
 
-CPMAddPackage(
-	NAME mrc
-	GIT_REPOSITORY https://forge.hekkelman.net/maarten/mrc.git
-	GIT_TAG v1.3.15
-	EXCLUDE_FROM_ALL YES
-	OPTIONS
-	"BUILD_TESTING NO")
-CPMAddPackage(
+find_package(Boost 1.74 REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(mrc REQUIRED)
+
+CPMAddPackage(NAME libpqxx
+    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+    GIT_TAG 7.10.1
+	VERSION 7.10.1
+    EXCLUDE_FROM_ALL YES)
+	
+CPMFindPackage(
 	NAME mcfp
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/mcfp.git
 	GIT_TAG v1.4.2
+	VERSION 1.4.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"BUILD_TESTING NO")
-CPMAddPackage(
+
+CPMFindPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/gxrio.git
 	GIT_TAG v1.0.2
+	VERSION 1.0.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"BUILD_TESTING NO")
+
 CPMAddPackage(NAME mailio
 	GIT_REPOSITORY "https://github.com/karastojko/mailio.git"
-	GIT_TAG ca9b585
+	GIT_TAG c85e063
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"MAILIO_BUILD_DOCUMENTATION NO"
 	"MAILIO_BUILD_EXAMPLES NO"
 	"MAILIO_BUILD_TESTS NO")
-CPMAddPackage(NAME zeep
+
+CPMFindPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
 	# GIT_TAG v7.1.0
 	GIT_TAG fd7b657
@@ -155,7 +162,7 @@ mrc_target_resources(prsmd
 
 target_compile_definitions(prsmd PUBLIC WEBAPP_USES_RESOURCES=1)
 target_include_directories(prsmd PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR})
-target_link_libraries(prsmd mailio zeep::zeep LibArchive::LibArchive mcfp::mcfp gxrio::gxrio libpqxx::pqxx)
+target_link_libraries(prsmd mailio::mailio zeep::zeep LibArchive::LibArchive mcfp::mcfp gxrio::gxrio libpqxx::pqxx)
 
 install(TARGETS prsmd DESTINATION ${CMAKE_INSTALL_SBINDIR})
 

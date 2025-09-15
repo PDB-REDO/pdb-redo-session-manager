@@ -179,7 +179,7 @@ UserService &UserService::instance()
 User UserService::getUser(unsigned long id) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT * FROM redo.user WHERE id = )" + std::to_string(id));
+	auto r = tx.exec(R"(SELECT * FROM redo.user WHERE id = )" + std::to_string(id)).one_row();
 
 	tx.commit();
 
@@ -189,11 +189,11 @@ User UserService::getUser(unsigned long id) const
 User UserService::getUser(const std::string &name) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT * FROM redo.user WHERE name = )" + tx.quote(name));
+	auto r = tx.exec(R"(SELECT * FROM redo.user WHERE name = )" + tx.quote(name)).one_row();
 
 	tx.commit();
 
-	return User(r);
+	return r;
 }
 
 std::vector<User> UserService::getAllUsers() const
@@ -204,10 +204,7 @@ std::vector<User> UserService::getAllUsers() const
 	auto rows = tx.exec(R"(SELECT * FROM redo.user ORDER BY created DESC)");
 
 	for (auto row : rows)
-	{
-		User user(row);
-		result.push_back(std::move(user));
-	}
+		result.emplace_back(row);
 
 	tx.commit();
 
@@ -218,14 +215,15 @@ uint32_t UserService::createRunID(const std::string &username)
 {
 	pqxx::work tx(prsm_db_connection::instance());
 
-	return tx.query_value<uint32_t>(
-				R"(UPDATE redo.user
+	auto result = tx.query_value<uint32_t>(
+		R"(UPDATE redo.user
 			  SET last_job_nr = last_job_nr + 1,
 				  last_job_date = CURRENT_TIMESTAMP
 		    WHERE name = )" +
 		tx.quote(username) + R"(
-		RETURNING last_job_nr)"
-	);
+		RETURNING last_job_nr)");
+	tx.commit();
+	return result;
 }
 
 zeep::http::user_details UserService::load_user(const std::string &username) const
@@ -235,13 +233,13 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 	try
 	{
 		pqxx::transaction tx_1(prsm_db_connection::instance());
-		auto r = tx_1.exec1(R"(SELECT * FROM redo.user WHERE name = )" + tx_1.quote(username));
+		auto r = tx_1.exec(R"(SELECT * FROM redo.user WHERE name = )" + tx_1.quote(username)).one_row();
 		tx_1.commit();
 
 		User user(r);
 
 		pqxx::transaction tx_2(prsm_db_connection::instance());
-		auto r2 = tx_2.exec0(R"(UPDATE redo.user SET last_login = CURRENT_TIMESTAMP WHERE id = )" + tx_2.quote(user.id));
+		tx_2.exec(R"(UPDATE redo.user SET last_login = CURRENT_TIMESTAMP WHERE id = )" + tx_2.quote(user.id)).no_rows();
 		tx_2.commit();
 
 		result.username = user.name;
@@ -261,18 +259,14 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 bool UserService::user_is_valid(const std::string &username) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(username));
-
-	tx.commit();
-
-	return r[0].get<int>() == 1;
+	return tx.query_value<int>(R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(username)) == 1;
 }
 
 uint32_t UserService::createUser(const User &user)
 {
 	pqxx::work tx(prsm_db_connection::instance());
 
-	return tx.query_value<uint32_t>(
+	auto result = tx.query_value<uint32_t>(
 		// clang-format off
 		R"(INSERT
 			 INTO redo.user (name, institution, email, password)
@@ -283,6 +277,8 @@ uint32_t UserService::createUser(const User &user)
 			+ tx.quote(user.password) + R"()
 		RETURNING id)");
 		//clang-format on
+	tx.commit();
+	return result;
 }
 
 void UserService::updateUser(const User &user)
@@ -305,7 +301,7 @@ void UserService::updateUser(const User &user)
 
 	if (not set.empty())
 	{
-		tx.exec0("UPDATE redo.user SET " + zeep::join(set, ", ") + " WHERE id = " + tx.quote(user.id));
+		tx.exec("UPDATE redo.user SET " + zeep::join(set, ", ") + " WHERE id = " + tx.quote(user.id)).no_rows();
 		tx.commit();
 	}
 }
@@ -314,7 +310,7 @@ void UserService::deleteUser(int id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 
-	tx.exec0("DELETE FROM redo.user WHERE id = " + tx.quote(id));
+	tx.exec("DELETE FROM redo.user WHERE id = " + tx.quote(id)).no_rows();
 	tx.commit();
 }
 
@@ -340,23 +336,15 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 	if (valid)
 	{
 		pqxx::transaction tx(prsm_db_connection::instance());
-		auto r = tx.exec1(
-			R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(user.name));
-
-		tx.commit();
-
-		valid.validName = r[0].get<uint32_t>() == 0;
+		valid.validName = tx.query_value<int>(
+			R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(user.name)) == 0;
 	}
 
 	if (valid)
 	{
 		pqxx::transaction tx(prsm_db_connection::instance());
-		auto r = tx.exec1(
-			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email));
-
-		tx.commit();
-
-		valid.validEmail = r[0].get<uint32_t>() == 0;
+		valid.validEmail = tx.query_value<int>(
+			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email)) == 0;
 	}
 
 #ifndef NDEBUG
@@ -381,12 +369,8 @@ bool UserService::isValidEmailForUser(const User &user, const std::string &email
 		if (result)
 		{
 			pqxx::transaction tx(prsm_db_connection::instance());
-			auto r = tx.exec1(
-				R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(email) + " AND id <> " + tx.quote(user.id));
-
-			tx.commit();
-
-			result = r[0].get<uint32_t>() == 0;
+			result = tx.query_value<int>(
+				R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(email) + " AND id <> " + tx.quote(user.id)) == 0;
 		}
 	}
 
@@ -414,12 +398,13 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		// --------------------------------------------------------------------
 
 		pqxx::transaction tx(prsm_db_connection::instance());
-		auto r = tx.exec0(
+		tx.exec(
 			R"(UPDATE redo.user
 				SET password = )" +
 			tx.quote(newPasswordHash) + R"(
 				WHERE name = )" +
-			tx.quote(username));
+			tx.quote(username))
+			.no_rows();
 
 		// --------------------------------------------------------------------
 

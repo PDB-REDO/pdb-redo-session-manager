@@ -354,7 +354,7 @@ class JobController : public zh::html_controller
 		: zh::html_controller("job")
 	{
 		map_get("", &JobController::getJobListing);
-		map_post("", &JobController::postJob, "mtz", "coords", "restraints", "sequence", "params");
+		map_post("", &JobController::postJob, "mtz", "coords", "restraints", "sequence", "paired-refinement");
 
 		map_get("output/{job-id}/{file}", &JobController::getOutputFile, "job-id", "file");
 		map_get("image/{job-id}", &JobController::getImageFile, "job-id");
@@ -389,8 +389,8 @@ class JobController : public zh::html_controller
 		auto credentials = scope.get_credentials();
 
 		zeep::el::object params;
-		if (pairedRefinement)
-			params["paired"] = true;
+		params["paired"] = pairedRefinement;
+		params["api"] = false;
 
 		auto r = RunService::instance().submit(credentials["username"].get<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
@@ -1202,7 +1202,7 @@ Command should be either:
 			if (config.has("no-daemon"))
 				result = server.run_foreground(address, port);
 			else
-				result = server.start(address, port, 8, 8, user);
+				result = server.start(address, port, 8, user);
 		}
 		else if (command == "stop")
 			result = server.stop();
