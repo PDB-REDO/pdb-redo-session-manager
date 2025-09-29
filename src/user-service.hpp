@@ -33,6 +33,8 @@
 
 #include <mxml/serialize.hpp>
 
+#include <date/date.h>
+
 #include <pqxx/pqxx>
 
 // --------------------------------------------------------------------

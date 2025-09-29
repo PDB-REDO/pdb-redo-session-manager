@@ -1,6 +1,9 @@
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const path = require('path');
+const glob = require('glob-all');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { PurgeCSSPlugin } = require("purgecss-webpack-plugin");
+var TerserPlugin = require("terser-webpack-plugin");
 
 const SCRIPTS = path.resolve(__dirname, "webapp");
 const DEST = path.resolve(__dirname, "docroot");
@@ -48,7 +51,6 @@ module.exports = (env) => {
 					use: [
 						MiniCssExtractPlugin.loader,
 						"css-loader",
-						"postcss-loader",
 						"sass-loader"
 					]
 				},
@@ -68,13 +70,22 @@ module.exports = (env) => {
 			extensions: ['.js', '.css', '.scss'],
 		},
 
-		optimization: { minimizer: [] },
+		optimization: {
+			minimize: true,
+			minimizer: [new TerserPlugin()]
+		},
 
 		target: 'web',
 
 		plugins: [
 			new MiniCssExtractPlugin({
 				filename: "css/[name].css"
+			}),
+			new PurgeCSSPlugin({
+				paths: glob.sync([
+					`${SCRIPTS}/**/*`,
+					`${DEST}/**/*`
+				], { nodir: true })
 			})
 		]
 	};

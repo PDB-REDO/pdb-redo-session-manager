@@ -29,6 +29,8 @@
 #include "prsm-db-connection.hpp"
 #include "user-service.hpp"
 
+#include <date/date.h>
+
 #include <iostream>
 
 // --------------------------------------------------------------------

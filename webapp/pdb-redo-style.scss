@@ -5,7 +5,7 @@
 @import "bootstrap/scss/_variables";
 @import "bootstrap/scss/_mixins";
 
-@import "~bootstrap-icons/font/bootstrap-icons.css";
+// @import "~bootstrap-icons/font/bootstrap-icons.css";
 
 .alert {
 	border: 1px solid;
@@ -45,6 +45,36 @@ $nav-link-padding-y: math.div($spacer, 2);
 
 $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 
+// Bootstrap icons, we only need :open
+
+@font-face {
+	font-display: block;
+	font-family: "bootstrap-icons";
+	src: url(../node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2) format("woff2"),
+		url(../node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff) format("woff");
+}
+
+.bi::before,
+[class^="bi-"]::before,
+[class*=" bi-"]::before {
+	display: inline-block;
+	font-family: bootstrap-icons !important;
+	font-style: normal;
+	font-weight: normal !important;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+	vertical-align: -.125em;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.bi-trash::before {
+	content: "\f5de";
+}
+
+// Rest of the style
+
 @mixin hover-focus() {
 
 	&:hover,
@@ -73,7 +103,7 @@ $theme-colors: map-merge($pdb-redo-colors, $theme-colors);
 		color: #555;
 		white-space: pre;
 	}
-	
+
 	.site-content {
 		flex: 1 0 auto;
 		padding: var(--space) var(--space) 0;
@@ -412,29 +442,32 @@ a.action:hover {
 // For the admin page
 
 th.sortable {
-	
+
 	&:hover {
 		text-decoration: underline;
 	}
 
-	&.sorted-asc::after {
-		content: "";
-		background: url("../docroot/images/driehoek-op.png") no-repeat top right;
-		display: inline-block;
-		width: 10px;
-		height: 10px;
-		margin: 0 auto;
-		margin-left: 5px;
-	}
-	
+	&.sorted-asc::after,
 	&.sorted-desc::after {
-		content: "";
-		background: url("../docroot/images/driehoek-neer.png") no-repeat top right;
 		display: inline-block;
-		width: 10px;
-		height: 10px;
-		margin: 0 auto;
-		margin-left: 5px;
+		font-family: bootstrap-icons !important;
+		font-style: normal;
+		font-weight: normal !important;
+		font-variant: normal;
+		text-transform: none;
+		line-height: 1;
+		vertical-align: -.125em;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		padding-left: 0.5em;
+	}
+
+	&.sorted-asc::after {
+		content: "\F574";
+	}
+
+	&.sorted-desc::after {
+		content: "\F57B";
 	}
 }
 

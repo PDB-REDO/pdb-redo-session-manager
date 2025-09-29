@@ -26,6 +26,8 @@
 
 #include <iostream>
 
+#include <date/date.h>
+
 #include "prsm-db-connection.hpp"
 
 // --------------------------------------------------------------------
@@ -51,12 +53,12 @@ std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string t
 	if (m[1].matched)
 	{
 		if (m[1] == "Z")
-			is >> parse("%F %TZ", result);
+			is >> date::parse("%F %TZ", result);
 		else
-			is >> parse("%F %T%0z", result);
+			is >> date::parse("%F %T%0z", result);
 	}
 	else
-		is >> parse("%F %T", result);
+		is >> date::parse("%F %T", result);
 
 	if (is.bad() or is.fail())
 		throw std::runtime_error("invalid formatted date");
