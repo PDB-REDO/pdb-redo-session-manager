@@ -99,8 +99,8 @@ CPMAddPackage(NAME mailio
 
 CPMFindPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG v7.0.3
-	VERSION 7.0.3
+	# GIT_TAG v7.1.0
+	GIT_TAG fd7b657
 	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)
