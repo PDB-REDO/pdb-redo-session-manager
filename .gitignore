@@ -11,4 +11,5 @@ docroot/css
 docroot/fonts
 docroot/scripts
 b-ninja/
+.cache/
 

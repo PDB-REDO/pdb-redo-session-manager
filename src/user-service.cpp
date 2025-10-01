@@ -25,10 +25,12 @@
  */
 
 #include "user-service.hpp"
+#include "run-service.hpp"
 
 #include "prsm-db-connection.hpp"
 #include "token-service.hpp"
 
+#include <filesystem>
 #include <zeep/http/uri.hpp>
 
 #include <boost/asio/deadline_timer.hpp>
@@ -42,6 +44,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include <random>
 
 // --------------------------------------------------------------------
@@ -308,10 +311,19 @@ void UserService::updateUser(const User &user)
 
 void UserService::deleteUser(int id)
 {
+	User user = getUser(id);
+
 	pqxx::transaction tx(prsm_db_connection::instance());
 
 	tx.exec("DELETE FROM redo.user WHERE id = " + tx.quote(id)).no_rows();
 	tx.commit();
+
+	auto userDir = RunService::instance().getRunsDir() / user.name;
+	std::error_code ec;
+	std::filesystem::create_directories(userDir, ec);
+
+	if (std::filesystem::exists(userDir, ec))
+		std::ofstream touched(userDir / "deleted.txt");
 }
 
 auto UserService::isValidUser(const User &user) const -> UserService::UserValidation
