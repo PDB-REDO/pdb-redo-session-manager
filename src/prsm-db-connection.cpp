@@ -53,12 +53,12 @@ std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string t
 	if (m[1].matched)
 	{
 		if (m[1] == "Z")
-			is >> date::parse("%F %TZ", result);
+			date::from_stream(is, "%F %TZ", result);	
 		else
-			is >> date::parse("%F %T%0z", result);
+			date::from_stream(is, "%F %T%0z", result);	
 	}
 	else
-		is >> date::parse("%F %T", result);
+		date::from_stream(is, "%F %T", result);	
 
 	if (is.bad() or is.fail())
 		throw std::runtime_error("invalid formatted date");
