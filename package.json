@@ -24,7 +24,7 @@
 		"glob-all": "^3.3.1",
 		"lit": "^3.2.1",
 		"mini-css-extract-plugin": "^2.7.6",
-		"purgecss-webpack-plugin": "^7.0.2",
+		"purgecss-webpack-plugin": "^8.0.0",
 		"sass": "^1.65.1",
 		"sass-loader": "^16.0.4",
 		"style-loader": "^4.0.0",
@@ -39,7 +39,7 @@
 		"bootstrap-icons": "^1.10.5",
 		"core-js": "^3.32.0",
 		"d3": "^7.8.5",
-		"glob": "^12.0.0"
+		"glob": "^13.0.0"
 	},
 	"babel": {
 		"presets": [
