@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,10 +27,7 @@
 #pragma once
 
 #include <chrono>
-#include <mutex>
-
 #include <pqxx/pqxx>
-
 #include <zeep/http/error-handler.hpp>
 
 // --------------------------------------------------------------------
@@ -42,17 +39,20 @@ std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string t
 class prsm_db_connection
 {
   public:
-	static void init(const std::string& connection_string);
-	static prsm_db_connection& instance();
+	prsm_db_connection(const prsm_db_connection &) = delete;
+	prsm_db_connection &operator=(const prsm_db_connection &) = delete;
+
+	static void init(std::string connection_string);
+	static prsm_db_connection &instance();
 
 	static pqxx::work start_transaction()
 	{
 		return pqxx::work(instance());
 	}
 
-	pqxx::connection& get_connection();
+	pqxx::connection &get_connection();
 
-	operator pqxx::connection&()
+	operator pqxx::connection &() // NOLINT(hicpp-explicit-conversions)
 	{
 		return get_connection();
 	}
@@ -60,10 +60,7 @@ class prsm_db_connection
 	void reset();
 
   private:
-	prsm_db_connection(const prsm_db_connection&) = delete;
-	prsm_db_connection& operator=(const prsm_db_connection&) = delete;
-
-	prsm_db_connection(const std::string& connectionString);
+	explicit prsm_db_connection(std::string connectionString);
 
 	std::string m_connection_string;
 
@@ -75,8 +72,5 @@ class prsm_db_connection
 class prsm_db_error_handler : public zeep::http::error_handler
 {
   public:
-
-	virtual bool create_error_reply(const zeep::http::request& req, std::exception_ptr eptr, zeep::http::reply& reply);
+	bool create_error_reply(const zeep::http::request &req, const std::exception_ptr &eptr, zeep::http::reply &reply) override;
 };
-
-

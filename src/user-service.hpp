@@ -28,20 +28,17 @@
 
 #include "run-service.hpp"
 
+#include <pqxx/pqxx>
+#include <utility>
+#include <zeem/serialize.hpp>
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
-
-#include <mxml/serialize.hpp>
-
-#include <date/date.h>
-
-#include <pqxx/pqxx>
 
 // --------------------------------------------------------------------
 
 struct User
 {
-	unsigned long id;
+	uint64_t id{};
 	std::string name;
 	std::string institution;
 	std::string email;
@@ -54,32 +51,32 @@ struct User
 	std::optional<std::chrono::time_point<std::chrono::system_clock>> lastJobDate;
 	std::optional<int> lastJobNr;
 
-	User(const std::string &name, const std::string &institution, const std::string &email, const std::string &password)
-		: name(name)
-		, institution(institution)
-		, email(email)
-		, password(password)
+	User(std::string name, std::string institution, std::string email, std::string password)
+		: name(std::move(name))
+		, institution(std::move(institution))
+		, email(std::move(email))
+		, password(std::move(password))
 	{
 	}
 
 	User(const User &) = default;
-	User(const pqxx::row &row);
+	User(const pqxx::row &row); // NOLINT(hicpp-explicit-conversions)
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, uint64_t  /*version*/)
 	{
-		ar & mxml::name_value_pair("id", id)
-		   & mxml::name_value_pair("name", name)
-		   & mxml::name_value_pair("institution", institution)
-		   & mxml::name_value_pair("email", email)
-		   & mxml::name_value_pair("password", password)
-		   & mxml::name_value_pair("created", created)
-		   
-		   & mxml::name_value_pair("last-login", lastLogin)
-
-		   & mxml::name_value_pair("last-job-nr", lastJobNr)
-		   & mxml::name_value_pair("last-job-date", lastJobDate)
-		   & mxml::name_value_pair("last-job-status", lastJobStatus);
+		// clang-format off
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("name", name)
+		   & zeem::name_value_pair("institution", institution)
+		   & zeem::name_value_pair("email", email)
+		   & zeem::name_value_pair("password", password)
+		   & zeem::name_value_pair("created", created)
+		   & zeem::name_value_pair("last-login", lastLogin)
+		   & zeem::name_value_pair("last-job-nr", lastJobNr)
+		   & zeem::name_value_pair("last-job-date", lastJobDate)
+		   & zeem::name_value_pair("last-job-status", lastJobStatus);
+		// clang-format on
 	}
 };
 
@@ -90,8 +87,8 @@ class PasswordEncoder : public zeep::http::password_encoder
   public:
 	static constexpr const char *name() { return ""; };
 
-	virtual std::string encode(const std::string &password) const;
-	virtual bool matches(const std::string &raw_password, const std::string &stored_password) const;
+	[[nodiscard]] std::string encode(const std::string &password) const override;
+	[[nodiscard]] bool matches(const std::string &raw_password, const std::string &stored_password) const override;
 };
 
 // --------------------------------------------------------------------
@@ -106,15 +103,15 @@ class UserService : public zeep::http::user_service
 	static UserService &instance();
 
 	/// Validate the authorization, returns the validated user. Throws unauthorized_exception in case of failure
-	zeep::http::user_details load_user(const std::string &username) const override;
-	bool user_is_valid(const std::string &username) const override;
+	[[nodiscard]] zeep::http::user_details load_user(const std::string &username) const override;
+	[[nodiscard]] bool user_is_valid(const std::string &username) const override;
 
 	// create a new user
 	uint32_t createUser(const User &user);
 
 	void updateUser(const User &user);
 
-	void deleteUser(int id);
+	void deleteUser(uint64_t id);
 	void deleteUser(const User &user)
 	{
 		deleteUser(user.id);
@@ -123,10 +120,10 @@ class UserService : public zeep::http::user_service
 	// To reset a password
 	void sendNewPassword(const std::string &username, const std::string &email);
 
-	User getUser(unsigned long id) const;
-	User getUser(const std::string &name) const;
+	[[nodiscard]] User getUser(uint64_t id) const;
+	[[nodiscard]] User getUser(const std::string &name) const;
 
-	std::vector<User> getAllUsers() const;
+	[[nodiscard]] std::vector<User> getAllUsers() const;
 
 	uint32_t createRunID(const std::string &username);
 
@@ -137,15 +134,15 @@ class UserService : public zeep::http::user_service
 		explicit operator bool() { return validName and validEmail and validInstitution and validPassword; }
 	};
 
-	UserValidation isValidUser(const User &user) const;
-	UserValidation isValidNewUser(const User &user) const;
+	[[nodiscard]] UserValidation isValidUser(const User &user) const;
+	[[nodiscard]] UserValidation isValidNewUser(const User &user) const;
 
 	bool isValidEmailForUser(const User &user, const std::string &email);
 
   private:
-	UserService(const std::string &admins);
+	explicit UserService(const std::string &admins);
 
-	std::string generatePassword() const;
+	[[nodiscard]] std::string generatePassword() const;
 
 	static std::unique_ptr<UserService> s_instance;
 	std::vector<std::string> m_admins;
@@ -158,11 +155,11 @@ class UserHTMLController : public zeep::http::login_controller
   public:
 	UserHTMLController();
 
-	mxml::document load_login_form(const zeep::http::request &req) const override;
+	[[nodiscard]] zeem::document load_login_form(const zeep::http::request &req) const override;
 
 	zeep::http::reply get_register(const zeep::http::scope &scope);
 	zeep::http::reply post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
-		const std::string &email, const std::string &password, const std::string &password2, std::optional<std::string> accept_gdpr);
+		const std::string &email, const std::string &password, const std::string &password2, const std::optional<std::string> &accept_gdpr);
 
 	zeep::http::reply get_is_valid_password(const zeep::http::scope &scope, const std::string &password);
 
@@ -182,7 +179,7 @@ class UserHTMLController : public zeep::http::login_controller
 
 	zeep::http::reply getTokens(const zeep::http::scope &scope);
 	zeep::http::reply createToken(const zeep::http::scope &scope, std::string name);
-	zeep::http::reply deleteToken(const zeep::http::scope &scope, unsigned long id);
+	zeep::http::reply deleteToken(const zeep::http::scope &scope, uint64_t id);
 
 	zeep::http::reply requestToken(const zeep::http::scope &scope, std::string name);
 };

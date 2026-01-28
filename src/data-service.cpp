@@ -30,12 +30,9 @@
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
-#include <mcfp/mcfp.hpp>
-
-#include <zeep/http/reply.hpp>
-
-#include <charconv>
 #include <iostream>
+#include <mcfp/mcfp.hpp>
+#include <zeep/http/reply.hpp>
 
 namespace fs = std::filesystem;
 
@@ -43,7 +40,7 @@ namespace fs = std::filesystem;
 
 UpdateRequest::UpdateRequest(const pqxx::row &row)
 {
-	id = row.at("id").as<unsigned long>();
+	id = row.at("id").as<uint64_t>();
 	user = row.at("user").as<std::string>();
 	pdb_id = row.at("pdb_id").as<std::string>();
 	created = parse_timestamp(row.at("created").as<std::string>());
@@ -91,12 +88,12 @@ void DataService::requestUpdate(const std::string &pdbID, const User &user)
 	tx.exec(R"(
 		INSERT INTO redo.update_request(pdb_id, user_id, version)
 		     VALUES ()" +
-					 tx.quote(pdbID) + ", " + tx.quote(user.id) + ", " + tx.quote(version()) + R"())")
-	             .no_rows();
+			tx.quote(pdbID) + ", " + tx.quote(user.id) + ", " + tx.quote(version()) + R"())")
+		.no_rows();
 	tx.commit();
 }
 
-void DataService::deleteUpdateRequest(int id)
+void DataService::deleteUpdateRequest(uint64_t id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	tx.exec(R"(DELETE FROM redo.update_request WHERE id = )" + tx.quote(id)).no_rows();
@@ -105,7 +102,7 @@ void DataService::deleteUpdateRequest(int id)
 
 std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 {
-	std::lock_guard lock(m_mutex);
+	std::scoped_lock lock(m_mutex);
 
 	std::vector<UpdateRequest> result;
 
@@ -132,9 +129,8 @@ std::vector<UpdateRequest> DataService::getAllUpdateRequests()
 		req.id = 0;
 	}
 
-	result.erase(std::remove_if(result.begin(), result.end(), [](UpdateRequest &r)
-					 { return r.id == 0; }),
-		result.end());
+	std::erase_if(result, [](UpdateRequest &r)
+		{ return r.id == 0; });
 
 	return result;
 }
@@ -152,7 +148,7 @@ float DataService::version() const
 		result = std::stof(line);
 		// auto r = std::from_chars(line.data(), line.data() + line.length(), result);
 		// if (r.ec != std::errc())
-		// 	std::cerr << "Error converting version from redo-version.txt" << std::endl;
+		// 	std::cerr << "Error converting version from redo-version.txt\n";
 	}
 
 	return result;
@@ -231,40 +227,40 @@ std::string DataService::getLatestAttic(const std::string &pdbID)
 	return result;
 }
 
-std::vector<std::string> DataService::getFileList(const std::string &pdbID, const std::optional<std::string> attic)
+std::vector<std::string> DataService::getFileList(const std::string &pdbID, const std::optional<std::string> &attic)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
 	if (not fs::exists(entry_dir))
-		throw zeep::http::not_found;
+		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
 
 	std::vector<std::string> result;
-	for (auto f : fs::recursive_directory_iterator(entry_dir))
+	for (const auto& f : fs::recursive_directory_iterator(entry_dir))
 	{
-		if (not f.is_regular_file())
-			continue;
+			if (not f.is_regular_file())
+				continue;
 
-		result.push_back(fs::relative(f.path(), entry_dir).string());
+			result.push_back(fs::relative(f.path(), entry_dir).string());
 	}
 
 	return result;
 }
 
-std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> attic)
+std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> &attic)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
 	if (not fs::exists(entry_dir))
-		throw zeep::http::not_found;
+		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
 
 	return entry_dir / file;
 }
 
-zeep::el::object DataService::getData(const std::string &pdbID, const std::optional<std::string> attic)
+zeep::el::object DataService::getData(const std::string &pdbID, const std::optional<std::string> &attic)
 {
 	zeep::el::object data;
 
@@ -295,36 +291,36 @@ zeep::el::object DataService::getData(const std::string &pdbID, const std::optio
 	return data;
 }
 
-std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> attic)
+std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> &attic)
 {
 	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
 	if (not fs::exists(entry_dir))
-		throw zeep::http::not_found;
+		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
 
 	ZipWriter zw;
 
 	fs::path d(pdbID);
 
-	for (auto f : fs::directory_iterator(entry_dir))
+	for (const auto& f : fs::directory_iterator(entry_dir))
 	{
-		if (f.path().filename() == "attic")
-			continue;
+			if (f.path().filename() == "attic")
+				continue;
 
-		if (f.is_regular_file())
-			zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
-		else if (f.is_directory())
-		{
-			for (auto fr : fs::directory_iterator(f.path()))
+			if (f.is_regular_file())
+				zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
+			else if (f.is_directory())
 			{
-				if (not fr.is_regular_file())
-					continue;
+				for (const auto& fr : fs::directory_iterator(f.path()))
+				{
+					if (not fr.is_regular_file())
+						continue;
 
-				zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
+					zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
+				}
 			}
-		}
 	}
 
 	return { zw.finish(), pdbID + ".zip" };

@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,19 +24,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-
-#include <date/date.h>
-
 #include "prsm-db-connection.hpp"
+
+#include <chrono>
+#include <iostream>
+#include <memory>
+#include <utility>
 
 // --------------------------------------------------------------------
 
 std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string timestamp)
 {
-	using namespace date;
-	using namespace std::chrono;
-
 	if (timestamp[10] == 'T')
 		timestamp[10] = ' ';
 
@@ -48,17 +46,17 @@ std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string t
 
 	std::istringstream is(timestamp);
 
-	time_point<system_clock> result;
+	std::chrono::time_point<std::chrono::system_clock> result;
 
 	if (m[1].matched)
 	{
 		if (m[1] == "Z")
-			date::from_stream(is, "%F %TZ", result);	
+			std::chrono::from_stream(is, "%F %TZ", result);
 		else
-			date::from_stream(is, "%F %T%0z", result);	
+			std::chrono::from_stream(is, "%F %T%0z", result);
 	}
 	else
-		date::from_stream(is, "%F %T", result);	
+		std::chrono::from_stream(is, "%F %T", result);
 
 	if (is.bad() or is.fail())
 		throw std::runtime_error("invalid formatted date");
@@ -71,27 +69,27 @@ std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string t
 std::unique_ptr<prsm_db_connection> prsm_db_connection::s_instance;
 thread_local std::unique_ptr<pqxx::connection> prsm_db_connection::s_connection;
 
-void prsm_db_connection::init(const std::string& connection_string)
+void prsm_db_connection::init(std::string connection_string)
 {
-	s_instance.reset(new prsm_db_connection(connection_string));
+	s_instance.reset(new prsm_db_connection(std::move(connection_string)));
 }
 
-prsm_db_connection& prsm_db_connection::instance()
+prsm_db_connection &prsm_db_connection::instance()
 {
 	return *s_instance;
 }
 
 // --------------------------------------------------------------------
 
-prsm_db_connection::prsm_db_connection(const std::string& connectionString)
-	: m_connection_string(connectionString)
+prsm_db_connection::prsm_db_connection(std::string connectionString)
+	: m_connection_string(std::move(connectionString))
 {
 }
 
-pqxx::connection& prsm_db_connection::get_connection()
+pqxx::connection &prsm_db_connection::get_connection()
 {
 	if (not s_connection)
-		s_connection.reset(new pqxx::connection(m_connection_string));
+		s_connection = std::make_unique<pqxx::connection>(m_connection_string);
 	return *s_connection;
 }
 
@@ -102,20 +100,21 @@ void prsm_db_connection::reset()
 
 // --------------------------------------------------------------------
 
-bool prsm_db_error_handler::create_error_reply(const zeep::http::request& req, std::exception_ptr eptr, zeep::http::reply& reply)
+bool prsm_db_error_handler::create_error_reply(
+	const zeep::http::request & /*req*/, const std::exception_ptr &eptr, zeep::http::reply & /*reply*/)
 {
 	try
 	{
 		std::rethrow_exception(eptr);
 	}
-	catch (pqxx::broken_connection& ex)
+	catch (pqxx::broken_connection &ex)
 	{
-		std::cerr << ex.what() << std::endl;
+		std::cerr << ex.what() << '\n';
 		prsm_db_connection::instance().reset();
 	}
 	catch (...)
 	{
 	}
-	
+
 	return false;
 }

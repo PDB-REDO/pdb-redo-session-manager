@@ -24,24 +24,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "run-service.hpp"
+
+#include "user-service.hpp"
+#include "zip-support.hpp"
+
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <regex>
 #include <stdexcept>
-
 #include <zeep/streambuf.hpp>
 
-#include "run-service.hpp"
-#include "user-service.hpp"
-#include "zip-support.hpp"
-
 namespace fs = std::filesystem;
-namespace zh = zeep::http;
 
 // --------------------------------------------------------------------
 
-static const std::regex kRunDirNameRx(R"([0-9]{10})");
+static const std::regex kRunDirNameRx(R"([0-9]{10})"); // NOLINT(bugprone-throwing-static-initialization,cert-err58-cpp)
 
 // --------------------------------------------------------------------
 
@@ -79,13 +79,13 @@ Run Run::create(const fs::path &dir, const std::string &username)
 	run.has_image = fs::exists(dir / "pdbin.png");
 
 	auto ft = fs::last_write_time(dir);
-    run.date = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+	run.date = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
 	if (fs::is_directory(dir / "input"))
 	{
-		for (auto d : fs::directory_iterator(dir / "input"))
+		for (const auto &d : fs::directory_iterator(dir / "input"))
 		{
-			for (auto f : fs::directory_iterator(d))
+			for (const auto &f : fs::directory_iterator(d))
 				run.input.emplace_back(f.path().filename().string());
 		}
 	}
@@ -148,7 +148,7 @@ std::vector<std::string> Run::getResultFileList()
 		throw std::runtime_error("Result directory does not exist");
 
 	std::vector<std::string> result;
-	for (auto f : fs::recursive_directory_iterator(output))
+	for (const auto &f : fs::recursive_directory_iterator(output))
 	{
 		if (not f.is_regular_file())
 			continue;
@@ -159,7 +159,7 @@ std::vector<std::string> Run::getResultFileList()
 	return result;
 }
 
-std::filesystem::path Run::getResultFile(const std::string& file)
+std::filesystem::path Run::getResultFile(const std::string &file)
 {
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run directory does not exist");
@@ -191,11 +191,11 @@ std::tuple<std::istream *, std::string> Run::getZippedResultFile()
 
 	ZipWriter zw;
 
-	for (auto f : fs::recursive_directory_iterator(output))
+	for (const auto &f : fs::recursive_directory_iterator(output))
 	{
 		if (not f.is_regular_file())
 			continue;
-		
+
 		zw.add(f.path(), (d / fs::relative(f.path(), output)).string());
 	}
 
@@ -215,16 +215,7 @@ void RunService::init(const std::string &runsDir)
 {
 	assert(not s_instance);
 
-	zeep::value_serializer<RunStatus>::instance("RunStatus")
-		("undefined", RunStatus::UNDEFINED)
-		("registered", RunStatus::REGISTERED)
-		("starting", RunStatus::STARTING)
-		("queued", RunStatus::QUEUED)
-		("running", RunStatus::RUNNING)
-		("stopping", RunStatus::STOPPING)
-		("stopped", RunStatus::STOPPED)
-		("ended", RunStatus::ENDED)
-		("deleting", RunStatus::DELETING);
+	zeep::value_serializer<RunStatus>::instance("RunStatus")("undefined", RunStatus::UNDEFINED)("registered", RunStatus::REGISTERED)("starting", RunStatus::STARTING)("queued", RunStatus::QUEUED)("running", RunStatus::RUNNING)("stopping", RunStatus::STOPPING)("stopped", RunStatus::STOPPED)("ended", RunStatus::ENDED)("deleting", RunStatus::DELETING);
 
 	s_instance.reset(new RunService(runsDir));
 }
@@ -235,8 +226,8 @@ RunService &RunService::instance()
 	return *s_instance;
 }
 
-Run RunService::submit(const std::string &user, const zh::file_param &pdb, const zh::file_param &mtz,
-	const zh::file_param &restraints, const zh::file_param &sequence, const zeep::el::object &params)
+Run RunService::submit(const std::string &user, const zeep::http::file_param &pdb, const zeep::http::file_param &mtz,
+	const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const zeep::el::object &params)
 {
 	using namespace std::literals;
 
@@ -262,7 +253,7 @@ Run RunService::submit(const std::string &user, const zh::file_param &pdb, const
 	fs::create_directory(runDir);
 	fs::create_directory(runDir / "output");
 
-	std::pair<const char *, const zh::file_param &> files[] = {
+	std::pair<const char *, const zeep::http::file_param &> files[] = {
 		{ "PDB", pdb }, { "MTZ", mtz }, { "CIF", restraints }, { "SEQ", sequence }
 	};
 
@@ -329,18 +320,18 @@ std::vector<Run> RunService::getRunsForUser(const std::string &username)
 			}
 			catch (const std::exception &e)
 			{
-				std::cerr << e.what() << std::endl;
+				std::cerr << e.what() << '\n';
 			}
 		}
 	}
 
-	std::sort(result.begin(), result.end(), [](Run &a, Run &b)
+	std::ranges::sort(result, [](Run &a, Run &b)
 		{ return a.id < b.id; });
 
 	return result;
 }
 
-Run RunService::getRun(const std::string &username, unsigned long runID)
+Run RunService::getRun(const std::string &username, uint64_t runID)
 {
 	Run result;
 
@@ -366,7 +357,7 @@ std::vector<Run> RunService::getAllRuns()
 	{
 		if (not userdir->is_directory())
 			continue;
-		
+
 		for (auto i = fs::directory_iterator(*userdir); i != fs::directory_iterator(); ++i)
 		{
 			if (not i->is_directory())
@@ -385,12 +376,12 @@ std::vector<Run> RunService::getAllRuns()
 			}
 			catch (const std::exception &e)
 			{
-				std::cerr << e.what() << std::endl;
+				std::cerr << e.what() << '\n';
 			}
 		}
 	}
 
-	std::sort(result.begin(), result.end(), [](Run &a, Run &b)
+	std::ranges::sort(result, [](Run &a, Run &b)
 		{ return a.date > b.date; });
 
 	return result;
@@ -398,7 +389,7 @@ std::vector<Run> RunService::getAllRuns()
 
 // --------------------------------------------------------------------
 
-void RunService::deleteRun(const std::string &username, unsigned long runID)
+void RunService::deleteRun(const std::string &username, uint64_t runID)
 {
 	auto dir = m_runsdir / username;
 

@@ -29,24 +29,24 @@
 #include "prsm-db-connection.hpp"
 #include "user-service.hpp"
 
-#include <date/date.h>
-
 #include <iostream>
+#include <utility>
 
 // --------------------------------------------------------------------
 
-Token::Token(unsigned long id, std::string name, const std::string &user, const std::string &secret,
+Token::Token(uint64_t id, std::string name, std::string user, std::string secret,
 	std::chrono::time_point<std::chrono::system_clock> created, std::chrono::time_point<std::chrono::system_clock> expires)
 	: id(id)
-	, user(user)
-	, secret(secret)
+	, name(std::move(name))
+	, user(std::move(user))
+	, secret(std::move(secret))
 	, created(created)
 	, expires(expires)
 {
 }
 
 Token::Token(const pqxx::row &row)
-	: id(row.at("id").as<unsigned long>())
+	: id(row.at("id").as<uint64_t>())
 	, name(row.at("name").as<std::string>())
 	, user(row.at("user").as<std::string>())
 	, secret(row.at("secret").as<std::string>())
@@ -57,7 +57,7 @@ Token::Token(const pqxx::row &row)
 
 Token &Token::operator=(const pqxx::row &row)
 {
-	id = row.at("id").as<unsigned long>();
+	id = row.at("id").as<uint64_t>();
 	name = row.at("name").as<std::string>();
 	user = row.at("user").as<std::string>();
 	secret = row.at("secret").as<std::string>();
@@ -72,14 +72,15 @@ Token &Token::operator=(const pqxx::row &row)
 TokenService *TokenService::s_instance = nullptr;
 
 TokenService::TokenService()
-	: m_clean(std::bind(&TokenService::runCleanThread, this))
+	: m_clean([this]
+		  { runCleanThread(); })
 {
 }
 
 TokenService::~TokenService()
 {
 	{
-		std::lock_guard<std::mutex> lock(m_cv_m);
+		std::scoped_lock lock(m_cv_m);
 		m_done = true;
 		m_cv.notify_one();
 	}
@@ -102,7 +103,7 @@ void TokenService::runCleanThread()
 			}
 			catch (const std::exception &ex)
 			{
-				std::cerr << ex.what() << std::endl;
+				std::cerr << ex.what() << '\n';
 			}
 		}
 	}
@@ -110,8 +111,6 @@ void TokenService::runCleanThread()
 
 Token TokenService::create(const std::string &name, const std::string &user)
 {
-	using namespace date;
-
 	User u = UserService::instance().getUser(user);
 
 	pqxx::transaction tx(prsm_db_connection::instance());
@@ -130,7 +129,7 @@ Token TokenService::create(const std::string &name, const std::string &user)
 	tx.commit();
 
 	return {
-		r["id"].as<long unsigned>(),
+		r["id"].as<uint64_t>(),
 		name,
 		user,
 		secret,
@@ -139,7 +138,7 @@ Token TokenService::create(const std::string &name, const std::string &user)
 	};
 }
 
-Token TokenService::getTokenByID(unsigned long id)
+Token TokenService::getTokenByID(uint64_t id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	Token result(tx.exec(
@@ -159,7 +158,7 @@ Token TokenService::getTokenByID(unsigned long id)
 	return result;
 }
 
-void TokenService::deleteToken(unsigned long id)
+void TokenService::deleteToken(uint64_t id)
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	tx.exec(R"(DELETE FROM redo.token WHERE id = )" + std::to_string(id)).no_rows();

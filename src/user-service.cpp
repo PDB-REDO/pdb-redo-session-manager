@@ -25,27 +25,23 @@
  */
 
 #include "user-service.hpp"
-#include "run-service.hpp"
-
-#include "prsm-db-connection.hpp"
-#include "token-service.hpp"
-
-#include <filesystem>
-#include <zeep/http/uri.hpp>
-
-#include <boost/asio/deadline_timer.hpp>
-
-#include <mailio/message.hpp>
-#include <mailio/smtp.hpp>
 
 #include "mrsrc.hpp"
+#include "prsm-db-connection.hpp"
+#include "run-service.hpp"
+#include "token-service.hpp"
 
-#include <mcfp/mcfp.hpp>
-
+#include <algorithm>
+#include <boost/asio/deadline_timer.hpp>
 #include <cassert>
-#include <iostream>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <mailio/message.hpp>
+#include <mailio/smtp.hpp>
+#include <mcfp/mcfp.hpp>
 #include <random>
+#include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
 
@@ -53,19 +49,21 @@ namespace
 {
 const double kMinimalPasswordEntropy = 50;
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization,cert-err58-cpp)
 const std::set<std::string> kAmbiguous{ "B", "8", "G", "6", "I", "1", "l", "0", "O", "Q", "D", "S", "5", "Z", "2" };
 const std::vector<std::string> kVowels{ "a", "ae", "ah", "ai", "e", "ee", "ei", "i", "ie", "o", "oh", "oo", "u" };
 const std::vector<std::string> kConsonants{ "b", "c", "ch", "d", "f", "g", "gh", "h", "j", "k", "l", "m", "n", "ng", "p", "ph", "qu", "r", "s", "sh", "t", "th", "v", "w", "x", "y", "z" };
 const std::vector<char> kSymbols{ '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
 
 std::regex kEmailRX(R"((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\]))", std::regex::icase);
+// NOLINTEND(bugprone-throwing-static-initialization,cert-err58-cpp)
 } // namespace
 
 // --------------------------------------------------------------------
 
 User::User(const pqxx::row &row)
 {
-	id = row.at("id").get<unsigned long>().value_or(0);
+	id = row.at("id").get<uint64_t>().value_or(0);
 	name = row.at("name").get<std::string>().value_or("");
 	email = row.at("email").get<std::string>().value_or("");
 	institution = row.at("institution").get<std::string>().value_or("");
@@ -77,8 +75,7 @@ User::User(const pqxx::row &row)
 
 	if (auto v = row.at("last_job_date").get<std::string>(); v)
 		lastJobDate = parse_timestamp(*v);
-	if (auto v = row.at("last_job_nr").get<int>(); v)
-		lastJobNr = *v;
+	lastJobNr = row.at("last_job_nr").get<int>();
 	if (auto v = row.at("last_job_status").get<std::string>(); v)
 		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
 }
@@ -90,7 +87,7 @@ const int
 	kSaltLength = 16,
 	kKeyLength = 256;
 
-std::string PasswordEncoder::encode(const std::string &password) const
+std::string PasswordEncoder::encode(const std::string & /*password*/) const
 {
 	return {};
 }
@@ -128,7 +125,7 @@ bool isValidPassword(const std::string &password)
 			upperSeen = true;
 		else if (std::isdigit(ch))
 			digitSeen = true;
-		else if (find(kSymbols.begin(), kSymbols.end(), ch) != kSymbols.end())
+		else if (std::ranges::find(kSymbols, ch) != kSymbols.end())
 			symbolSeen = true;
 		else if (std::isspace(ch))
 			return false;
@@ -179,7 +176,7 @@ UserService &UserService::instance()
 	return *s_instance;
 }
 
-User UserService::getUser(unsigned long id) const
+User UserService::getUser(uint64_t id) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
 	auto r = tx.exec(R"(SELECT * FROM redo.user WHERE id = )" + std::to_string(id)).one_row();
@@ -248,7 +245,7 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 		result.username = user.name;
 		result.password = user.password;
 		result.roles.insert("USER");
-		if (std::find(m_admins.begin(), m_admins.end(), user.name) != m_admins.end())
+		if (std::ranges::find(m_admins, user.name) != m_admins.end())
 			result.roles.insert("ADMIN");
 	}
 	catch (...)
@@ -309,7 +306,7 @@ void UserService::updateUser(const User &user)
 	}
 }
 
-void UserService::deleteUser(int id)
+void UserService::deleteUser(uint64_t id)
 {
 	User user = getUser(id);
 
@@ -391,7 +388,7 @@ bool UserService::isValidEmailForUser(const User &user, const std::string &email
 
 void UserService::sendNewPassword(const std::string &username, const std::string &email)
 {
-	std::cerr << "Request reset password for " << email << std::endl;
+	std::cerr << "Request reset password for " << email << '\n';
 
 	try
 	{
@@ -405,7 +402,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		zeep::http::pbkdf2_sha256_password_encoder enc(kIterations, kKeyLength / 8);
 		std::string newPasswordHash = enc.encode(newPassword);
 
-		std::cerr << "Reset password for " << email << " to " << newPasswordHash << std::endl;
+		std::cerr << "Reset password for " << email << " to " << newPasswordHash << '\n';
 
 		// --------------------------------------------------------------------
 
@@ -436,7 +433,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 			auto i = line.find("^1");
 			if (i != std::string::npos)
 				line.replace(i, 2, newPassword);
-			content << line << std::endl;
+			content << line << '\n';
 		}
 
 		msg.content(content.str());
@@ -457,26 +454,10 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		auto smtp_host = config.get("smtp-host");
 		auto smtp_port = config.get<uint16_t>("smtp-port");
 
-		if (smtp_port == 25)
-		{
-			mailio::smtp conn(smtp_host, smtp_port);
-			conn.authenticate(smtp_user, smtp_password, smtp_user.empty() ? mailio::smtp::auth_method_t::NONE : mailio::smtp::auth_method_t::LOGIN);
-			conn.submit(msg);
-		}
-		else if (smtp_port == 465)
-		{
-			mailio::smtps conn(smtp_host, smtp_port);
-			conn.authenticate(smtp_user, smtp_password, smtp_user.empty() ? mailio::smtps::auth_method_t::NONE : mailio::smtps::auth_method_t::LOGIN);
-			conn.submit(msg);
-		}
-		else if (smtp_port == 587 and not smtp_user.empty())
-		{
-			mailio::smtps conn(smtp_host, smtp_port);
-			conn.authenticate(smtp_user, smtp_password, mailio::smtps::auth_method_t::START_TLS);
-			conn.submit(msg);
-		}
-		else
-			throw std::runtime_error("Unable to send message, smtp configuration error");
+		mailio::smtp conn(smtp_host, smtp_port);
+		conn.authenticate(smtp_user, smtp_password,
+			smtp_user.empty() ? mailio::smtp::auth_method_t::NONE : mailio::smtp::auth_method_t::LOGIN);
+		conn.submit(msg);
 
 		// --------------------------------------------------------------------
 		// Sending the new password succeeded
@@ -485,7 +466,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Sending new password failed: " << ex.what() << std::endl;
+		std::cerr << "Sending new password failed: " << ex.what() << '\n';
 	}
 }
 
@@ -607,7 +588,7 @@ UserHTMLController::UserHTMLController()
 	map_post("token-request", &UserHTMLController::requestToken, "name");
 }
 
-mxml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
+zeem::document UserHTMLController::load_login_form(const zeep::http::request &req) const
 {
 	auto uri = get_prefixless_path(req);
 
@@ -618,7 +599,7 @@ mxml::document UserHTMLController::load_login_form(const zeep::http::request &re
 
 	auto &tp = m_server->get_template_processor();
 
-	mxml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -635,7 +616,7 @@ zeep::http::reply UserHTMLController::get_register(const zeep::http::scope &scop
 }
 
 zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
-	const std::string &email, const std::string &password, const std::string &password2, std::optional<std::string> accept_gdpr)
+	const std::string &email, const std::string &password, const std::string &password2, const std::optional<std::string> &accept_gdpr)
 {
 	UserService &userService = UserService::instance();
 
@@ -649,18 +630,16 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		zeep::http::scope sub(scope);
 		auto uri = get_prefixless_path(req);
 
-		zeep::http::scope scope(m_server, req);
-
-		scope.put("baseuri", uri.string());
-		scope.put("dialog", "register");
+		sub.put("baseuri", uri.string());
+		sub.put("dialog", "register");
 
 		auto &tp = m_server->get_template_processor();
 
-		mxml::document doc;
+		zeem::document doc;
 		doc.set_preserve_cdata(true);
 
 		tp.load_template("index", doc);
-		tp.process_tags(doc.child(), scope);
+		tp.process_tags(doc.child(), sub);
 
 		for (auto csrf_attr : doc.find("//input[@name='_csrf']"))
 			csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
@@ -716,7 +695,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 	return reply;
 }
 
-zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope &scope, const std::string &password)
+zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope & /*scope*/, const std::string &password)
 {
 	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::ok);
 	zeep::el::object e = isValidPassword(password);
@@ -778,7 +757,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	auto &tp = m_server->get_template_processor();
 
-	mxml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -847,7 +826,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 
 	auto &tp = m_server->get_template_processor();
 
-	mxml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -895,7 +874,7 @@ zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope
 
 zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope &scope, const std::string &reqid, const std::string &cburl)
 {
-	if (not zeep::http::is_fully_qualified_uri(cburl))
+	if (not zeep::is_fully_qualified_uri(cburl))
 		throw std::runtime_error("The callback is not a valid URI");
 
 	zeep::http::scope sub(scope);
@@ -917,16 +896,14 @@ zeep::http::reply UserHTMLController::getTokens(const zeep::http::scope &scope)
 	return get_template_processor().create_reply_from_template("tokens", sub);
 }
 
-zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope, unsigned long id)
+zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope, uint64_t id)
 {
 	auto username = scope.get_credentials()["username"].get<std::string>();
-
-	zeep::http::scope sub(scope);
 
 	Token s = TokenService::instance().getTokenByID(id);
 
 	if (s.user != username)
-		throw zeep::http::forbidden;
+		throw std::system_error(std::error_code(zeep::http::forbidden, zeep::http::status_type_category()));
 
 	TokenService::instance().deleteToken(id);
 
@@ -937,7 +914,7 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
-		throw zeep::http::unauthorized;
+		throw std::system_error(std::error_code(zeep::http::unauthorized, zeep::http::status_type_category()));
 
 	auto username = credentials["username"].get<std::string>();
 
@@ -953,7 +930,7 @@ zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scop
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
-		throw zeep::http::unauthorized;
+		throw std::system_error(std::error_code(zeep::http::unauthorized, zeep::http::status_type_category()));
 
 	auto username = credentials["username"].get<std::string>();
 

@@ -26,11 +26,13 @@
 
 #include "api-controller.hpp"
 
+#include <algorithm>
 #include <zeep/crypto.hpp>
+#include <zeep/http/status.hpp>
 #include <zeep/http/security.hpp>
-#include <zeep/http/uri.hpp>
+#include <zeep/http/status.hpp>
+#include <zeep/uri.hpp>
 
-namespace zh = zeep::http;
 namespace fs = std::filesystem;
 
 using json = zeep::el::object;
@@ -49,11 +51,11 @@ JobInfo::JobInfo(const Run &run)
 
 // --------------------------------------------------------------------
 
-unsigned long thread_local APIRESTController_v2::s_token_id = 0;
+uint64_t thread_local APIRESTController_v2::s_token_id = 0;
 
 
 APIRESTController_v2::APIRESTController_v2()
-	: zh::controller("api")
+	: zeep::http::controller("api")
 {
 	// return a list of runs
 	map_get_request("run", &APIRESTController_v2::getAllRuns);
@@ -78,7 +80,7 @@ APIRESTController_v2::APIRESTController_v2()
 	map_delete_request("run/{run}", &APIRESTController_v2::deleteRun, "run");
 }
 
-bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
+bool APIRESTController_v2::handle_request(zeep::http::request &req, zeep::http::reply &rep)
 {
 	bool result = false;
 
@@ -94,8 +96,8 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 			std::string authorization = req.get_header("Authorization");
 			// PDB-REDO-api Credential=token-id/date/pdb-redo-apiv2,SignedHeaders=host;x-pdb-redo-content-sha256,Signature=xxxxx
 
-			if (authorization.compare(0, 13, "PDB-REDO-api ") != 0)
-				throw zh::unauthorized_exception();
+			if (!authorization.starts_with("PDB-REDO-api "))
+				throw zeep::http::unauthorized_exception();
 
 			std::vector<std::string> signedHeaders;
 
@@ -103,22 +105,22 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 
 			std::smatch m;
 			if (not std::regex_search(authorization, m, re))
-				throw zh::unauthorized_exception();
+				throw zeep::http::unauthorized_exception();
 
 			std::vector<std::string> credentials;
 			std::string credential = m[1].str();
 
-			for (std::string::size_type i = 0, j = credential.find("/");;)
+			for (std::string::size_type i = 0, j = credential.find('/');;)
 			{
 				credentials.push_back(credential.substr(i, j - i));
 				if (j == std::string::npos)
 					break;
 				i = j + 1;
-				j = credential.find("/", i);
+				j = credential.find('/', i);
 			}
 
 			if (credentials.size() != 3 or credentials[2] != "pdb-redo-api")
-				throw zh::unauthorized_exception();
+				throw zeep::http::unauthorized_exception();
 
 			auto signature = zeep::decode_base64(m[3].str());
 
@@ -128,32 +130,32 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 
 			std::vector<std::tuple<std::string, std::string>> params;
 			for (auto &p : req.get_parameters())
-				params.push_back(std::make_tuple(p.first, p.second));
-			std::sort(params.begin(), params.end());
+				params.emplace_back(p.first, p.second);
+			std::ranges::sort(params);
 			std::ostringstream ps;
 			auto n = params.size();
 			for (auto &[name, value] : params)
 			{
-				ps << zeep::http::encode_url(name);
+				ps << zeep::encode_url(name);
 				if (not value.empty())
-					ps << '=' << zeep::http::encode_url(value);
+					ps << '=' << zeep::encode_url(value);
 				if (n-- > 1)
 					ps << '&';
 			}
 
 			auto contentHash = zeep::encode_base64(zeep::sha256(req.get_payload()));
 
-			auto pathPart = zeep::http::uri(req.get_uri().get_path().string(), m_server->get_context_name());
+			auto pathPart = zeep::uri(req.get_uri().get_path().string(), m_server->get_context_name());
 
 			std::string host = req.get_header("X-Forwarded-Host");
 			if (host.empty())
 				host = req.get_header("host");			
 
 			std::ostringstream ss;
-			ss << req.get_method() << std::endl
-				<< pathPart.get_path() << std::endl
-				<< ps.str() << std::endl
-				<< host << std::endl
+			ss << req.get_method() << '\n'
+				<< pathPart.get_path() << '\n'
+				<< ps.str() << '\n'
+				<< host << '\n'
 				<< contentHash;
 
 			auto canonicalRequest = ss.str();
@@ -163,9 +165,9 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 			auto timestamp = req.get_header("X-PDB-REDO-Date");
 
 			std::ostringstream ss2;
-			ss2 << "PDB-REDO-api" << std::endl
-				<< timestamp << std::endl
-				<< credential << std::endl
+			ss2 << "PDB-REDO-api\n"
+				<< timestamp << '\n'
+				<< credential << '\n'
 				<< canonicalRequestHash;
 			auto stringToSign = ss2.str();
 
@@ -177,18 +179,18 @@ bool APIRESTController_v2::handle_request(zh::request &req, zh::reply &rep)
 
 			auto key = zeep::hmac_sha256(date, keyString);
 			if (zeep::hmac_sha256(stringToSign, key) != signature)
-				throw zh::unauthorized_exception();
+				throw zeep::http::unauthorized_exception();
 			
 			s_token_id = stoi(credentials[0]);
 
-			result = zh::controller::handle_request(req, rep);
+			result = zeep::http::controller::handle_request(req, rep);
 		}
 		catch (const std::exception &e)
 		{
 			using namespace std::literals;
 
 			rep.set_content(json({ { "error", e.what() } }));
-			rep.set_status(zh::unauthorized);
+			rep.set_status(zeep::http::unauthorized);
 
 			result = true;
 		}
@@ -223,8 +225,8 @@ std::vector<JobInfo> APIRESTController_v2::getAllRuns()
 	return result;
 }
 
-JobInfo APIRESTController_v2::createJob(const zh::file_param &diffractionData, const zh::file_param &coordinates,
-	const zh::file_param &restraints, const zh::file_param &sequence, json params)
+JobInfo APIRESTController_v2::createJob(const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
+	const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, json params)
 {
 	auto token = getTokenForRequest();
 
@@ -233,41 +235,41 @@ JobInfo APIRESTController_v2::createJob(const zh::file_param &diffractionData, c
 	return RunService::instance().submit(token.user, coordinates, diffractionData, restraints, sequence, params);
 }
 
-JobInfo APIRESTController_v2::getRun(unsigned long runID)
+JobInfo APIRESTController_v2::getRun(uint64_t runID)
 {
 	auto token = getTokenForRequest();
 
 	return RunService::instance().getRun(token.user, runID);
 }
 
-std::vector<std::string> APIRESTController_v2::getResultFileList(unsigned long runID)
+std::vector<std::string> APIRESTController_v2::getResultFileList(uint64_t runID)
 {
 	auto token = getTokenForRequest();
 
 	return RunService::instance().getRun(token.user, runID).getResultFileList();
 }
 
-fs::path APIRESTController_v2::getResultFile(unsigned long runID, const std::string &file)
+fs::path APIRESTController_v2::getResultFile(uint64_t runID, const std::string &file)
 {
 	auto token = getTokenForRequest();
 
 	return RunService::instance().getRun(token.user, runID).getResultFile(file);
 }
 
-zh::reply APIRESTController_v2::getZippedResultFile(unsigned long runID)
+zeep::http::reply APIRESTController_v2::getZippedResultFile(uint64_t runID)
 {
 	auto token = getTokenForRequest();
 
 	const auto &[is, name] = RunService::instance().getRun(token.user, runID).getZippedResultFile();
 
-	zh::reply rep{ zh::ok };
+	zeep::http::reply rep{ zeep::http::ok };
 	rep.set_content(is, "application/zip");
 	rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 	return rep;
 }
 
-void APIRESTController_v2::deleteRun(unsigned long runID)
+void APIRESTController_v2::deleteRun(uint64_t runID)
 {
 	auto token = getTokenForRequest();
 
@@ -308,64 +310,64 @@ APIRESTController_v1::APIRESTController_v1()
 	map_delete_request("session/{id}/run/{run}", &APIRESTController_v1::deleteRun, "id", "run");
 }
 
-void APIRESTController_v1::checkTokenID(unsigned long tokenID)
+void APIRESTController_v1::checkTokenID(uint64_t tokenID)
 {
 	if (tokenID != s_token_id)
-		throw zh::forbidden;
+		throw std::system_error(std::error_code(zeep::http::forbidden, zeep::http::status_type_category()));
 }
 
 // CRUD routines
 
-Token APIRESTController_v1::getToken(unsigned long id)
+Token APIRESTController_v1::getToken(uint64_t id)
 {
 	checkTokenID(id);
 	return getTokenForRequest();
 }
 
-void APIRESTController_v1::deleteToken(unsigned long id)
+void APIRESTController_v1::deleteToken(uint64_t id)
 {
 	checkTokenID(id);
 	TokenService::instance().deleteToken(s_token_id);
 }
 
-std::vector<JobInfo> APIRESTController_v1::getAllRuns(unsigned long id)
+std::vector<JobInfo> APIRESTController_v1::getAllRuns(uint64_t id)
 {
 	checkTokenID(id);
 	return APIRESTController_v2::getAllRuns();
 }
 
-JobInfo APIRESTController_v1::createJob(unsigned long tokenID, const zh::file_param &diffractionData, const zh::file_param &coordinates,
-	const zh::file_param &restraints, const zh::file_param &sequence, const json &params)
+JobInfo APIRESTController_v1::createJob(uint64_t tokenID, const zeep::http::file_param &diffractionData, const zeep::http::file_param &coordinates,
+	const zeep::http::file_param &restraints, const zeep::http::file_param &sequence, const json &params)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::createJob(diffractionData, coordinates, restraints, sequence, params);
 }
 
-JobInfo APIRESTController_v1::getRun(unsigned long tokenID, unsigned long runID)
+JobInfo APIRESTController_v1::getRun(uint64_t tokenID, uint64_t runID)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::getRun(runID);
 }
 
-std::vector<std::string> APIRESTController_v1::getResultFileList(unsigned long tokenID, unsigned long runID)
+std::vector<std::string> APIRESTController_v1::getResultFileList(uint64_t tokenID, uint64_t runID)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::getResultFileList(runID);
 }
 
-fs::path APIRESTController_v1::getResultFile(unsigned long tokenID, unsigned long runID, const std::string &file)
+fs::path APIRESTController_v1::getResultFile(uint64_t tokenID, uint64_t runID, const std::string &file)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::getResultFile(runID, file);
 }
 
-zh::reply APIRESTController_v1::getZippedResultFile(unsigned long tokenID, unsigned long runID)
+zeep::http::reply APIRESTController_v1::getZippedResultFile(uint64_t tokenID, uint64_t runID)
 {
 	checkTokenID(tokenID);
 	return APIRESTController_v2::getZippedResultFile(runID);
 }
 
-void APIRESTController_v1::deleteRun(unsigned long tokenID, unsigned long runID)
+void APIRESTController_v1::deleteRun(uint64_t tokenID, uint64_t runID)
 {
 	checkTokenID(tokenID);
 	APIRESTController_v2::deleteRun(runID);

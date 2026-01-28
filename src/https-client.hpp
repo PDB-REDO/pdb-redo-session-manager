@@ -30,6 +30,6 @@
 
 #include <zeep/http/reply.hpp>
 
-zeep::http::reply simple_request(std::string url, std::vector<zeep::http::header> headers = {});
-zeep::http::reply head_request(std::string url, std::vector<zeep::http::header> headers = {});
-zeep::http::reply post_request(std::string url, std::vector<zeep::http::header> headers, zeep::el::object&& payload);
+zeep::http::reply simple_request(const std::string &url, std::vector<zeep::http::header> headers = {});
+zeep::http::reply head_request(const std::string &url, std::vector<zeep::http::header> headers = {});
+zeep::http::reply post_request(const std::string &url, std::vector<zeep::http::header> headers, zeep::el::object&& payload);

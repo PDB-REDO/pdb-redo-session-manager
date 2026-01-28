@@ -25,9 +25,11 @@
 cmake_minimum_required(VERSION 3.31)
 
 # set the project name
-project(prsmd VERSION 2.1.0 LANGUAGES CXX)
+project(prsmd VERSION 2.2.0 LANGUAGES CXX)
 
-cmake_policy(SET CMP0167 NEW)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+    cmake_policy(SET CMP0167 NEW)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -64,7 +66,7 @@ find_package(Boost 1.74 REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(mrc REQUIRED)
 
-CPMAddPackage(NAME libpqxx
+CPMFindPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
     GIT_TAG 7.10.1
 	VERSION 7.10.1
@@ -88,9 +90,9 @@ CPMFindPackage(
 	OPTIONS
 	"BUILD_TESTING NO")
 
-CPMAddPackage(NAME mailio
+CPMFindPackage(NAME mailio
 	GIT_REPOSITORY "https://github.com/karastojko/mailio.git"
-	GIT_TAG c85e063
+	GIT_TAG 0.26
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"MAILIO_BUILD_DOCUMENTATION NO"
@@ -99,7 +101,7 @@ CPMAddPackage(NAME mailio
 
 CPMFindPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG v7.1.0
+	GIT_TAG v7.3.0
 	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)

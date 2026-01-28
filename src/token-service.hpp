@@ -32,31 +32,33 @@
 
 struct Token
 {
-	unsigned long id = 0;
+	uint64_t id = 0;
 	std::string name;
 	std::string user;
 	std::string secret;
 	std::chrono::time_point<std::chrono::system_clock> created;
 	std::chrono::time_point<std::chrono::system_clock> expires;
 
-	Token(const pqxx::row &row);
-	Token(unsigned long id, std::string name, const std::string &user, const std::string &secret,
+	Token(const pqxx::row &row); // NOLINT(hicpp-explicit-conversions)
+	Token(uint64_t id, std::string name, std::string user, std::string secret,
 		std::chrono::time_point<std::chrono::system_clock> created, std::chrono::time_point<std::chrono::system_clock> expires);
 	Token &operator=(const pqxx::row &row);
 
 	explicit operator bool() const { return id != 0; }
 
-	bool expired() const { return std::chrono::system_clock::now() > expires; }
+	[[nodiscard]] bool expired() const { return std::chrono::system_clock::now() > expires; }
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, uint64_t  /*version*/)
 	{
-		ar & mxml::name_value_pair("id", id)
-		   & mxml::name_value_pair("name", name)
-		   & mxml::name_value_pair("user", user)
-		   & mxml::name_value_pair("secret", secret)
-		   & mxml::name_value_pair("created", created)
-		   & mxml::name_value_pair("expires", expires);
+		// clang-format off
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("name", name)
+		   & zeem::name_value_pair("user", user)
+		   & zeem::name_value_pair("secret", secret)
+		   & zeem::name_value_pair("created", created)
+		   & zeem::name_value_pair("expires", expires);
+		// clang-format on
 	}
 };
 
@@ -65,6 +67,9 @@ struct Token
 class TokenService
 {
   public:
+	TokenService(const TokenService &) = delete;
+	TokenService &operator=(const TokenService &) = delete;
+
 	static void init()
 	{
 		s_instance = new TokenService();
@@ -82,8 +87,8 @@ class TokenService
 	}
 
 	Token create(const std::string &name, const std::string &user);
-	Token getTokenByID(unsigned long id);
-	void deleteToken(unsigned long id);
+	Token getTokenByID(uint64_t id);
+	void deleteToken(uint64_t id);
 
 	std::vector<Token> getAllTokens();
 	std::vector<Token> getAllTokensForUser(const std::string &user);
@@ -91,9 +96,6 @@ class TokenService
   private:
 	TokenService();
 	~TokenService();
-
-	TokenService(const TokenService &) = delete;
-	TokenService &operator=(const TokenService &) = delete;
 
 	void runCleanThread();
 
