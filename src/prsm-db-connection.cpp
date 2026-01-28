@@ -26,6 +26,8 @@
 
 #include "prsm-db-connection.hpp"
 
+#include <zeem/serialize.hpp>
+
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -35,33 +37,10 @@
 
 std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string timestamp)
 {
-	if (timestamp[10] == 'T')
-		timestamp[10] = ' ';
+	if (timestamp[10] == ' ')
+		timestamp[10] = 'T';
 
-	std::regex kRX(R"(^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[-+]\d{2}(?::\d{2})?)?)");
-	std::smatch m;
-
-	if (not std::regex_match(timestamp, m, kRX))
-		throw std::runtime_error("Invalid date format");
-
-	std::istringstream is(timestamp);
-
-	std::chrono::time_point<std::chrono::system_clock> result;
-
-	if (m[1].matched)
-	{
-		if (m[1] == "Z")
-			std::chrono::from_stream(is, "%F %TZ", result);
-		else
-			std::chrono::from_stream(is, "%F %T%0z", result);
-	}
-	else
-		std::chrono::from_stream(is, "%F %T", result);
-
-	if (is.bad() or is.fail())
-		throw std::runtime_error("invalid formatted date");
-
-	return result;
+	return zeem::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(timestamp);
 }
 
 // --------------------------------------------------------------------

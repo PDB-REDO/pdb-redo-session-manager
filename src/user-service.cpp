@@ -914,7 +914,7 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
-		throw std::system_error(std::error_code(zeep::http::unauthorized, zeep::http::status_type_category()));
+		throw zeep::http::unauthorized_exception();
 
 	auto username = credentials["username"].get<std::string>();
 
@@ -930,7 +930,7 @@ zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scop
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
-		throw std::system_error(std::error_code(zeep::http::unauthorized, zeep::http::status_type_category()));
+		throw zeep::http::unauthorized_exception();
 
 	auto username = credentials["username"].get<std::string>();
 
