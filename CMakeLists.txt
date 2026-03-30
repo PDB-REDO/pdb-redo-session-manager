@@ -92,7 +92,7 @@ CPMFindPackage(
 
 CPMFindPackage(NAME mailio
 	GIT_REPOSITORY "https://github.com/karastojko/mailio.git"
-	GIT_TAG 0.26
+	GIT_TAG 0.25.3
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"MAILIO_BUILD_DOCUMENTATION NO"
