@@ -237,12 +237,12 @@ std::vector<std::string> DataService::getFileList(const std::string &pdbID, cons
 		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
 
 	std::vector<std::string> result;
-	for (const auto& f : fs::recursive_directory_iterator(entry_dir))
+	for (const auto &f : fs::recursive_directory_iterator(entry_dir))
 	{
-			if (not f.is_regular_file())
-				continue;
+		if (not f.is_regular_file())
+			continue;
 
-			result.push_back(fs::relative(f.path(), entry_dir).string());
+		result.push_back(fs::relative(f.path(), entry_dir).string());
 	}
 
 	return result;
@@ -304,23 +304,23 @@ std::tuple<std::istream *, std::string> DataService::getZipFile(const std::strin
 
 	fs::path d(pdbID);
 
-	for (const auto& f : fs::directory_iterator(entry_dir))
+	for (const auto &f : fs::directory_iterator(entry_dir))
 	{
-			if (f.path().filename() == "attic")
-				continue;
+		if (f.path().filename() == "attic")
+			continue;
 
-			if (f.is_regular_file())
-				zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
-			else if (f.is_directory())
+		if (f.is_regular_file())
+			zw.add(f.path(), (d / fs::relative(f.path(), entry_dir)).string());
+		else if (f.is_directory())
+		{
+			for (const auto &fr : fs::directory_iterator(f.path()))
 			{
-				for (const auto& fr : fs::directory_iterator(f.path()))
-				{
-					if (not fr.is_regular_file())
-						continue;
+				if (not fr.is_regular_file())
+					continue;
 
-					zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
-				}
+				zw.add(fr.path(), (d / fs::relative(fr.path(), entry_dir)).string());
 			}
+		}
 	}
 
 	return { zw.finish(), pdbID + ".zip" };

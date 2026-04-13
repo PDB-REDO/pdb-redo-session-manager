@@ -221,6 +221,8 @@ json create_entry_data(json &data, const fs::path &dir, const std::vector<std::s
 			link["final_mtz"] = dir / file;
 		else if (zeep::ends_with(file.string(), "besttls.pdb.gz"))
 			link["besttls_pdb"] = dir / file;
+		else if (zeep::ends_with(file.string(), "besttls.cif.gz"))
+			link["besttls_cif"] = dir / file;
 		else if (zeep::ends_with(file.string(), "besttls.mtz.gz"))
 			link["besttls_mtz"] = dir / file;
 		else if (zeep::ends_with(file.string(), ".refmac"))
@@ -572,6 +574,7 @@ zeep::http::reply RootController::handle_entry(const zeep::http::scope &scope, c
 		link["final_cif"] = db + (pdbID + "_final.cif");
 		link["final_mtz"] = db + (pdbID + "_final.mtz");
 		link["besttls_pdb"] = db + (pdbID + "_besttls.pdb");
+		link["besttls_cif"] = db + (pdbID + "_besttls.cif");
 		link["besttls_mtz"] = db + (pdbID + "_besttls.mtz");
 		link["refmac_settings"] = db + (pdbID + ".refmac");
 		link["homology_rest"] = db + "homology.rest";

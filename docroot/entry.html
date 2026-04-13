@@ -201,8 +201,8 @@
 										z2:href="@{${entry.link['final_pdb']}}">PDB</a></li>
 								<li z2:if="not ${entry.link['final_pdb']}">PDB</li>
 
-								<li z2:if="${entry.link['final_cif']}"><a z2:href="@{${entry.link['final_cif']}}"
-										id="final-mmcif-link">mmCIF</a></li>
+								<li z2:if="${entry.link['final_cif']}">
+										<a z2:href="@{${entry.link['final_cif']}}">mmCIF</a></li>
 								<li z2:if="${not entry.link['final_cif']}">mmCIF</li>
 
 								<li z2:if="${entry.link['final_mtz']}"><a
@@ -215,7 +215,9 @@
 							<ul class="entry-file-list">
 								<li z2:if="${entry.link['besttls_pdb']}"><a
 										z2:href="@{${entry.link['besttls_pdb']}}">PDB</a></li>
-								<li z2:if="${not entry.link['besttls_pdb']}">PDB</li>
+								<li z2:if="${entry.link['besttls_cif']}">
+									<a z2:href="@{${entry.link['besttls_cif']}}">mmCIF</a>
+								</li>
 								<li z2:if="${entry.link['besttls_mtz']}"><a
 										z2:href="@{${entry.link['besttls_mtz']}}">MTZ</a></li>
 								<li z2:if="${not entry.link['besttls_mtz']}">MTZ</li>
