@@ -156,7 +156,7 @@ float DataService::version() const
 
 bool DataService::exists(const std::string &pdbID) const
 {
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	auto entry_dir = getSubdir(pdbID) / pdbID;
 
 	std::error_code ec;
 	return fs::is_directory(entry_dir, ec);
@@ -204,7 +204,7 @@ std::string DataService::getLatestAttic(const std::string &pdbID)
 
 	std::string result;
 
-	auto attic_dir = m_data_dir / pdbID.substr(1, 2) / pdbID / "attic";
+	auto attic_dir = getSubdir(pdbID) / pdbID / "attic";
 
 	system_clock::time_point t{};
 
@@ -229,7 +229,7 @@ std::string DataService::getLatestAttic(const std::string &pdbID)
 
 std::vector<std::string> DataService::getFileList(const std::string &pdbID, const std::optional<std::string> &attic)
 {
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
@@ -250,7 +250,7 @@ std::vector<std::string> DataService::getFileList(const std::string &pdbID, cons
 
 std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> &attic)
 {
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
@@ -264,7 +264,7 @@ zeep::el::object DataService::getData(const std::string &pdbID, const std::optio
 {
 	zeep::el::object data;
 
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
@@ -293,7 +293,7 @@ zeep::el::object DataService::getData(const std::string &pdbID, const std::optio
 
 std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> &attic)
 {
-	auto entry_dir = m_data_dir / pdbID.substr(1, 2) / pdbID;
+	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
