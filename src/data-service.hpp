@@ -106,10 +106,7 @@ class DataService
 	DataService();
 
 	void checkUpdateRequests();
-	[[nodiscard]] std::filesystem::path getSubdir(const std::string &pdbID) const
-	{
-		return m_data_dir / pdbID.substr(pdbID.length() - 3, 2);
-	}
+	[[nodiscard]] std::filesystem::path getSubdir(std::string pdbID) const;
 
 	std::filesystem::path m_data_dir;
 	std::mutex m_mutex;

@@ -154,6 +154,18 @@ float DataService::version() const
 	return result;
 }
 
+std::filesystem::path DataService::getSubdir(std::string pdbID) const
+{
+	if (pdbID.starts_with("pdb_"))
+		pdbID.erase(0, 4);
+
+	if (pdbID.length() == 4)
+		pdbID = "0000" + pdbID;
+
+	return m_data_dir / pdbID.substr(pdbID.length() - 3, 2);
+}
+
+
 bool DataService::exists(const std::string &pdbID) const
 {
 	auto entry_dir = getSubdir(pdbID) / pdbID;
