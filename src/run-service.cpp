@@ -175,7 +175,7 @@ std::filesystem::path Run::getImageFile()
 	return m_dir / "pdbin.png";
 }
 
-std::tuple<std::istream *, std::string> Run::getZippedResultFile()
+std::tuple<std::unique_ptr<std::istream>, std::string> Run::getZippedResultFile()
 {
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run does not exist");

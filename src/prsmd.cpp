@@ -254,7 +254,7 @@ json create_entry_data(Run &run, const fs::path &basePath)
 	std::ifstream dataJson(dataJsonFile);
 
 	if (not dataJson.is_open())
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
@@ -394,7 +394,7 @@ class JobController : public zeep::http::html_controller
 
 		auto r = RunService::instance().submit(credentials["username"].get<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
-		return zeep::http::reply::redirect("/job", zeep::http::see_other);
+		return zeep::http::reply::redirect("/job", zeep::http::status_type::see_other);
 	}
 
 	zeep::http::reply getOutputFile(const zeep::http::scope &scope, uint64_t job_id, const std::string &file)
@@ -402,12 +402,12 @@ class JobController : public zeep::http::html_controller
 		auto credentials = scope.get_credentials();
 		auto run = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id);
 
-		zeep::http::reply result(zeep::http::ok);
+		zeep::http::reply result(zeep::http::status_type::ok);
 
 		if (file == "zipped")
 		{
 			auto [f, name] = run.getZippedResultFile();
-			result.set_content(f, "application/zip");
+			result.set_content(std::move(f), "application/zip");
 			result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
 		}
 		else
@@ -416,9 +416,9 @@ class JobController : public zeep::http::html_controller
 
 			std::error_code ec;
 			if (not fs::exists(f, ec))
-				return zeep::http::reply::stock_reply(zeep::http::not_found);
+				return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-			result.set_content(new std::ifstream(f), "application/octet-stream");
+			result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
 			result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		}
 
@@ -433,10 +433,10 @@ class JobController : public zeep::http::html_controller
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f, std::ios::in | std::ios::binary), "image/png");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f, std::ios::in | std::ios::binary), "image/png");
 		return result;
 	}
 
@@ -489,7 +489,7 @@ class JobController : public zeep::http::html_controller
 		auto credentials = scope.get_credentials();
 		RunService::instance().deleteRun(credentials["username"].get<std::string>(), job_id);
 
-		return zeep::http::reply::stock_reply(zeep::http::ok);
+		return zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 	}
 
 	zeep::http::reply getStatus(const zeep::http::scope &scope, const std::vector<uint64_t> &job_ids)
@@ -504,7 +504,7 @@ class JobController : public zeep::http::html_controller
 			status.emplace_back(r.status);
 		}
 
-		zeep::http::reply reply(zeep::http::ok);
+		zeep::http::reply reply(zeep::http::status_type::ok);
 		reply.set_content(status);
 		return reply;
 	}
@@ -512,7 +512,7 @@ class JobController : public zeep::http::html_controller
 
 // --------------------------------------------------------------------
 
-class RootController : public zeep::http::html_controller_v1
+class RootController : public zeep::http::html_controller
 {
   public:
 	explicit RootController(const fs::path &pdb_db_dir)
@@ -525,11 +525,11 @@ class RootController : public zeep::http::html_controller_v1
 		map_get_simple("license", "license");
 		map_get_simple("api-doc", "api-doc");
 
-		mount("client-api/**", &RootController::handle_client_api_file);
+		map_get("client-api/**", &RootController::handle_client_api_file);
 
 		map_get_file("{css,scripts,fonts,images}/");
 
-		mount("{others,schema}/**", &RootController::handle_others);
+		map_get("{others,schema}/**", &RootController::handle_others);
 
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
 
@@ -540,12 +540,12 @@ class RootController : public zeep::http::html_controller_v1
 	zeep::http::reply handle_entry(const zeep::http::scope &scope, const zeep::el::object &data, const std::optional<std::string> &link_url);
 
 	// For the 'others' directory
-	void handle_others(const zeep::http::request & /*request*/, const zeep::http::scope &scope, zeep::http::reply &reply)
+	zeep::http::reply handle_others(const zeep::http::scope &scope)
 	{
-		reply = m_db_dir.create_reply_for_get_file(scope);
+		return m_db_dir.create_reply_for_get_file(scope);
 	}
 
-	void handle_client_api_file(const zeep::http::request &request, const zeep::http::scope &scope, zeep::http::reply &reply);
+	zeep::http::reply handle_client_api_file(const zeep::http::scope &scope);
 
 	zeep::http::reply nextUpdateRequest(const zeep::http::scope &scope);
 
@@ -593,17 +593,18 @@ zeep::http::reply RootController::handle_entry(const zeep::http::scope &scope, c
 	return get_template_processor().create_reply_from_template("entry::tables", sub);
 }
 
-void RootController::handle_client_api_file(const zeep::http::request & /*request*/, const zeep::http::scope &scope, zeep::http::reply &reply)
+zeep::http::reply RootController::handle_client_api_file(const zeep::http::scope &scope)
 {
 	fs::path file = fs::path(scope["baseuri"].get<std::string>()).lexically_relative("client-api");
 
 	mrsrc::rsrc data(file.string());
 
 	if (not data)
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
-	reply = zeep::http::reply::stock_reply(zeep::http::ok);
-	reply.set_content(new mrsrc::istream(data), "text/plain");
+	auto reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
+	reply.set_content(std::make_unique<mrsrc::istream>(data), "text/plain");
+	return reply;
 }
 
 zeep::http::reply RootController::nextUpdateRequest(const zeep::http::scope & /*scope*/)
@@ -613,7 +614,7 @@ zeep::http::reply RootController::nextUpdateRequest(const zeep::http::scope & /*
 	for (const auto &ur : DataService::instance().getAllUpdateRequests())
 		os << ur.pdb_id << ',' << ur.user << '\n';
 
-	zeep::http::reply result(zeep::http::ok);
+	zeep::http::reply result(zeep::http::status_type::ok);
 	result.set_content(os.str(), "text/plain");
 	return result;
 }
@@ -681,24 +682,24 @@ zeep::http::reply AdminController::job(const zeep::http::scope &scope, const std
 	std::error_code ec;
 	if (fs::exists(f, ec))
 	{
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f), "text/plain");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f), "text/plain");
 		return result;
 	}
 
-	return zeep::http::reply::stock_reply(zeep::http::not_found);
+	return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 }
 
 zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope & /*scope*/, const std::string &user, uint64_t job_id, const std::string &file)
 {
 	auto run = RunService::instance().getRun(user, job_id);
 
-	zeep::http::reply result(zeep::http::ok);
+	zeep::http::reply result(zeep::http::status_type::ok);
 
 	if (file == "zipped")
 	{
 		auto [f, name] = run.getZippedResultFile();
-		result.set_content(f, "application/zip");
+		result.set_content(std::move(f), "application/zip");
 		result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
 	}
 	else
@@ -707,9 +708,9 @@ zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope &
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		result.set_content(new std::ifstream(f), "application/octet-stream");
+		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
 		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 	}
 
@@ -802,10 +803,10 @@ class DbController : public zeep::http::html_controller
 	{
 		zeep::to_lower(pdbID);
 
-		const auto &[is, name] = DataService::instance().getZipFile(pdbID);
+		auto &&[is, name] = DataService::instance().getZipFile(pdbID);
 
-		zeep::http::reply rep{ zeep::http::ok };
-		rep.set_content(is, "application/zip");
+		zeep::http::reply rep{ zeep::http::status_type::ok };
+		rep.set_content(std::move(is), "application/zip");
 		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 		return rep;
@@ -840,10 +841,10 @@ class DbController : public zeep::http::html_controller
 		}
 
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f), "application/octet-stream");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
 		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
@@ -852,10 +853,10 @@ class DbController : public zeep::http::html_controller
 	{
 		zeep::to_lower(pdbID);
 
-		const auto &[is, name] = DataService::instance().getZipFile(pdbID, attic);
+		auto &&[is, name] = DataService::instance().getZipFile(pdbID, attic);
 
-		zeep::http::reply rep{ zeep::http::ok };
-		rep.set_content(is, "application/zip");
+		zeep::http::reply rep{ zeep::http::status_type::ok };
+		rep.set_content(std::move(is), "application/zip");
 		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 		return rep;
@@ -869,10 +870,10 @@ class DbController : public zeep::http::html_controller
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f), "application/octet-stream");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
 		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
@@ -882,10 +883,10 @@ zeep::http::reply DbController::handle_get(const zeep::http::scope & /*scope*/, 
 {
 	// const std::regex rx(R"((pdb_)?[0-9][0-9a-z]{3,7})", std::regex::icase);
 	// if (not std::regex_match(pdbID, rx))
-	// 	throw std::system_error(std::error_code(zeep::http::unprocessable_entity, zeep::http::status_type_category()));
+	// 	throw std::system_error(zeep::http::unprocessable_entity));
 
 	zeep::to_lower(pdbID);
-	return zeep::http::reply::redirect(pdbID, zeep::http::see_other);
+	return zeep::http::reply::redirect(pdbID, zeep::http::status_type::see_other);
 }
 
 zeep::http::reply DbController::handle_show(const zeep::http::scope &scope, std::string pdbID)
@@ -983,14 +984,14 @@ class pdb_entry_error_handler : public zeep::http::error_handler
 		}
 		catch (const zeep::http::status_type &err)
 		{
-			if (err == zeep::http::unprocessable_entity)
+			if (err == zeep::http::status_type::unprocessable_entity)
 			{
 				auto pdb_id = req.get_parameter("pdb-id");
 				zeep::http::scope scope(m_server, req);
 				if (pdb_id.has_value())
 					scope.put("pdb-id", *pdb_id);
 				reply = m_server->get_template_processor().create_reply_from_template("entry-not-found", scope);
-				reply.set_status(zeep::http::unprocessable_entity);
+				reply.set_status(zeep::http::status_type::unprocessable_entity);
 				result = true;
 			}
 		}

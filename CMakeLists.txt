@@ -101,7 +101,7 @@ CPMFindPackage(NAME mailio
 
 CPMFindPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG v7.3.1
+	GIT_TAG v8.2.0
 	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)
@@ -111,8 +111,6 @@ add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/api-controller.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/https-client.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/https-client.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.cpp

@@ -89,11 +89,11 @@ class ZipWriter
 		archive_entry_free(entry);
 	}
 
-	std::istream *finish()
+	std::unique_ptr<std::istream> finish()
 	{
 		archive_write_close(m_a);
 
-		return m_s.release();
+		return std::move(m_s);
 	}
 
   private:

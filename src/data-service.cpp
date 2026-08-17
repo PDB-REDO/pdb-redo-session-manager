@@ -26,13 +26,13 @@
 
 #include "data-service.hpp"
 
-#include "https-client.hpp"
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
 #include <iostream>
 #include <mcfp/mcfp.hpp>
 #include <zeep/http/reply.hpp>
+#include <zeep/http/client.hpp>
 
 namespace fs = std::filesystem;
 
@@ -194,7 +194,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 		for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
 			uri.replace(i, 5, pdbID);
 
-		if (not head_request(uri))
+		if (not zeep::http::head_request(uri))
 			whynot = "PDB Entry does not exist";
 		else
 		{
@@ -202,7 +202,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
 				uri.replace(i, 5, pdbID);
 
-			if (not head_request(uri))
+			if (not zeep::http::head_request(uri))
 				whynot = "No reflection data available";
 		}
 	}
@@ -246,7 +246,7 @@ std::vector<std::string> DataService::getFileList(const std::string &pdbID, cons
 		entry_dir /= fs::path("attic") / *attic;
 
 	if (not fs::exists(entry_dir))
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	std::vector<std::string> result;
 	for (const auto &f : fs::recursive_directory_iterator(entry_dir))
@@ -267,7 +267,7 @@ std::filesystem::path DataService::getFile(const std::string &pdbID, const std::
 		entry_dir /= fs::path("attic") / *attic;
 
 	if (not fs::exists(entry_dir))
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	return entry_dir / file;
 }
@@ -303,14 +303,14 @@ zeep::el::object DataService::getData(const std::string &pdbID, const std::optio
 	return data;
 }
 
-std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> &attic)
+std::tuple<std::unique_ptr<std::istream>, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> &attic)
 {
 	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
 		entry_dir /= fs::path("attic") / *attic;
 
 	if (not fs::exists(entry_dir))
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	ZipWriter zw;
 

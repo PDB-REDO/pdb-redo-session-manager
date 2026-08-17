@@ -190,7 +190,7 @@ bool APIRESTController_v2::handle_request(zeep::http::request &req, zeep::http::
 			using namespace std::literals;
 
 			rep.set_content(json({ { "error", e.what() } }));
-			rep.set_status(zeep::http::unauthorized);
+			rep.set_status(zeep::http::status_type::unauthorized);
 
 			result = true;
 		}
@@ -260,10 +260,10 @@ zeep::http::reply APIRESTController_v2::getZippedResultFile(uint64_t runID)
 {
 	auto token = getTokenForRequest();
 
-	const auto &[is, name] = RunService::instance().getRun(token.user, runID).getZippedResultFile();
+	auto &&[is, name] = RunService::instance().getRun(token.user, runID).getZippedResultFile();
 
-	zeep::http::reply rep{ zeep::http::ok };
-	rep.set_content(is, "application/zip");
+	zeep::http::reply rep{ zeep::http::status_type::ok };
+	rep.set_content(std::move(is), "application/zip");
 	rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 	return rep;
@@ -313,7 +313,7 @@ APIRESTController_v1::APIRESTController_v1()
 void APIRESTController_v1::checkTokenID(uint64_t tokenID)
 {
 	if (tokenID != s_token_id)
-		throw std::system_error(std::error_code(zeep::http::forbidden, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::forbidden);
 }
 
 // CRUD routines

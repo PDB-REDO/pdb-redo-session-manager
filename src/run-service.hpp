@@ -137,7 +137,7 @@ struct Run
 	std::vector<std::string> getResultFileList();
 	std::filesystem::path getResultFile(const std::string &file);
 	std::filesystem::path getImageFile();
-	std::tuple<std::istream *, std::string> getZippedResultFile();
+	std::tuple<std::unique_ptr<std::istream>, std::string> getZippedResultFile();
 
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)

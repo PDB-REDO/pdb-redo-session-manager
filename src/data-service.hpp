@@ -99,7 +99,7 @@ class DataService
 
 	std::vector<std::string> getFileList(const std::string &pdbID, const std::optional<std::string> &attic = {});
 	std::filesystem::path getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> &attic = {});
-	std::tuple<std::istream *, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> &attic = {});
+	std::tuple<std::unique_ptr<std::istream>, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> &attic = {});
 	zeep::el::object getData(const std::string &pdbID, const std::optional<std::string> &attic = {});
 
   private:

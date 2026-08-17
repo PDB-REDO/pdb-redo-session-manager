@@ -678,7 +678,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri.string());
 
-		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content(doc);
 		return rep;
 	}
@@ -697,7 +697,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 
 zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope & /*scope*/, const std::string &password)
 {
-	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::ok);
+	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 	zeep::el::object e = isValidPassword(password);
 	rep.set_content(e);
 	return rep;
@@ -781,7 +781,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 	for (auto i_uri : doc.find("//input[@name='uri']"))
 		i_uri->set_attribute("value", uri.string());
 
-	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::internal_server_error);
 	rep.set_content(doc);
 	return rep;
 }
@@ -848,7 +848,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 	for (auto i_uri : doc.find("//input[@name='uri']"))
 		i_uri->set_attribute("value", uri.string());
 
-	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::internal_server_error);
 	rep.set_content(doc);
 	return rep;
 }
@@ -903,11 +903,11 @@ zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope
 	Token s = TokenService::instance().getTokenByID(id);
 
 	if (s.user != username)
-		throw std::system_error(std::error_code(zeep::http::forbidden, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::forbidden);
 
 	TokenService::instance().deleteToken(id);
 
-	return zeep::http::reply::stock_reply(zeep::http::ok);
+	return zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 }
 
 zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope, std::string name)
@@ -923,7 +923,7 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 
 	TokenService::instance().create(name, username);
 
-	return zeep::http::reply::redirect("/token", zeep::http::see_other);
+	return zeep::http::reply::redirect("/token", zeep::http::status_type::see_other);
 }
 
 zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scope, std::string name)
@@ -938,7 +938,7 @@ zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scop
 		name = "<untitled>";
 
 	auto token = TokenService::instance().create(name, username);
-	zeep::http::reply reply(zeep::http::ok);
+	zeep::http::reply reply(zeep::http::status_type::ok);
 	reply.set_content(zeep::el::serializer<Token>::serialize(token));
 
 	return reply;
