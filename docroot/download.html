@@ -1,7 +1,7 @@
 <!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
 ]>
 
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="en">
 
 <head z2:replace="~{head::head(~{::title},~{::head/script})}">
 	<meta charset="UTF-8" />
@@ -40,15 +40,18 @@
 					maps.</li>
 				<li><a href="http://www2.mrc-lmb.cam.ac.uk/Personal/pemsley/coot/" target="_blank">(Win)COOT</a> also
 					has a native
-					PDB-REDO interface that shows models, maps, and a guided tour through the model changes.
+					PDB-REDO interface that shows models and maps. When available anomalous maps are also shown.
 				</li>
+                                <li><a href="http://moorhen.org" target="_blank">Moorhen</a> can also show models and maps directly from the PDB-REDO databank.
+                                </li>
+
 
 			</ul>
 			<h2>Manual download (single entries) via the website or using <code>wget</code>:</h2>
 			<ul>
-				<li><code>wget https://pdb-redo.eu/db/9xyz/9xyz_final.pdb</code> downloads the fully optimised
+				<li><code>wget https://pdb-redo.eu/db/9xyz/9xyz_final.cif</code> downloads the fully optimised
 					(re-refined and
-					rebuilt) PDB file.
+					rebuilt) coordinate file.
 				</li>
 				<li><code>wget https://pdb-redo.eu/db/9xyz/9xyz_final.mtz</code> downloads the MTZ files to generate
 					electron
@@ -94,23 +97,23 @@
 					</tr>
 					<tr>
 						<td>Initial model</td>
-						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_0cyc.pdb.gz</code></td>
+						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_0cyc.cif.gz</code></td>
 					</tr>
 					<tr>
 						<td>Re-refined (only) model</td>
-						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_besttls.pdb.gz</code></td>
+						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_besttls.cif.gz</code></td>
 					</tr>
 					<tr>
 						<td>Re-refined &amp; rebuilt structure model</td>
-						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final.pdb</code></td>
-					</tr>
-					<tr>
-						<td>Re-refined &amp; rebuilt structure model with total B-factors (PDB)</td>
-						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final_tot.pdb</code></td>
-					</tr>
-					<tr>
-						<td>Re-refined &amp; rebuilt structure model with total B-factors (mmCIF)</td>
 						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final.cif</code></td>
+					</tr>
+					<tr>
+						<td>Re-refined &amp; rebuilt structure model with residual B-factors</td>
+						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final_residual.cif</code></td>
+					</tr>
+					<tr>
+						<td>Re-refined &amp; rebuilt structure model in PDB format (not available for all entries)</td>
+						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final.pdb</code></td>
 					</tr>
 
 
@@ -134,15 +137,15 @@
 						<td colspan="2" class="group">Validation data</td>
 					</tr>
 					<tr>
-						<td>WHAT_CHECK report for initial model</td>
+						<td>WHAT_CHECK report for initial model (deprecated)</td>
 						<td><code>https://pdb-redo.eu/db/9xyz/wo/pdbout.txt</code></td>
 					</tr>
 					<tr>
-						<td>WHAT_CHECK report for re-refined (only) model</td>
+						<td>WHAT_CHECK report for re-refined (only) model (deprecated)</td>
 						<td><code>https://pdb-redo.eu/db/9xyz/wc/pdbout.txt</code></td>
 					</tr>
 					<tr>
-						<td>WHAT_CHECK report for re-refined &amp; rebuilt model</td>
+						<td>WHAT_CHECK report for re-refined &amp; rebuilt model (deprecated)</td>
 						<td><code>https://pdb-redo.eu/db/9xyz/wf/pdbout.txt</code></td>
 					</tr>
 					<tr>
@@ -168,16 +171,6 @@
 								z2:href="@{/schema/pdbe.json.schema}">JSON Schema</a>)</td>
 					</tr>
 					<tr>
-						<td colspan="2" class="group">Visual tools</td>
-					</tr>
-					<tr>
-						<td>COOT script to show model changes</td>
-						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final.py</code> (Python) or
-							<code>https://pdb-redo.eu/db/9xyz/9xyz_final.scm</code>
-							(Scheme)
-						</td>
-					</tr>
-					<tr>
 						<td colspan="2" class="group">Descriptive data</td>
 					</tr>
 					<tr>
@@ -187,17 +180,11 @@
 								z2:href="@{/schema/data.json.schema}">JSON Schema</a>)</td>
 					</tr>
 					<tr>
-						<td>List of homologous entries in PDB-REDO databank</td>
-						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_available_homologs.json</code> (<a
-								href="id_available_homologs.json.schema"
-								z2:href="@{/schema/id_available_homologs.json.schema}">JSON Schema</a>)</td>
-					</tr>
-					<tr>
 						<td>DSSP analysis of the re-refined &amp; rebuilt model</td>
 						<td><code>https://pdb-redo.eu/db/9xyz/9xyz_final.dssp</code></td>
 					</tr>
 					<tr>
-						<td>Software versions of all programs used</td>
+						<td>Versions of the input data and all used programs</td>
 						<td><code>https://pdb-redo.eu/db/9xyz/versions.json</code> (<a href="versions.json.schema"
 								z2:href="@{/schema/versions.json.schema}">JSON Schema</a>)</td>
 					</tr>

@@ -19,7 +19,8 @@ class PDBRedoResult extends HTMLElement {
 		this.data = null;
 		this.error = null;
 
-		this.pdb_redo_url = 'https://pdb-redo.eu';
+		// this.pdb_redo_url = 'https://pdb-redo.eu';
+		this.pdb_redo_url = this.pdbRedoBaseURI;
 		this.data_url = null;
 		this.include_credentials = false;
 

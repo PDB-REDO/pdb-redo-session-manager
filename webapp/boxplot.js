@@ -1,13 +1,27 @@
 import * as d3 from 'd3';
 
+const DataType = {
+	Original: {
+		set: 'Original',
+		colour: 'blue',
+		x: 'PDB'
+	},
+	Final: {
+		set: 'Final',
+		colour: 'orange',
+		x: 'PDB-REDO'
+	}
+};
+
 class Data {
-	constructor(x, values, score, colour, sigma) {
+	constructor(type, values, score, sigma) {
 		values.sort((a, b) => a - b);
 
-		this.x = x;
+		this.x = type.x;
+		this.colour = type.colour;
+		this.set = type.set;
 		this.values = values;
 		this.score = score;
-		this.colour = colour;
 		this.sigma = sigma;
 
 		const [min, max] = values.map(d => [d, d])
@@ -217,7 +231,7 @@ function BoxPlot(width, height, title, yLabel, data, range) {
 		.attr("y", d => ly(d.x) + ly.bandwidth() / 2)
 		.attr("dy", "0.3em")
 		.attr("font-size", "xx-small")
-		.text(d => d.x);
+		.text(d => d.set);
 
 	return svg.node();
 }
@@ -225,8 +239,8 @@ function BoxPlot(width, height, title, yLabel, data, range) {
 function createBoxPlots(e, s, td) {
 
 	const dataRFree = [
-		new Data('Original', s.map(d => 100 * d.RFREE), 100 * e.RFREE, 'blue', 100 * e.SIGRFCAL),
-		new Data('PDB-REDO', s.map(d => 100 * d.RFFIN), 100 * e.RFFIN, 'orange', 100 * e.SIGRFFIN)
+		new Data(DataType.Original, s.map(d => 100 * d.RFREE), 100 * e.RFREE, 100 * e.SIGRFCAL),
+		new Data(DataType.Final, s.map(d => 100 * d.RFFIN), 100 * e.RFFIN, 100 * e.SIGRFFIN)
 	];
 	const range = dataRFree.map(d => d.range)
 		.reduce((a, b) => [Math.min(a[0], b[0]), Math.max(a[1], b[1])]);
@@ -236,13 +250,13 @@ function createBoxPlots(e, s, td) {
 
 	if (e.OZRAMA != null && e.FZRAMA != null && e.FCHI12 != null && e.OSCHI12 != null) {
 		const dataRama = [
-			new Data('Original', s.map(d => d.OZRAMA), e.OZRAMA, 'blue', e.OSZRAMA),
-			new Data('PDB-REDO', s.map(d => d.FZRAMA), e.FZRAMA, 'orange', e.FSZRAMA)
+			new Data(DataType.Original, s.map(d => d.OZRAMA), e.OZRAMA, e.OSZRAMA),
+			new Data(DataType.Final, s.map(d => d.FZRAMA), e.FZRAMA, e.FSZRAMA)
 		];
 
 		const dataRota = [
-			new Data('Original', s.map(d => d.OCHI12), e.OCHI12, 'blue', e.OSCHI12),
-			new Data('PDB-REDO', s.map(d => d.FCHI12), e.FCHI12, 'orange', e.FSCHI12)
+			new Data(DataType.Original, s.map(d => d.OCHI12), e.OCHI12, e.OSCHI12),
+			new Data(DataType.Final, s.map(d => d.FCHI12), e.FCHI12, e.FSCHI12)
 		];
 
 		const rRange = [...dataRama, ...dataRota].map(d => d.range)

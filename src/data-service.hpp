@@ -28,80 +28,85 @@
 
 #include "user-service.hpp"
 
-#include <zeep/json/element.hpp>
-
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <zeep/el/object.hpp>
 
 struct UpdateRequest
 {
-	unsigned long id;
+	uint64_t id;
 	std::string user;
 	std::string pdb_id;
 	std::chrono::time_point<std::chrono::system_clock> created;
 	double version;
 
-	UpdateRequest(const pqxx::row &row);
+	explicit UpdateRequest(const pqxx::row &row);
 	// UpdateRequest &operator=(const pqxx::row &row);
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long v)
+	void serialize(Archive &ar, uint64_t /* version */)
 	{
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("user", user)
-		   & zeep::make_nvp("pdb_id", pdb_id)
-		   & zeep::make_nvp("created", created)
-		   & zeep::make_nvp("version", version);
-	}	
+		// clang-format off
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("user", user)
+		   & zeem::name_value_pair("pdb_id", pdb_id)
+		   & zeem::name_value_pair("created", created)
+		   & zeem::name_value_pair("version", version);
+		// clang-format on
+	}
 };
 
 struct UpdateStatus
 {
-	bool ok;
+	bool ok{};
 	std::optional<float> pendingVersion;
 
-	explicit operator bool() { return ok; }
+	explicit operator bool() const { return ok; }
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar & zeep::make_nvp("ok", ok)
-		   & zeep::make_nvp("version", pendingVersion);
+		// clang-format off
+		ar & zeem::name_value_pair("ok", ok)
+		   & zeem::name_value_pair("version", pendingVersion);
+		// clang-format on
 	}
 };
 
 class DataService
 {
   public:
+	DataService(const DataService &) = delete;
+	DataService &operator=(const DataService &) = delete;
+
 	static DataService &instance();
 
-	UpdateStatus getUpdateStatus(const std::string &pdbID);
+	[[nodiscard]] UpdateStatus getUpdateStatus(const std::string &pdbID);
 	void requestUpdate(const std::string &pdbID, const User &user);
-	void deleteUpdateRequest(int id);
+	void deleteUpdateRequest(uint64_t id);
 
-	float version() const;
+	[[nodiscard]] float version() const;
 
 	std::vector<UpdateRequest> getAllUpdateRequests();
 
-	bool exists(const std::string &pdbID) const;
+	[[nodiscard]] bool exists(const std::string &pdbID) const;
 	std::string getWhyNot(const std::string &pdbID);
 
 	// attic access
 	std::string getLatestAttic(const std::string &pdbID);
 
-	std::vector<std::string> getFileList(const std::string &pdbID, const std::optional<std::string> attic = {});
-	std::filesystem::path getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> attic = {});
-	std::tuple<std::istream *, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> attic = {});
-	zeep::json::element getData(const std::string &pdbID, const std::optional<std::string> attic = {});
+	std::vector<std::string> getFileList(const std::string &pdbID, const std::optional<std::string> &attic = {});
+	std::filesystem::path getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> &attic = {});
+	std::tuple<std::unique_ptr<std::istream>, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> &attic = {});
+	zeep::el::object getData(const std::string &pdbID, const std::optional<std::string> &attic = {});
 
   private:
 	DataService();
 
-	DataService(const DataService &) = delete;
-	DataService &operator=(const DataService &) = delete;
-
 	void checkUpdateRequests();
+	[[nodiscard]] std::filesystem::path getSubdir(std::string pdbID) const;
 
 	std::filesystem::path m_data_dir;
 	std::mutex m_mutex;

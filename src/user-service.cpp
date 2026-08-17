@@ -26,21 +26,22 @@
 
 #include "user-service.hpp"
 
-#include "token-service.hpp"
+#include "mrsrc.hpp"
 #include "prsm-db-connection.hpp"
+#include "run-service.hpp"
+#include "token-service.hpp"
 
-#include <zeep/http/uri.hpp>
-
+#include <algorithm>
+#include <boost/asio/deadline_timer.hpp>
+#include <cassert>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <mailio/message.hpp>
 #include <mailio/smtp.hpp>
-
-#include "mrsrc.hpp"
-
-#include <mcfp.hpp>
-
-#include <cassert>
-#include <iostream>
+#include <mcfp/mcfp.hpp>
 #include <random>
+#include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
 
@@ -48,56 +49,35 @@ namespace
 {
 const double kMinimalPasswordEntropy = 50;
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization,cert-err58-cpp)
 const std::set<std::string> kAmbiguous{ "B", "8", "G", "6", "I", "1", "l", "0", "O", "Q", "D", "S", "5", "Z", "2" };
 const std::vector<std::string> kVowels{ "a", "ae", "ah", "ai", "e", "ee", "ei", "i", "ie", "o", "oh", "oo", "u" };
 const std::vector<std::string> kConsonants{ "b", "c", "ch", "d", "f", "g", "gh", "h", "j", "k", "l", "m", "n", "ng", "p", "ph", "qu", "r", "s", "sh", "t", "th", "v", "w", "x", "y", "z" };
 const std::vector<char> kSymbols{ '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
 
 std::regex kEmailRX(R"((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\]))", std::regex::icase);
+// NOLINTEND(bugprone-throwing-static-initialization,cert-err58-cpp)
 } // namespace
 
 // --------------------------------------------------------------------
 
 User::User(const pqxx::row &row)
 {
-	id = row.at("id").as<unsigned long>();
-	name = row.at("name").as<std::string>();
-	email = row.at("email").as<std::string>();
-	institution = row.at("institution").as<std::string>();
-	password = row.at("password").as<std::string>();
-	created = parse_timestamp(row.at("created").as<std::string>());
+	id = row.at("id").get<uint64_t>().value_or(0);
+	name = row.at("name").get<std::string>().value_or("");
+	email = row.at("email").get<std::string>().value_or("");
+	institution = row.at("institution").get<std::string>().value_or("");
+	password = row.at("password").get<std::string>().value_or("");
+	created = parse_timestamp(row.at("created").get<std::string>().value_or(""));
 
-	if (not row.at("last_login").is_null())
-		lastLogin = parse_timestamp(row.at("last_login").as<std::string>());
+	if (auto v = row.at("last_login").get<std::string>(); v)
+		lastLogin = parse_timestamp(*v);
 
-	if (not row.at("last_job_date").is_null())
-		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
-	if (not row.at("last_job_nr").is_null())
-		lastJobNr = row.at("last_job_nr").as<int>();
-	if (not row.at("last_job_status").is_null())
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(row.at("last_job_status").as<std::string>());
-}
-
-User &User::operator=(const pqxx::row &row)
-{
-	id = row.at("id").as<unsigned long>();
-	name = row.at("name").as<std::string>();
-	email = row.at("email").as<std::string>();
-	institution = row.at("institution").as<std::string>();
-	password = row.at("password").as<std::string>();
-	created = parse_timestamp(row.at("created").as<std::string>());
-
-	if (not row.at("last_login").is_null())
-		lastLogin = parse_timestamp(row.at("last_login").as<std::string>());
-
-	if (not row.at("last_job_date").is_null())
-		lastJobDate = parse_timestamp(row.at("last_job_date").as<std::string>());
-	if (not row.at("last_job_nr").is_null())
-		lastJobNr = row.at("last_job_nr").as<int>();
-	if (not row.at("last_job_status").is_null())
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(row.at("last_job_status").as<std::string>());
-
-	return *this;
+	if (auto v = row.at("last_job_date").get<std::string>(); v)
+		lastJobDate = parse_timestamp(*v);
+	lastJobNr = row.at("last_job_nr").get<int>();
+	if (auto v = row.at("last_job_status").get<std::string>(); v)
+		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
 }
 
 // --------------------------------------------------------------------
@@ -107,7 +87,7 @@ const int
 	kSaltLength = 16,
 	kKeyLength = 256;
 
-std::string PasswordEncoder::encode(const std::string &password) const
+std::string PasswordEncoder::encode(const std::string & /*password*/) const
 {
 	return {};
 }
@@ -145,7 +125,7 @@ bool isValidPassword(const std::string &password)
 			upperSeen = true;
 		else if (std::isdigit(ch))
 			digitSeen = true;
-		else if (find(kSymbols.begin(), kSymbols.end(), ch) != kSymbols.end())
+		else if (std::ranges::find(kSymbols, ch) != kSymbols.end())
 			symbolSeen = true;
 		else if (std::isspace(ch))
 			return false;
@@ -196,24 +176,24 @@ UserService &UserService::instance()
 	return *s_instance;
 }
 
-User UserService::getUser(unsigned long id) const
+User UserService::getUser(uint64_t id) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT * FROM redo.user WHERE id = )" + std::to_string(id));
+	auto r = tx.exec(R"(SELECT * FROM redo.user WHERE id = )" + std::to_string(id)).one_row();
 
 	tx.commit();
 
-	return User(r);
+	return r;
 }
 
 User UserService::getUser(const std::string &name) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT * FROM redo.user WHERE name = )" + tx.quote(name));
+	auto r = tx.exec(R"(SELECT * FROM redo.user WHERE name = )" + tx.quote(name)).one_row();
 
 	tx.commit();
 
-	return User(r);
+	return r;
 }
 
 std::vector<User> UserService::getAllUsers() const
@@ -224,10 +204,7 @@ std::vector<User> UserService::getAllUsers() const
 	auto rows = tx.exec(R"(SELECT * FROM redo.user ORDER BY created DESC)");
 
 	for (auto row : rows)
-	{
-		User user(row);
-		result.push_back(std::move(user));
-	}
+		result.emplace_back(row);
 
 	tx.commit();
 
@@ -236,18 +213,17 @@ std::vector<User> UserService::getAllUsers() const
 
 uint32_t UserService::createRunID(const std::string &username)
 {
-	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(
+	pqxx::work tx(prsm_db_connection::instance());
+
+	auto result = tx.query_value<uint32_t>(
 		R"(UPDATE redo.user
 			  SET last_job_nr = last_job_nr + 1,
 				  last_job_date = CURRENT_TIMESTAMP
 		    WHERE name = )" +
 		tx.quote(username) + R"(
 		RETURNING last_job_nr)");
-
 	tx.commit();
-
-	return r[0].as<uint32_t>();
+	return result;
 }
 
 zeep::http::user_details UserService::load_user(const std::string &username) const
@@ -257,19 +233,19 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 	try
 	{
 		pqxx::transaction tx_1(prsm_db_connection::instance());
-		auto r = tx_1.exec1(R"(SELECT * FROM redo.user WHERE name = )" + tx_1.quote(username));
+		auto r = tx_1.exec(R"(SELECT * FROM redo.user WHERE name = )" + tx_1.quote(username)).one_row();
 		tx_1.commit();
 
 		User user(r);
 
 		pqxx::transaction tx_2(prsm_db_connection::instance());
-		auto r2 = tx_2.exec0(R"(UPDATE redo.user SET last_login = CURRENT_TIMESTAMP WHERE id = )" + tx_2.quote(user.id));
+		tx_2.exec(R"(UPDATE redo.user SET last_login = CURRENT_TIMESTAMP WHERE id = )" + tx_2.quote(user.id)).no_rows();
 		tx_2.commit();
 
 		result.username = user.name;
 		result.password = user.password;
 		result.roles.insert("USER");
-		if (std::find(m_admins.begin(), m_admins.end(), user.name) != m_admins.end())
+		if (std::ranges::find(m_admins, user.name) != m_admins.end())
 			result.roles.insert("ADMIN");
 	}
 	catch (...)
@@ -283,30 +259,26 @@ zeep::http::user_details UserService::load_user(const std::string &username) con
 bool UserService::user_is_valid(const std::string &username) const
 {
 	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(username));
-
-	tx.commit();
-
-	return r[0].as<int>() == 1;
+	return tx.query_value<int>(R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(username)) == 1;
 }
 
 uint32_t UserService::createUser(const User &user)
 {
-	pqxx::transaction tx(prsm_db_connection::instance());
-	auto r = tx.exec1(
+	pqxx::work tx(prsm_db_connection::instance());
+
+	auto result = tx.query_value<uint32_t>(
+		// clang-format off
 		R"(INSERT
 			 INTO redo.user (name, institution, email, password)
-		   VALUES (
-				 )" + tx.quote(user.name) + R"(,
-				 )" + tx.quote(user.institution) + R"(,
-				 )" + tx.quote(user.email) + R"(,
-				 )" + tx.quote(user.password) + R"(
-		   )
+		   VALUES ()"
+		   	+ tx.quote(user.name) + ","
+		   	+ tx.quote(user.institution) + ","
+		   	+ tx.quote(user.email) + ","
+			+ tx.quote(user.password) + R"()
 		RETURNING id)");
-
+		//clang-format on
 	tx.commit();
-
-	return r[0].as<uint32_t>();
+	return result;
 }
 
 void UserService::updateUser(const User &user)
@@ -329,17 +301,26 @@ void UserService::updateUser(const User &user)
 
 	if (not set.empty())
 	{
-		tx.exec0("UPDATE redo.user SET " + zeep::join(set, ", ") + " WHERE id = " + tx.quote(user.id));
+		tx.exec("UPDATE redo.user SET " + zeep::join(set, ", ") + " WHERE id = " + tx.quote(user.id)).no_rows();
 		tx.commit();
 	}
 }
 
-void UserService::deleteUser(int id)
+void UserService::deleteUser(uint64_t id)
 {
+	User user = getUser(id);
+
 	pqxx::transaction tx(prsm_db_connection::instance());
 
-	tx.exec0("DELETE FROM redo.user WHERE id = " + tx.quote(id));
+	tx.exec("DELETE FROM redo.user WHERE id = " + tx.quote(id)).no_rows();
 	tx.commit();
+
+	auto userDir = RunService::instance().getRunsDir() / user.name;
+	std::error_code ec;
+	std::filesystem::create_directories(userDir, ec);
+
+	if (std::filesystem::exists(userDir, ec))
+		std::ofstream touched(userDir / "deleted.txt");
 }
 
 auto UserService::isValidUser(const User &user) const -> UserService::UserValidation
@@ -364,23 +345,15 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 	if (valid)
 	{
 		pqxx::transaction tx(prsm_db_connection::instance());
-		auto r = tx.exec1(
-			R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(user.name));
-
-		tx.commit();
-
-		valid.validName = r[0].as<uint32_t>() == 0;
+		valid.validName = tx.query_value<int>(
+			R"(SELECT COUNT(*) FROM redo.user WHERE name = )" + tx.quote(user.name)) == 0;
 	}
 
 	if (valid)
 	{
 		pqxx::transaction tx(prsm_db_connection::instance());
-		auto r = tx.exec1(
-			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email));
-
-		tx.commit();
-
-		valid.validEmail = r[0].as<uint32_t>() == 0;
+		valid.validEmail = tx.query_value<int>(
+			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email)) == 0;
 	}
 
 #ifndef NDEBUG
@@ -405,12 +378,8 @@ bool UserService::isValidEmailForUser(const User &user, const std::string &email
 		if (result)
 		{
 			pqxx::transaction tx(prsm_db_connection::instance());
-			auto r = tx.exec1(
-				R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(email) + " AND id <> " + tx.quote(user.id));
-
-			tx.commit();
-
-			result = r[0].as<uint32_t>() == 0;
+			result = tx.query_value<int>(
+				R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(email) + " AND id <> " + tx.quote(user.id)) == 0;
 		}
 	}
 
@@ -419,7 +388,7 @@ bool UserService::isValidEmailForUser(const User &user, const std::string &email
 
 void UserService::sendNewPassword(const std::string &username, const std::string &email)
 {
-	std::cerr << "Request reset password for " << email << std::endl;
+	std::cerr << "Request reset password for " << email << '\n';
 
 	try
 	{
@@ -433,15 +402,18 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		zeep::http::pbkdf2_sha256_password_encoder enc(kIterations, kKeyLength / 8);
 		std::string newPasswordHash = enc.encode(newPassword);
 
-		std::cerr << "Reset password for " << email << " to " << newPasswordHash << std::endl;
+		std::cerr << "Reset password for " << email << " to " << newPasswordHash << '\n';
 
 		// --------------------------------------------------------------------
 
 		pqxx::transaction tx(prsm_db_connection::instance());
-		auto r = tx.exec0(
+		tx.exec(
 			R"(UPDATE redo.user
-				SET password = )" + tx.quote(newPasswordHash) + R"(
-				WHERE name = )" + tx.quote(username));
+				SET password = )" +
+			tx.quote(newPasswordHash) + R"(
+				WHERE name = )" +
+			tx.quote(username))
+			.no_rows();
 
 		// --------------------------------------------------------------------
 
@@ -461,7 +433,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 			auto i = line.find("^1");
 			if (i != std::string::npos)
 				line.replace(i, 2, newPassword);
-			content << line << std::endl;
+			content << line << '\n';
 		}
 
 		msg.content(content.str());
@@ -482,26 +454,10 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 		auto smtp_host = config.get("smtp-host");
 		auto smtp_port = config.get<uint16_t>("smtp-port");
 
-		if (smtp_port == 25)
-		{
-			mailio::smtp conn(smtp_host, smtp_port);
-			conn.authenticate(smtp_user, smtp_password, smtp_user.empty() ? mailio::smtp::auth_method_t::NONE : mailio::smtp::auth_method_t::LOGIN);
-			conn.submit(msg);
-		}
-		else if (smtp_port == 465)
-		{
-			mailio::smtps conn(smtp_host, smtp_port);
-			conn.authenticate(smtp_user, smtp_password, smtp_user.empty() ? mailio::smtps::auth_method_t::NONE : mailio::smtps::auth_method_t::LOGIN);
-			conn.submit(msg);
-		}
-		else if (smtp_port == 587 and not smtp_user.empty())
-		{
-			mailio::smtps conn(smtp_host, smtp_port);
-			conn.authenticate(smtp_user, smtp_password, mailio::smtps::auth_method_t::START_TLS);
-			conn.submit(msg);
-		}
-		else
-			throw std::runtime_error("Unable to send message, smtp configuration error");
+		mailio::smtp conn(smtp_host, smtp_port);
+		conn.authenticate(smtp_user, smtp_password,
+			smtp_user.empty() ? mailio::smtp::auth_method_t::NONE : mailio::smtp::auth_method_t::LOGIN);
+		conn.submit(msg);
 
 		// --------------------------------------------------------------------
 		// Sending the new password succeeded
@@ -510,7 +466,7 @@ void UserService::sendNewPassword(const std::string &username, const std::string
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Sending new password failed: " << ex.what() << std::endl;
+		std::cerr << "Sending new password failed: " << ex.what() << '\n';
 	}
 }
 
@@ -632,8 +588,7 @@ UserHTMLController::UserHTMLController()
 	map_post("token-request", &UserHTMLController::requestToken, "name");
 }
 
-
-zeep::xml::document UserHTMLController::load_login_form(const zeep::http::request &req) const
+zeem::document UserHTMLController::load_login_form(const zeep::http::request &req) const
 {
 	auto uri = get_prefixless_path(req);
 
@@ -644,7 +599,7 @@ zeep::xml::document UserHTMLController::load_login_form(const zeep::http::reques
 
 	auto &tp = m_server->get_template_processor();
 
-	zeep::xml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -661,7 +616,7 @@ zeep::http::reply UserHTMLController::get_register(const zeep::http::scope &scop
 }
 
 zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &scope, const std::string &username, const std::string &institution,
-	const std::string &email, const std::string &password, const std::string &password2, std::optional<std::string> accept_gdpr)
+	const std::string &email, const std::string &password, const std::string &password2, const std::optional<std::string> &accept_gdpr)
 {
 	UserService &userService = UserService::instance();
 
@@ -675,18 +630,16 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		zeep::http::scope sub(scope);
 		auto uri = get_prefixless_path(req);
 
-		zeep::http::scope scope(m_server, req);
-
-		scope.put("baseuri", uri.string());
-		scope.put("dialog", "register");
+		sub.put("baseuri", uri.string());
+		sub.put("dialog", "register");
 
 		auto &tp = m_server->get_template_processor();
 
-		zeep::xml::document doc;
+		zeem::document doc;
 		doc.set_preserve_cdata(true);
 
 		tp.load_template("index", doc);
-		tp.process_tags(doc.child(), scope);
+		tp.process_tags(doc.child(), sub);
 
 		for (auto csrf_attr : doc.find("//input[@name='_csrf']"))
 			csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
@@ -725,7 +678,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri.string());
 
-		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content(doc);
 		return rep;
 	}
@@ -742,10 +695,10 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 	return reply;
 }
 
-zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope &scope, const std::string &password)
+zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope & /*scope*/, const std::string &password)
 {
-	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::ok);
-	zeep::json::element e = isValidPassword(password);
+	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
+	zeep::el::object e = isValidPassword(password);
 	rep.set_content(e);
 	return rep;
 }
@@ -778,7 +731,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	bool oldPWValid = false, newPWValid = isValidPassword(newPassword), newPW2Valid = newPassword == newPassword2;
 
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 	oldPWValid = m_server->get_security_context().verify_username_password(user.name, oldPassword);
 
 	if (oldPWValid and newPWValid and newPW2Valid)
@@ -792,7 +745,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 		userService.updateUser(user);
 
-		return create_redirect_for_request(scope.get_request());	
+		return create_redirect_for_request(scope.get_request());
 	}
 
 	auto &req = scope.get_request();
@@ -804,7 +757,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 
 	auto &tp = m_server->get_template_processor();
 
-	zeep::xml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -828,7 +781,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 	for (auto i_uri : doc.find("//input[@name='uri']"))
 		i_uri->set_attribute("value", uri.string());
 
-	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::internal_server_error);
 	rep.set_content(doc);
 	return rep;
 }
@@ -836,7 +789,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &scope)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 
 	zeep::http::scope sub(scope);
 	sub.put("dialog", "update");
@@ -848,7 +801,7 @@ zeep::http::reply UserHTMLController::get_update_info(const zeep::http::scope &s
 zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &scope, const std::string &institution, const std::string &email)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 
 	bool institutionValid = not institution.empty(), emailValid = userService.isValidEmailForUser(user, email);
 
@@ -861,7 +814,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 
 		userService.updateUser(user);
 
-		return create_redirect_for_request(scope.get_request());	
+		return create_redirect_for_request(scope.get_request());
 	}
 
 	auto &req = scope.get_request();
@@ -873,7 +826,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 
 	auto &tp = m_server->get_template_processor();
 
-	zeep::xml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	tp.load_template("index", doc);
@@ -895,7 +848,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 	for (auto i_uri : doc.find("//input[@name='uri']"))
 		i_uri->set_attribute("value", uri.string());
 
-	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::internal_server_error);
 	rep.set_content(doc);
 	return rep;
 }
@@ -910,7 +863,7 @@ zeep::http::reply UserHTMLController::get_delete(const zeep::http::scope &scope)
 zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope)
 {
 	UserService &userService = UserService::instance();
-	User user = userService.getUser(scope.get_credentials()["username"].as<std::string>());
+	User user = userService.getUser(scope.get_credentials()["username"].get<std::string>());
 
 	userService.deleteUser(user);
 
@@ -921,7 +874,7 @@ zeep::http::reply UserHTMLController::post_delete(const zeep::http::scope &scope
 
 zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope &scope, const std::string &reqid, const std::string &cburl)
 {
-	if (not zeep::http::is_fully_qualified_uri(cburl))
+	if (not zeep::is_fully_qualified_uri(cburl))
 		throw std::runtime_error("The callback is not a valid URI");
 
 	zeep::http::scope sub(scope);
@@ -933,67 +886,60 @@ zeep::http::reply UserHTMLController::get_token_for_ccp4(const zeep::http::scope
 
 zeep::http::reply UserHTMLController::getTokens(const zeep::http::scope &scope)
 {
-	auto username = scope.get_credentials()["username"].as<std::string>();
+	auto username = scope.get_credentials()["username"].get<std::string>();
 
 	zeep::http::scope sub(scope);
-	
+
 	auto s = TokenService::instance().getAllTokensForUser(username);
-	zeep::json::element e;
-	to_element(e, s);
-	sub.put("tokens", e);
+	sub.put("tokens", zeep::el::serializer<decltype(s)>::serialize(s));
 
 	return get_template_processor().create_reply_from_template("tokens", sub);
 }
 
-zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope, unsigned long id)
+zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope, uint64_t id)
 {
-	auto username = scope.get_credentials()["username"].as<std::string>();
-
-	zeep::http::scope sub(scope);
+	auto username = scope.get_credentials()["username"].get<std::string>();
 
 	Token s = TokenService::instance().getTokenByID(id);
 
 	if (s.user != username)
-		throw zeep::http::forbidden;
+		throw std::system_error(zeep::http::status_type::forbidden);
 
 	TokenService::instance().deleteToken(id);
 
-	return zeep::http::reply::stock_reply(zeep::http::ok);
+	return zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 }
 
 zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope, std::string name)
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
-		throw zeep::http::unauthorized;
+		throw zeep::http::unauthorized_exception();
 
-	auto username = credentials["username"].as<std::string>();
+	auto username = credentials["username"].get<std::string>();
 
 	if (name.empty())
 		name = "<untitled>";
 
 	TokenService::instance().create(name, username);
 
-	return zeep::http::reply::redirect("/token", zeep::http::see_other);
+	return zeep::http::reply::redirect("/token", zeep::http::status_type::see_other);
 }
 
 zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scope, std::string name)
 {
 	auto credentials = scope.get_credentials();
 	if (not credentials)
-		throw zeep::http::unauthorized;
+		throw zeep::http::unauthorized_exception();
 
-	auto username = credentials["username"].as<std::string>();
+	auto username = credentials["username"].get<std::string>();
 
 	if (name.empty())
 		name = "<untitled>";
 
 	auto token = TokenService::instance().create(name, username);
-	zeep::json::element e;
-	to_element(e, token);
-
-	zeep::http::reply reply(zeep::http::ok);
-	reply.set_content(e);
+	zeep::http::reply reply(zeep::http::status_type::ok);
+	reply.set_content(zeep::el::serializer<Token>::serialize(token));
 
 	return reply;
 }

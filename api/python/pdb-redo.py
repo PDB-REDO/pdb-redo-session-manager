@@ -245,4 +245,7 @@ parser_fetch.add_argument(
 parser_fetch.set_defaults(func=do_fetch)
 
 args = parser.parse_args()
-args.func(args)
+try:
+    args.func(args)
+except AttributeError:
+    usage()

@@ -1,0 +1,15 @@
+[Unit]
+Description=The PDB-REDO web service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=on-failure
+Type=forking
+PIDFile=@PRSMD_PID@
+ExecStart=@PRSMD_EXE@ start
+ExecReload=@PRSMD_EXE@ reload
+ExecStop=@PRSMD_EXE@ stop
+
+[Install]
+WantedBy=multi-user.target

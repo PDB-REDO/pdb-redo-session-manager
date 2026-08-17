@@ -29,7 +29,7 @@ import argparse
 import time
 
 # Due to a bug? in the server implementation, the :port is required here...
-#PDBREDO_URI = 'https://services.pdb-redo.eu:443'
+#PDBREDO_URI = 'https://pdb-redo.eu'
 PDBREDO_URI = 'http://localhost:10339'
 
 # collect arguments

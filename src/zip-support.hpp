@@ -26,9 +26,11 @@
 
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <sstream>
 #include <filesystem>
+#include <vector>
 
 #include <gxrio.hpp>
 
@@ -52,7 +54,7 @@ class ZipWriter
 		archive_write_free(m_a);
 	}
 
-	void add(std::filesystem::path file, std::filesystem::path name)
+	void add(const std::filesystem::path& file, std::filesystem::path name)
 	{
 		gxrio::ifstream in(file);
 
@@ -87,25 +89,25 @@ class ZipWriter
 		archive_entry_free(entry);
 	}
 
-	std::istream *finish()
+	std::unique_ptr<std::istream> finish()
 	{
 		archive_write_close(m_a);
 
-		return m_s.release();
+		return std::move(m_s);
 	}
 
   private:
-	static int open_cb(struct archive *a, void *self)
+	static int open_cb(struct archive * /*a*/, void * /*self*/)
 	{
 		return ARCHIVE_OK;
 	}
 
-	static la_ssize_t write_cb(struct archive *a, void *self, const void *buffer, size_t length)
+	static la_ssize_t write_cb(struct archive * /*a*/, void *self, const void *buffer, size_t length)
 	{
 		return static_cast<ZipWriter *>(self)->write(static_cast<const char *>(buffer), length);
 	}
 
-	static int close_cb(struct archive *a, void *self)
+	static int close_cb(struct archive * /*a*/, void * /*self*/)
 	{
 		return ARCHIVE_OK;
 	}

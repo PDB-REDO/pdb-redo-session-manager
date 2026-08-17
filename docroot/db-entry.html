@@ -1,7 +1,7 @@
 <!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
 ]>
 
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="en">
 
 <head z2:replace="~{head::head(~{::title},~{::head/script})}">
 	<meta charset="UTF-8" />
@@ -36,7 +36,7 @@
 				class="alert alert-secondary" role="alert">
 
 			<span z2:switch="${entry.status.version gt 0}">
-				<span z2:case="${true}" z2:text="|Update to version ${entry.status.version} is pending.|"></span>
+				<span z2:case="${true}" z2:text="|Update to version ${#version.format(entry.status.version)} is pending.|"></span>
 				<span z2:case="*">
 					This entry is not up to date with the most recent version of PDB-REDO.
 					<a z2:if="${#security.authorized}"

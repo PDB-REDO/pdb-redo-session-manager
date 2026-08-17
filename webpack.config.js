@@ -1,12 +1,12 @@
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const webpack = require('webpack');
-const TerserPlugin = require('terser-webpack-plugin');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const path = require('path');
+const glob = require('glob-all');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { PurgeCSSPlugin } = require("purgecss-webpack-plugin");
+var TerserPlugin = require("terser-webpack-plugin");
 
-const SCRIPTS = __dirname + "/webapp/";
-const DEST = __dirname + "/docroot/scripts";
+const SCRIPTS = path.resolve(__dirname, "webapp");
+const DEST = path.resolve(__dirname, "docroot");
 
 module.exports = (env) => {
 
@@ -14,21 +14,23 @@ module.exports = (env) => {
 
 	const webpackConf = {
 		entry: {
-			admin: SCRIPTS + "admin.js",
-			dialog: SCRIPTS + "dialog.js",
-			index: SCRIPTS + "index.js",
-			'inline-entry': SCRIPTS + 'inline-entry.js',
-			jobs: SCRIPTS + 'jobs.js',
-			'pdb-redo-result': SCRIPTS + 'pdb-redo-result.js',
-			'pdb-redo-result-loader': SCRIPTS + 'pdb-redo-result-loader.js',
-			tokens: SCRIPTS + "tokens.js",
+			admin: path.resolve(SCRIPTS, "admin.js"),
+			dialog: path.resolve(SCRIPTS, "dialog.js"),
+			index: path.resolve(SCRIPTS, "index.js"),
+			'inline-entry': path.resolve(SCRIPTS, 'inline-entry.js'),
+			jobs: path.resolve(SCRIPTS, 'jobs.js'),
+			'pdb-redo-result': path.resolve(SCRIPTS, 'pdb-redo-result.js'),
+			'pdb-redo-result-loader': path.resolve(SCRIPTS, 'pdb-redo-result-loader.js'),
+			tokens: path.resolve(SCRIPTS, "tokens.js"),
 
-			'web-component-style': { import: SCRIPTS + 'web-component-style.scss' }
+			w3: path.resolve(SCRIPTS, "w3.css"),
+			'web-component-style': path.resolve(SCRIPTS, 'web-component-style.scss')
 		},
 
 		output: {
 			path: DEST,
-			crossOriginLoading: 'anonymous'
+			crossOriginLoading: 'anonymous',
+			filename: "scripts/[name].js"
 		},
 
 		module: {
@@ -49,8 +51,19 @@ module.exports = (env) => {
 					use: [
 						MiniCssExtractPlugin.loader,
 						"css-loader",
-						"postcss-loader",
-						"sass-loader"
+						{
+							loader: "sass-loader",
+							options: {
+								sassOptions: {
+									silenceDeprecations: [
+										"color-functions",
+										"global-builtin",
+										"import",
+										"if-function"
+									]
+								}
+							}
+						}
 					]
 				},
 
@@ -59,25 +72,34 @@ module.exports = (env) => {
 					include: path.resolve(__dirname, './node_modules/bootstrap-icons/font/fonts'),
 					type: 'asset/resource',
 					generator: {
-						filename: '../fonts/[name][ext]'
+						filename: 'fonts/[name][ext]'
 					}
 				}
 			]
 		},
 
 		resolve: {
-			extensions: ['.js', '.scss'],
+			extensions: ['.js', '.css', '.scss'],
 		},
+
+		optimization: {
+			minimize: true,
+			minimizer: [new TerserPlugin()]
+		},
+
+		target: 'web',
 
 		plugins: [
 			new MiniCssExtractPlugin({
-				filename: "../css/[name].css"
+				filename: "css/[name].css"
+			}),
+			new PurgeCSSPlugin({
+				paths: glob.sync([
+					`${SCRIPTS}/**/*`,
+					`${DEST}/**/*`
+				], { nodir: true })
 			})
-		],
-
-		optimization: { minimizer: [] },
-
-		target: 'web'
+		]
 	};
 
 	if (PRODUCTION) {
@@ -85,17 +107,18 @@ module.exports = (env) => {
 
 		webpackConf.plugins.push(
 			new CleanWebpackPlugin({
-				verbose: true
-			}));
+				verbose: true,
+				cleanOnceBeforeBuildPatterns: [
+					'css/*',
+					'fonts/*',
+					'scripts/*',
+				]
 
-		webpackConf.optimization.minimizer.push(
-			new TerserPlugin({ /* additional options here */ }),
-			new UglifyJsPlugin({ parallel: 4 })
+			})
 		);
 	} else {
 		webpackConf.mode = "development";
 		webpackConf.devtool = 'source-map';
-		webpackConf.plugins.push(new webpack.optimize.AggressiveMergingPlugin())
 	}
 
 	return webpackConf;

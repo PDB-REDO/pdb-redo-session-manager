@@ -3,14 +3,10 @@ pdb-redo-session-manager
 
 This is the repository containing the code for the PDB-REDO web site and web services.
 
-This code relies heavily on [libzeep](https://github.com/mhekkel/libzeep). Also, you will have to use [mrc](https://github.com/mhekkel/mrc) to store the web assets as resource. Therefore, if you want to run this on a system that does not use ELF executable format you will have to hack the source.
+Before building the software, please make sure you have at least installed a good, modern C++ compiler as well as:
 
-Other requirements are
-
+* [cmake](https://cmake.org) Preferrably version 4 or later
 * [yarn](https://yarnpkg.org)
-* [libpqxx](https://pqxx.org)
-* [libmcfp](https://github.com/mhekkel/libmcfp.git)
-* [gxrio](https://github.com/mhekkel/gxrio.git)
 
 Building
 --------
