@@ -189,7 +189,7 @@ bool APIRESTController_v2::handle_request(zeep::http::request &req, zeep::http::
 		{
 			using namespace std::literals;
 
-			rep.set_content(json({ { "error", e.what() } }));
+			rep.set_content(json({ { "error", "invalid credentials" } }));
 			rep.set_status(zeep::http::status_type::unauthorized);
 
 			result = true;
