@@ -215,7 +215,16 @@ void RunService::init(const std::string &runsDir)
 {
 	assert(not s_instance);
 
-	zeep::value_serializer<RunStatus>::instance("RunStatus")("undefined", RunStatus::UNDEFINED)("registered", RunStatus::REGISTERED)("starting", RunStatus::STARTING)("queued", RunStatus::QUEUED)("running", RunStatus::RUNNING)("stopping", RunStatus::STOPPING)("stopped", RunStatus::STOPPED)("ended", RunStatus::ENDED)("deleting", RunStatus::DELETING);
+	zeep::value_serializer<RunStatus>::instance("RunStatus") //
+		("undefined", RunStatus::UNDEFINED)                  //
+		("registered", RunStatus::REGISTERED)                //
+		("starting", RunStatus::STARTING)                    //
+		("queued", RunStatus::QUEUED)                        //
+		("running", RunStatus::RUNNING)                      //
+		("stopping", RunStatus::STOPPING)                    //
+		("stopped", RunStatus::STOPPED)                      //
+		("ended", RunStatus::ENDED)                          //
+		("deleting", RunStatus::DELETING);
 
 	s_instance.reset(new RunService(runsDir));
 }
