@@ -26,6 +26,7 @@
 
 #include "run-service.hpp"
 
+#include "data-service.hpp"
 #include "user-service.hpp"
 #include "zip-support.hpp"
 
@@ -164,7 +165,7 @@ std::filesystem::path Run::getResultFile(const std::string &file)
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run directory does not exist");
 
-	return m_dir / "output" / file;
+	return sanitizePath(m_dir / "output", file);
 }
 
 std::filesystem::path Run::getImageFile()
