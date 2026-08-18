@@ -84,7 +84,7 @@ CPMFindPackage(
 CPMFindPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/gxrio.git
-	GIT_TAG v1.0.2
+	GIT_TAG v1.1.0
 	VERSION 1.0.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
@@ -99,10 +99,11 @@ CPMFindPackage(NAME mailio
 	"MAILIO_BUILD_EXAMPLES NO"
 	"MAILIO_BUILD_TESTS NO")
 
-CPMFindPackage(NAME zeep
-	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG v8.2.0
-	EXCLUDE_FROM_ALL YES)
+# CPMFindPackage(NAME zeep
+# 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
+# 	GIT_TAG v8.2.0
+# 	EXCLUDE_FROM_ALL YES)
+find_package(zeep REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
