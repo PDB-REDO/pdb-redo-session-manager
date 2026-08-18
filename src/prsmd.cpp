@@ -1029,6 +1029,7 @@ int a_main(int argc, char *const argv[])
 		mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
 		mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
 		mcfp::make_option<std::string>("context", "The outside base url for this service"),
+		mcfp::make_option<std::string>("allow-origin", "*", "The value for the CORS header Access-Control-Allow-Origin"),
 		mcfp::make_option<std::string>("user,u", "User to run the daemon"),
 		mcfp::make_option<std::string>("db-host", "Database host"),
 		mcfp::make_option<std::string>("db-port", "Database port"),
@@ -1133,7 +1134,9 @@ Command should be either:
 		if (config.has("context"))
 			context = config.get<std::string>("context");
 
-		zeep::http::daemon server([secret, context, &config]()
+		std::string allow_origin = config.get("allow-origin");
+
+		zeep::http::daemon server([secret, context, allow_origin, &config]()
 			{
 			auto sc = new zeep::http::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
@@ -1151,7 +1154,7 @@ Command should be either:
 
 			auto s = new zeep::http::server(sc);
 
-			auto access_control = new zeep::http::access_control("*", true);
+			auto access_control = new zeep::http::access_control(allow_origin, true);
 			access_control->add_allowed_header("X-PDB-REDO-Date");
 			access_control->add_allowed_header("Authorization");
 			s->set_access_control(access_control);
