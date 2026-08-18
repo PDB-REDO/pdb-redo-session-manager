@@ -84,7 +84,7 @@ CPMFindPackage(
 CPMFindPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/gxrio.git
-	GIT_TAG v1.0.2
+	GIT_TAG v1.1.0
 	VERSION 1.0.2
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
