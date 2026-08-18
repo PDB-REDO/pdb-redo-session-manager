@@ -78,6 +78,8 @@ struct User
 		   & zeem::name_value_pair("last-job-status", lastJobStatus);
 		// clang-format on
 	}
+
+	[[nodiscard]] bool shouldRenewPassword() const;
 };
 
 // --------------------------------------------------------------------

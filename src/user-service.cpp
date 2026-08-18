@@ -94,6 +94,25 @@ User::User(const pqxx::row &row)
 	}
 }
 
+
+bool User::shouldRenewPassword() const
+{
+	bool result = true;
+
+	auto parts = zeep::split(password, "$");
+	
+	if (parts.size() == 4 and parts.front() == "pbkdf2_sha256")
+	{
+		int iterations;
+		const auto &[ptr, ec] = std::from_chars(parts[1].data(), parts[1].data() + parts[1].size(), iterations);
+
+		if (ec == std::errc{} and ptr == parts[1].data() + parts[1].length() and iterations >= 100'000)
+			result = false;
+	}
+
+	return result;
+}
+
 // --------------------------------------------------------------------
 
 const int
@@ -117,8 +136,6 @@ bool PasswordEncoder::matches(const std::string &raw_password, const std::string
 
 		result = b.substr(kSaltLength) == test;
 	}
-	else
-		result = zeep::encode_base64(zeep::md5(raw_password)) == stored_password;
 
 	return result;
 }
