@@ -41,6 +41,7 @@
 #include <mailio/smtp.hpp>
 #include <mcfp/mcfp.hpp>
 #include <random>
+#include <stdexcept>
 #include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
@@ -77,7 +78,20 @@ User::User(const pqxx::row &row)
 		lastJobDate = parse_timestamp(*v);
 	lastJobNr = row.at("last_job_nr").get<int>();
 	if (auto v = row.at("last_job_status").get<std::string>(); v)
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
+	{
+		try
+		{
+			lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
+		}
+		catch (const std::invalid_argument &ex)
+		{
+			auto s = *v;
+			int vi;
+			auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.length(), vi);
+			if (ptr == s.data() + s.length() and ec == std::errc{} and vi >= 0 and vi < static_cast<int>(RunStatus::DELETING))
+				lastJobStatus = static_cast<RunStatus>(vi);
+		}
+	}
 }
 
 // --------------------------------------------------------------------
