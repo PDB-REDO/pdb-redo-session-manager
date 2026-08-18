@@ -370,10 +370,10 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email)) == 0;
 	}
 
-#ifndef NDEBUG
-	if (valid and user.name == "scott" and user.password == "tiger")
-		return valid;
-#endif
+// #ifndef NDEBUG
+// 	if (valid and user.name == "scott" and user.password == "tiger")
+// 		return valid;
+// #endif
 
 	if (valid)
 		valid.validPassword = isValidPassword(user.password);
