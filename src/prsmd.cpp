@@ -1005,79 +1005,100 @@ class pdb_entry_error_handler : public zeep::http::error_handler
 
 // --------------------------------------------------------------------
 
-int a_main(int argc, char *const argv[])
+// recursively print exception whats:
+void print_what(const std::exception &e)
 {
-	using namespace std::literals;
+	std::cerr << e.what() << '\n';
+	try
+	{
+		std::rethrow_if_nested(e);
+	}
+	catch (const std::exception &nested)
+	{
+		std::cerr << " >> ";
+		print_what(nested);
+	}
+}
 
+// --------------------------------------------------------------------
+
+int main(int argc, char *const argv[])
+{
 	int result = 0;
 
-	auto &config = mcfp::config::instance();
-
-	config.init(
-		"usage: prsmd command [options]\n       (where command is one of 'start', 'stop', 'status' or 'reload'",
-		mcfp::make_option("help,h", "Display help message"),
-		mcfp::make_option("verbose,v", "Verbose output"),
-		mcfp::make_option("no-daemon,F", "Do not fork into background"),
-		mcfp::make_option<std::string>("config", "Specify the config file to use"),
-		mcfp::make_option("version", "Print version and exit"),
-
-		mcfp::make_option<std::string>("pdb-redo-db-dir", "Directory containing PDB-REDO databank"),
-		mcfp::make_option<std::string>("pdb-redo-tools-dir", "Directory containing PDB-REDO tools (and files)"),
-		mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
-		mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
-		mcfp::make_option<std::string>("ccp4-dir", "CCP4 directory, if not specified the environmental variable CCP4 will be used (and should be available)"),
-		mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
-		mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
-		mcfp::make_option<std::string>("context", "The outside base url for this service"),
-		mcfp::make_option<std::string>("allow-origin", "*", "The value for the CORS header Access-Control-Allow-Origin"),
-		mcfp::make_option<std::string>("user,u", "User to run the daemon"),
-		mcfp::make_option<std::string>("db-host", "Database host"),
-		mcfp::make_option<std::string>("db-port", "Database port"),
-		mcfp::make_option<std::string>("db-dbname", "Database name"),
-		mcfp::make_option<std::string>("db-user", "Database user name"),
-		mcfp::make_option<std::string>("db-password", "Database password"),
-		mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
-		mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"),
-
-		mcfp::make_option<std::string>("smtp-user", "user name of SMTP server used for resetting password"),
-		mcfp::make_option<std::string>("smtp-password", "password of SMTP server used for resetting password"),
-		mcfp::make_option<std::string>("smtp-host", "host of SMTP server used for resetting password"),
-		mcfp::make_option<uint16_t>("smtp-port", "port of SMTP server used for resetting password"),
-
-		mcfp::make_option<std::string>("ebi-coord-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/pdb${id}.ent", "Link template for coord file at the EBI"),
-		mcfp::make_option<std::string>("ebi-sf-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/r${id}sf.ent", "Link template for sf file at the EBI"),
-
-		// for rama-angles
-		mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
-		mcfp::make_option<std::string>("final-file-pattern", "${id}_final.cif", "Pattern for the final xyzin file"));
-
-	std::error_code ec;
-	config.parse(argc, argv, ec);
-	if (ec)
-		throw std::runtime_error("Error parsing arguments: " + ec.message());
-
-	if (config.has("version"))
+	try
 	{
-		write_version_string(std::cout, config.has("verbose"));
-		exit(0);
-	}
+		using namespace std::literals;
 
-	if (config.has("help"))
-	{
-		std::cerr << config << '\n';
-		exit(config.has("help") ? 0 : 1);
-	}
+		int result = 0;
 
-	config.parse_config_file("config", "prsmd.conf", { fs::current_path().string(), "/etc/" }, ec);
-	if (ec)
-		throw std::runtime_error("Error parsing config file: " + ec.message());
+		auto &config = mcfp::config::instance();
 
-	// --------------------------------------------------------------------
+		config.init(
+			"usage: prsmd command [options]\n       (where command is one of 'start', 'stop', 'status' or 'reload'",
+			mcfp::make_option("help,h", "Display help message"),
+			mcfp::make_option("verbose,v", "Verbose output"),
+			mcfp::make_option("no-daemon,F", "Do not fork into background"),
+			mcfp::make_option<std::string>("config", "Specify the config file to use"),
+			mcfp::make_option("version", "Print version and exit"),
 
-	if (config.has("help") or config.operands().empty())
-	{
-		std::cerr << config << '\n'
-				  << R"(
+			mcfp::make_option<std::string>("pdb-redo-db-dir", "Directory containing PDB-REDO databank"),
+			mcfp::make_option<std::string>("pdb-redo-tools-dir", "Directory containing PDB-REDO tools (and files)"),
+			mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
+			mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
+			mcfp::make_option<std::string>("ccp4-dir", "CCP4 directory, if not specified the environmental variable CCP4 will be used (and should be available)"),
+			mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
+			mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
+			mcfp::make_option<std::string>("context", "The outside base url for this service"),
+			mcfp::make_option<std::string>("allow-origin", "*", "The value for the CORS header Access-Control-Allow-Origin"),
+			mcfp::make_option<std::string>("user,u", "User to run the daemon"),
+			mcfp::make_option<std::string>("db-host", "Database host"),
+			mcfp::make_option<std::string>("db-port", "Database port"),
+			mcfp::make_option<std::string>("db-dbname", "Database name"),
+			mcfp::make_option<std::string>("db-user", "Database user name"),
+			mcfp::make_option<std::string>("db-password", "Database password"),
+			mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
+			mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"),
+
+			mcfp::make_option<std::string>("smtp-user", "user name of SMTP server used for resetting password"),
+			mcfp::make_option<std::string>("smtp-password", "password of SMTP server used for resetting password"),
+			mcfp::make_option<std::string>("smtp-host", "host of SMTP server used for resetting password"),
+			mcfp::make_option<uint16_t>("smtp-port", "port of SMTP server used for resetting password"),
+
+			mcfp::make_option<std::string>("ebi-coord-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/pdb${id}.ent", "Link template for coord file at the EBI"),
+			mcfp::make_option<std::string>("ebi-sf-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/r${id}sf.ent", "Link template for sf file at the EBI"),
+
+			// for rama-angles
+			mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
+			mcfp::make_option<std::string>("final-file-pattern", "${id}_final.cif", "Pattern for the final xyzin file"));
+
+		std::error_code ec;
+		config.parse(argc, argv, ec);
+		if (ec)
+			throw std::runtime_error("Error parsing arguments: " + ec.message());
+
+		if (config.has("version"))
+		{
+			write_version_string(std::cout, config.has("verbose"));
+			return 0;
+		}
+
+		if (config.has("help"))
+		{
+			std::cerr << config << '\n';
+			return config.has("help") ? 0 : 1;
+		}
+
+		config.parse_config_file("config", "prsmd.conf", { fs::current_path().string(), "/etc/" }, ec);
+		if (ec)
+			throw std::runtime_error("Error parsing config file: " + ec.message());
+
+		// --------------------------------------------------------------------
+
+		if (config.has("help") or config.operands().empty())
+		{
+			std::cerr << config << '\n'
+					  << R"(
 Command should be either:
 
   start     start a new server
@@ -1086,19 +1107,17 @@ Command should be either:
   reload    restart a running server with new options
 
   )";
-		exit(config.has("help") ? 0 : 1);
-	}
+			return config.has("help") ? 0 : 1;
+		}
 
-	for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir", "pdb-redo-tools-dir" })
-	{
-		if (config.has(option))
-			continue;
-		std::cerr << "Missing " << option << " option\n";
-		exit(1);
-	}
+		for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir", "pdb-redo-tools-dir" })
+		{
+			if (config.has(option))
+				continue;
+			std::cerr << "Missing " << option << " option\n";
+			return 1;
+		}
 
-	try
-	{
 		std::stringstream vConn;
 		for (std::string opt : { "db-host", "db-port", "db-dbname", "db-user", "db-password" })
 		{
@@ -1226,45 +1245,8 @@ Command should be either:
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "exception:\n"
-				  << ex.what() << '\n';
-		result = 1;
-	}
-
-	return result;
-}
-
-// --------------------------------------------------------------------
-
-// recursively print exception whats:
-void print_what(const std::exception &e)
-{
-	std::cerr << e.what() << '\n';
-	try
-	{
-		std::rethrow_if_nested(e);
-	}
-	catch (const std::exception &nested)
-	{
-		std::cerr << " >> ";
-		print_what(nested);
-	}
-}
-
-// --------------------------------------------------------------------
-
-int main(int argc, char *const argv[])
-{
-	int result = 0;
-
-	try
-	{
-		result = a_main(argc, argv);
-	}
-	catch (const std::exception &ex)
-	{
 		print_what(ex);
-		exit(1);
+		return 1;
 	}
 
 	return result;
