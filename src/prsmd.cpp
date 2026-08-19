@@ -394,7 +394,7 @@ class JobController : public zeep::http::html_controller
 
 		auto r = RunService::instance().submit(credentials["username"].get<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
-		return zeep::http::reply::redirect("/job", zeep::http::status_type::see_other);
+		return zeep::http::reply::redirect("job", zeep::http::status_type::see_other);
 	}
 
 	zeep::http::reply getOutputFile(const zeep::http::scope &scope, uint64_t job_id, const std::string &file)
