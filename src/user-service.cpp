@@ -41,6 +41,7 @@
 #include <mailio/smtp.hpp>
 #include <mcfp/mcfp.hpp>
 #include <random>
+#include <stdexcept>
 #include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
@@ -77,7 +78,39 @@ User::User(const pqxx::row &row)
 		lastJobDate = parse_timestamp(*v);
 	lastJobNr = row.at("last_job_nr").get<int>();
 	if (auto v = row.at("last_job_status").get<std::string>(); v)
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
+	{
+		try
+		{
+			lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
+		}
+		catch (const std::invalid_argument &ex)
+		{
+			auto s = *v;
+			int vi;
+			auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.length(), vi);
+			if (ptr == s.data() + s.length() and ec == std::errc{} and vi >= 0 and vi < static_cast<int>(RunStatus::DELETING))
+				lastJobStatus = static_cast<RunStatus>(vi);
+		}
+	}
+}
+
+
+bool User::shouldRenewPassword() const
+{
+	bool result = true;
+
+	auto parts = zeep::split(password, "$");
+	
+	if (parts.size() == 4 and parts.front() == "pbkdf2_sha256")
+	{
+		int iterations;
+		const auto &[ptr, ec] = std::from_chars(parts[1].data(), parts[1].data() + parts[1].size(), iterations);
+
+		if (ec == std::errc{} and ptr == parts[1].data() + parts[1].length() and iterations >= 100'000)
+			result = false;
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -103,8 +136,6 @@ bool PasswordEncoder::matches(const std::string &raw_password, const std::string
 
 		result = b.substr(kSaltLength) == test;
 	}
-	else
-		result = zeep::encode_base64(zeep::md5(raw_password)) == stored_password;
 
 	return result;
 }
@@ -356,10 +387,10 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email)) == 0;
 	}
 
-#ifndef NDEBUG
-	if (valid and user.name == "scott" and user.password == "tiger")
-		return valid;
-#endif
+// #ifndef NDEBUG
+// 	if (valid and user.name == "scott" and user.password == "tiger")
+// 		return valid;
+// #endif
 
 	if (valid)
 		valid.validPassword = isValidPassword(user.password);

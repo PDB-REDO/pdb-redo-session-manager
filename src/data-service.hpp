@@ -30,9 +30,26 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <format>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <zeep/el/object.hpp>
+
+class InvalidPDBIDError : public std::runtime_error
+{
+  public:
+	explicit InvalidPDBIDError(std::string_view pdbID)
+		: std::runtime_error(std::format("'{}' is not a valid PDB ID", pdbID))
+	{
+	}
+};
+
+// --------------------------------------------------------------------
+
+auto sanitizePath(const std::filesystem::path &dir, const std::filesystem::path &file) -> std::filesystem::path;
+
+// --------------------------------------------------------------------
 
 struct UpdateRequest
 {
@@ -102,11 +119,13 @@ class DataService
 	std::tuple<std::unique_ptr<std::istream>, std::string> getZipFile(const std::string &pdbID, const std::optional<std::string> &attic = {});
 	zeep::el::object getData(const std::string &pdbID, const std::optional<std::string> &attic = {});
 
+	static void validatePDBID(std::string_view pdbID);
+
   private:
 	DataService();
 
 	void checkUpdateRequests();
-	[[nodiscard]] std::filesystem::path getSubdir(std::string pdbID) const;
+	[[nodiscard]] std::filesystem::path getSubdir(std::string_view pdbID) const;
 
 	std::filesystem::path m_data_dir;
 	std::mutex m_mutex;

@@ -26,6 +26,7 @@
 
 #include "run-service.hpp"
 
+#include "data-service.hpp"
 #include "user-service.hpp"
 #include "zip-support.hpp"
 
@@ -164,7 +165,7 @@ std::filesystem::path Run::getResultFile(const std::string &file)
 	if (not fs::exists(m_dir))
 		throw std::runtime_error("Run directory does not exist");
 
-	return m_dir / "output" / file;
+	return sanitizePath(m_dir / "output", file);
 }
 
 std::filesystem::path Run::getImageFile()
@@ -215,7 +216,16 @@ void RunService::init(const std::string &runsDir)
 {
 	assert(not s_instance);
 
-	zeep::value_serializer<RunStatus>::instance("RunStatus")("undefined", RunStatus::UNDEFINED)("registered", RunStatus::REGISTERED)("starting", RunStatus::STARTING)("queued", RunStatus::QUEUED)("running", RunStatus::RUNNING)("stopping", RunStatus::STOPPING)("stopped", RunStatus::STOPPED)("ended", RunStatus::ENDED)("deleting", RunStatus::DELETING);
+	zeep::value_serializer<RunStatus>::instance("RunStatus") //
+		("undefined", RunStatus::UNDEFINED)                  //
+		("registered", RunStatus::REGISTERED)                //
+		("starting", RunStatus::STARTING)                    //
+		("queued", RunStatus::QUEUED)                        //
+		("running", RunStatus::RUNNING)                      //
+		("stopping", RunStatus::STOPPING)                    //
+		("stopped", RunStatus::STOPPED)                      //
+		("ended", RunStatus::ENDED)                          //
+		("deleting", RunStatus::DELETING);
 
 	s_instance.reset(new RunService(runsDir));
 }
