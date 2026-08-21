@@ -264,7 +264,7 @@ zeep::http::reply APIRESTController_v2::getZippedResultFile(uint64_t runID)
 
 	zeep::http::reply rep{ zeep::http::status_type::ok };
 	rep.set_content(std::move(is), "application/zip");
-	rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+	rep.set_header("content-disposition", "attachment; filename = \"" + name + '"');
 
 	return rep;
 }
