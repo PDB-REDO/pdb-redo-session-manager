@@ -408,7 +408,7 @@ class JobController : public zeep::http::html_controller
 		{
 			auto [f, name] = run.getZippedResultFile();
 			result.set_content(std::move(f), "application/zip");
-			result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
+			result.set_header("content-disposition", "attachment; filename = \"" + name + "\"");
 		}
 		else
 		{
@@ -419,7 +419,7 @@ class JobController : public zeep::http::html_controller
 				return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
 			result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
-			result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+			result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 		}
 
 		return result;
@@ -700,7 +700,7 @@ zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope &
 	{
 		auto [f, name] = run.getZippedResultFile();
 		result.set_content(std::move(f), "application/zip");
-		result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
+		result.set_header("content-disposition", "attachment; filename = \"" + name + "\"");
 	}
 	else
 	{
@@ -711,7 +711,7 @@ zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope &
 			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
 		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 	}
 
 	return result;
@@ -807,7 +807,7 @@ class DbController : public zeep::http::html_controller
 
 		zeep::http::reply rep{ zeep::http::status_type::ok };
 		rep.set_content(std::move(is), "application/zip");
-		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+		rep.set_header("content-disposition", "attachment; filename = \"" + name + '"');
 
 		return rep;
 	}
@@ -845,7 +845,7 @@ class DbController : public zeep::http::html_controller
 
 		zeep::http::reply result(zeep::http::status_type::ok);
 		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
 
@@ -857,7 +857,7 @@ class DbController : public zeep::http::html_controller
 
 		zeep::http::reply rep{ zeep::http::status_type::ok };
 		rep.set_content(std::move(is), "application/zip");
-		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+		rep.set_header("content-disposition", "attachment; filename = \"" + name + '"');
 
 		return rep;
 	}
@@ -874,7 +874,7 @@ class DbController : public zeep::http::html_controller
 
 		zeep::http::reply result(zeep::http::status_type::ok);
 		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
 };
