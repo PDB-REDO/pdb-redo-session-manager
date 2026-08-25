@@ -48,10 +48,13 @@ auto sanitizePath(const fs::path &dir, const fs::path &file) -> fs::path
 	auto result = fs::weakly_canonical(dir / file, ec);
 	auto s = result.generic_string();
 
-	if (ec or not s.starts_with(dir.generic_string()))
+	auto dirStr = dir.generic_string();
+	if (not dirStr.empty() and dirStr.back() != '/')
+		dirStr += '/';
+	if (ec or not s.starts_with(dirStr))
 		result.clear();
 
-	return result;
+		return result;
 }
 
 void DataService::validatePDBID(std::string_view pdbID)
