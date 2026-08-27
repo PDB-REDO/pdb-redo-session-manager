@@ -19,28 +19,29 @@ window.addEventListener('load', () => {
 
 		[...document.querySelectorAll('a.delete-a')]
 			.forEach(btn => {
-				btn.addEventListener('click', (e) => {
+				btn.addEventListener('click', async (e) => {
 					e.preventDefault();
 					e.stopPropagation();
 
 					let failed = false;
 
 					if (confirm(`Are you sure you want to delete job ${btn.dataset.id}?`)) {
-						fetch(`job/${btn.dataset.id}`, {
+						const r = await fetch(`job/${btn.dataset.id}`, {
 							method: "DELETE",
-							credentials: 'include'
-						}).then(r => {
-							if (r.ok)
-								window.location.replace("job");
-							else
-								failed = true;
-							return r.text();
-						}).then(r => {
-							if (failed)
-								throw r;
-						}).catch(err => {
-							console.log(err);
-						});
+							credentials: 'include',
+							headers: {
+								'X-CSRF-Token': _csrf
+							}
+						})
+						
+						if (r.ok)
+							window.location.replace("job");
+						else
+						{
+							const txt = await r.text();
+							console.log(txt);
+							alert("Deleting job failed");
+						}
 					}
 				});
 			});
@@ -55,7 +56,7 @@ window.addEventListener('load', () => {
 							return r.json();
 						throw 'no data';
 					}).then(r => {
-						
+
 						if (r.findIndex((s) => s == 'stopped' || s == 'ended') != -1)
 							window.location.reload();
 

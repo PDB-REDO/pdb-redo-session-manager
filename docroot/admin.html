@@ -12,13 +12,11 @@
 </head>
 
 <body>
+	<nav z2:replace="~{menu :: navbar('admin')}"></nav>
 
 	<script z2:inline="javascript">
-		const _csrf = /*[[${csrfToken}]]*/ null;
 		const tab = /*[[${tab}]]*/ null;
 	</script>
-
-	<nav z2:replace="~{menu :: navbar('admin')}" />
 
 	<div class="container">
 

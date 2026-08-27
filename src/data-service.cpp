@@ -29,11 +29,9 @@
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
-#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <mcfp/mcfp.hpp>
-#include <numeric>
 #include <zeep/http/client.hpp>
 #include <zeep/http/reply.hpp>
 

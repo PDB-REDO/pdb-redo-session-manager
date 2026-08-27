@@ -630,16 +630,20 @@ class AdminController : public zeep::http::html_controller
 		map_get("", &AdminController::admin, "tab");
 		map_get("job/{user}/{id}/output/{file}", &AdminController::handle_get_job_file, "user", "id", "file");
 		map_get("job/{user}/{id}", &AdminController::job, "user", "id");
-		map_get("delete/jobs/{user}/{id}", &AdminController::handle_delete_job, "user", "id");
-		map_get("delete/{tab}/{id}", &AdminController::handle_delete, "tab", "id");
+		map_delete_request("job/{user}/{id}", &AdminController::handle_delete_job, "user", "id");
+		map_delete_request("user/{id}", &AdminController::handle_delete_user, "id");
+		map_delete_request("token/{id}", &AdminController::handle_delete_token, "id");
+		map_delete_request("update/{id}", &AdminController::handle_delete_update, "id");
 	}
 
 	zeep::http::reply admin(const zeep::http::scope &scope, const std::optional<std::string> &tab);
 	zeep::http::reply job(const zeep::http::scope &scope, const std::string &user, uint64_t id);
 	zeep::http::reply handle_get_job_file(const zeep::http::scope &scope, const std::string &user, uint64_t id, const std::string &file);
 
-	zeep::http::reply handle_delete(const zeep::http::scope &scope, const std::string &tab, uint64_t id);
-	zeep::http::reply handle_delete_job(const zeep::http::scope &scope, const std::string &user, uint64_t id);
+	void handle_delete_job(const std::string &user, uint64_t id);
+	void handle_delete_user(const zeep::http::scope &scope, uint64_t id);
+	void handle_delete_token(uint64_t id);
+	void handle_delete_update(uint64_t id);
 };
 
 zeep::http::reply AdminController::admin(const zeep::http::scope &scope, const std::optional<std::string> &tab)
@@ -717,32 +721,29 @@ zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope &
 	return result;
 }
 
-zeep::http::reply AdminController::handle_delete(const zeep::http::scope &scope, const std::string &tab, uint64_t id)
-{
-	if (tab == "users")
-	{
-		auto &user_service = UserService::instance();
-
-		auto me = user_service.getUser(scope.get_credentials()["username"].get<std::string>());
-		if (me.id == id)
-			throw std::runtime_error("Are you serious, do you want to throw away yourself?");
-
-		user_service.deleteUser(id);
-	}
-	// else if (tab == "jobs")
-	// 	RunService::instance().deleteRun();
-	else if (tab == "tokens")
-		TokenService::instance().deleteToken(id);
-	else if (tab == "updates")
-		DataService::instance().deleteUpdateRequest(id);
-
-	return zeep::http::reply::redirect("/admin?tab=" + tab);
-}
-
-zeep::http::reply AdminController::handle_delete_job(const zeep::http::scope & /*scope*/, const std::string &user, uint64_t id)
+void AdminController::handle_delete_job(const std::string &user, uint64_t id)
 {
 	RunService::instance().deleteRun(user, id);
-	return zeep::http::reply::redirect("/admin?tab=jobs");
+}
+
+void AdminController::handle_delete_user(const zeep::http::scope &scope, uint64_t id)
+{
+	auto &user_service = UserService::instance();
+	auto me = user_service.getUser(scope.get_credentials()["username"].get<std::string>());
+	if (me.id == id)
+		throw std::runtime_error("Are you serious, do you want to throw away yourself?");
+
+	user_service.deleteUser(id);
+}
+
+void AdminController::handle_delete_token(uint64_t id)
+{
+	TokenService::instance().deleteToken(id);
+}
+
+void AdminController::handle_delete_update(uint64_t id)
+{
+	TokenService::instance().deleteToken(id);
 }
 
 // --------------------------------------------------------------------
@@ -1177,7 +1178,7 @@ Command should be either:
 			s->set_access_control(access_control);
 	
 			if (not context.empty())
-				s->set_context_name(context);
+				s->set_context_path(context);
 
 			s->add_error_handler(new prsm_db_error_handler());
 			s->add_error_handler(new pdb_entry_error_handler());

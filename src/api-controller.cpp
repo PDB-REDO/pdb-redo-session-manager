@@ -145,7 +145,7 @@ bool APIRESTController_v2::handle_request(zeep::http::request &req, zeep::http::
 
 			auto contentHash = zeep::encode_base64(zeep::sha256(req.get_payload()));
 
-			auto pathPart = zeep::uri(req.get_uri().get_path().string(), m_server->get_context_name());
+			auto pathPart = zeep::uri(req.get_uri().get_path().string(), m_server->get_context_path());
 
 			std::string host = req.get_header("X-Forwarded-Host");
 			if (host.empty())
