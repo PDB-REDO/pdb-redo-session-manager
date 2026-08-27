@@ -743,7 +743,7 @@ void AdminController::handle_delete_token(uint64_t id)
 
 void AdminController::handle_delete_update(uint64_t id)
 {
-	TokenService::instance().deleteToken(id);
+	DataService::instance().deleteUpdateRequest(id);
 }
 
 // --------------------------------------------------------------------
