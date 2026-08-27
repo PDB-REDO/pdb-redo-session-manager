@@ -37,7 +37,7 @@
 
 std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string timestamp)
 {
-	if (timestamp[10] == ' ')
+	if (timestamp.length() >= 10 and timestamp[10] == ' ')
 		timestamp[10] = 'T';
 
 	return zeem::value_serializer<std::chrono::time_point<std::chrono::system_clock>>::from_string(timestamp);

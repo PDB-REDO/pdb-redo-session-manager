@@ -1029,8 +1029,6 @@ int main(int argc, char *const argv[])
 	{
 		using namespace std::literals;
 
-		int result = 0;
-
 		auto &config = mcfp::config::instance();
 
 		config.init(
