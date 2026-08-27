@@ -324,15 +324,13 @@ class GFXRESTController : public zeep::http::controller
 		std::string line;
 		getline(f, line); // skip first
 
-		double minURESO, maxURESO;
-
 		while (getline(f, line))
 		{
 			std::vector<std::string> fld;
 			zeep::split(fld, line, ",");
 			if (fld.size() != 7)
 				continue;
-			auto &s = m_stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
+			m_stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
 		}
 	}
 	
