@@ -1195,7 +1195,6 @@ Command should be either:
 			s->add_controller(new UserHTMLController());
 			s->add_controller(new AdminController());
 			s->add_controller(new DbController());
-			// s->add_controller(new TokenRESTController());
 			s->add_controller(new APIRESTController_v1());
 			s->add_controller(new APIRESTController_v2());
 

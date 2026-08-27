@@ -9,7 +9,7 @@ window.addEventListener('load', () => {
 			const jobID = tr.dataset.job;
 			const status = tr.dataset.status;
 
-			if (status == 'started' || status == 'registered' || status == 'starting' || status == 'queued' || status == 'running')
+			if (status == 'registered' || status == 'starting' || status == 'queued' || status == 'running')
 				jobIDs.push(jobID);
 
 			tr.addEventListener('click', (e) => {

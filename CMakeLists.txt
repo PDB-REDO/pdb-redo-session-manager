@@ -61,10 +61,7 @@ find_package(Threads)
 
 find_package(nlohmann_json REQUIRED)
 find_package(LibArchive REQUIRED)
-
 find_package(Boost 1.74 REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(mrc REQUIRED)
 
 CPMFindPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git

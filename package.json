@@ -1,6 +1,6 @@
 {
 	"name": "pdb-redo-session-manager",
-	"version": "1.0.0",
+	"version": "2.2.0",
 	"description": "A session manager for PDB-REDO",
 	"main": "index.js",
 	"author": "Maarten L. Hekkelman",
