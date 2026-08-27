@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <charconv>
 #include <iostream>
+#include <iterator>
 #include <mcfp/mcfp.hpp>
 #include <pqxx/pqxx>
 #include <system_error>
@@ -59,7 +60,9 @@ class entry_class_expression_object : public zeep::http::expression_utility_obje
 	static constexpr const char *name() { return "entry"; }
 
   protected:
-	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope & /*scope*/, const std::string &methodName,
+	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope
+												  & /*scope*/,
+		const std::string &methodName,
 		const std::vector<zeep::http::object> &parameters) const override
 	{
 		zeep::http::object result;
@@ -154,7 +157,9 @@ class version_format_expression_object : public zeep::http::expression_utility_o
 	static constexpr const char *name() { return "version"; }
 
   protected:
-	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope & /*scope*/, const std::string &methodName,
+	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope
+												  & /*scope*/,
+		const std::string &methodName,
 		const std::vector<zeep::http::object> &parameters) const override
 	{
 		zeep::http::object result;
@@ -283,10 +288,22 @@ struct Stats
 	Stats(const Stats &) = default;
 	Stats &operator=(const Stats &) = default;
 
+	auto operator<=>(const Stats &rhs) const noexcept
+	{
+		return URESO <=> rhs.URESO;
+	}
+
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar &zeem::name_value_pair("RFREE", RFREE) & zeem::name_value_pair("RFFIN", RFFIN) & zeem::name_value_pair("OZRAMA", OZRAMA) & zeem::name_value_pair("FZRAMA", FZRAMA) & zeem::name_value_pair("OCHI12", OCHI12) & zeem::name_value_pair("FCHI12", FCHI12) & zeem::name_value_pair("URESO", URESO);
+		// clang-format off
+		ar & zeem::name_value_pair("RFREE", RFREE)
+		   & zeem::name_value_pair("RFFIN", RFFIN)
+		   & zeem::name_value_pair("OZRAMA", OZRAMA)
+		   & zeem::name_value_pair("FZRAMA", FZRAMA)
+		   & zeem::name_value_pair("OCHI12", OCHI12)
+		   & zeem::name_value_pair("FCHI12", FCHI12)
+		   & zeem::name_value_pair("URESO", URESO);
 	}
 };
 
@@ -297,10 +314,7 @@ class GFXRESTController : public zeep::http::controller
 		: zeep::http::controller("gfx")
 	{
 		map_get_request("statistics-for-box-plot", &GFXRESTController::get_statistics_for_box_plot, "ureso");
-	}
 
-	std::vector<Stats> get_statistics_for_box_plot(double ureso)
-	{
 		auto &config = mcfp::config::instance();
 		fs::path toolsDir = config.get<std::string>("pdb-redo-tools-dir");
 		std::ifstream f(toolsDir / "pdb_redo_stats.csv");
@@ -310,7 +324,7 @@ class GFXRESTController : public zeep::http::controller
 		std::string line;
 		getline(f, line); // skip first
 
-		std::vector<Stats> stats;
+		double minURESO, maxURESO;
 
 		while (getline(f, line))
 		{
@@ -318,32 +332,32 @@ class GFXRESTController : public zeep::http::controller
 			zeep::split(fld, line, ",");
 			if (fld.size() != 7)
 				continue;
-			stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
+			auto &s = m_stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
 		}
-
-		std::ranges::sort(stats, [ureso](const Stats &a, const Stats &b)
-			{
-			auto ad = (a.URESO - ureso) * (a.URESO - ureso);
-			auto bd = (b.URESO - ureso) * (b.URESO - ureso);
-			return ad < bd; });
-
-		auto mm = std::accumulate(stats.begin(), stats.begin() + 1000,
-			std::tuple<double, double>{ std::numeric_limits<double>::max(), std::numeric_limits<double>::min() },
-			[](std::tuple<double, double> cur, const Stats &stat)
-			{
-				if (std::get<0>(cur) > stat.URESO)
-					std::get<0>(cur) = stat.URESO;
-				if (std::get<1>(cur) < stat.URESO)
-					std::get<1>(cur) = stat.URESO;
-				return cur;
-			});
-
-		std::erase_if(stats,
-			[mmin = std::get<0>(mm), mmax = std::get<1>(mm)](const Stats &stat)
-			{ return stat.URESO < mmin or stat.URESO > mmax; });
-
-		return stats;
 	}
+	
+	std::vector<Stats> get_statistics_for_box_plot(double ureso)
+	{
+		std::vector<Stats> result;
+		result.reserve(1000);
+
+		Stats test{};
+		test.URESO = ureso;
+		auto i = std::lower_bound(m_stats.begin(), m_stats.end(), test);
+
+		auto tail = m_stats.end() - i;
+		auto trailing = i - m_stats.begin();
+		if (trailing <= 500)
+			std::copy(m_stats.begin(), m_stats.begin() + 1000, std::back_inserter(result));
+		else if (tail < 500)
+			std::copy(m_stats.end() - 1000, m_stats.end(), std::back_inserter(result));
+		else
+		 	std::copy(i - 500, i + 500, std::back_inserter(result));
+
+		return result;
+	}
+
+	std::vector<Stats> m_stats;
 };
 
 // --------------------------------------------------------------------
@@ -608,7 +622,8 @@ zeep::http::reply RootController::handle_client_api_file(const zeep::http::scope
 	return reply;
 }
 
-zeep::http::reply RootController::nextUpdateRequest(const zeep::http::scope & /*scope*/)
+zeep::http::reply RootController::nextUpdateRequest(const zeep::http::scope
+		& /*scope*/)
 {
 	std::ostringstream os;
 
@@ -695,7 +710,8 @@ zeep::http::reply AdminController::job(const zeep::http::scope &scope, const std
 	return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 }
 
-zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope & /*scope*/, const std::string &user, uint64_t job_id, const std::string &file)
+zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope
+		& /*scope*/, const std::string &user, uint64_t job_id, const std::string &file)
 {
 	auto run = RunService::instance().getRun(user, job_id);
 
@@ -801,7 +817,8 @@ class DbController : public zeep::http::html_controller
 		}
 	}
 
-	zeep::http::reply handle_zipped(const zeep::http::scope & /*scope*/, std::string pdbID)
+	zeep::http::reply handle_zipped(const zeep::http::scope
+			& /*scope*/, std::string pdbID)
 	{
 		zeep::to_lower(pdbID);
 
@@ -829,7 +846,8 @@ class DbController : public zeep::http::html_controller
 		return handle_pdb_file(scope, std::move(pdbID), fs::path("wc") / file);
 	}
 
-	zeep::http::reply handle_pdb_file(const zeep::http::scope & /*scope*/, std::string pdbID, std::string file)
+	zeep::http::reply handle_pdb_file(const zeep::http::scope
+			& /*scope*/, std::string pdbID, std::string file)
 	{
 		zeep::to_lower(pdbID);
 
@@ -851,7 +869,8 @@ class DbController : public zeep::http::html_controller
 		return result;
 	}
 
-	zeep::http::reply handle_zipped_attic(const zeep::http::scope & /*scope*/, std::string pdbID, const std::string &attic)
+	zeep::http::reply handle_zipped_attic(const zeep::http::scope
+			& /*scope*/, std::string pdbID, const std::string &attic)
 	{
 		zeep::to_lower(pdbID);
 
@@ -864,7 +883,8 @@ class DbController : public zeep::http::html_controller
 		return rep;
 	}
 
-	zeep::http::reply handle_file_attic(const zeep::http::scope & /*scope*/, std::string pdbID, const std::string &file, const std::string &attic)
+	zeep::http::reply handle_file_attic(const zeep::http::scope
+			& /*scope*/, std::string pdbID, const std::string &file, const std::string &attic)
 	{
 		zeep::to_lower(pdbID);
 
@@ -881,7 +901,8 @@ class DbController : public zeep::http::html_controller
 	}
 };
 
-zeep::http::reply DbController::handle_get(const zeep::http::scope & /*scope*/, std::string pdbID)
+zeep::http::reply DbController::handle_get(const zeep::http::scope
+		& /*scope*/, std::string pdbID)
 {
 	DataService::validatePDBID(pdbID);
 
