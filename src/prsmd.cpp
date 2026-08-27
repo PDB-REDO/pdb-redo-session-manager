@@ -339,20 +339,47 @@ class GFXRESTController : public zeep::http::controller
 	std::vector<Stats> get_statistics_for_box_plot(double ureso)
 	{
 		std::vector<Stats> result;
-		result.reserve(1000);
 
 		Stats test{};
 		test.URESO = ureso;
-		auto i = std::lower_bound(m_stats.begin(), m_stats.end(), test);
+		auto i1 = std::lower_bound(m_stats.begin(), m_stats.end(), test);
+		auto i2 = std::upper_bound(m_stats.begin(), m_stats.end(), test);
 
-		auto tail = m_stats.end() - i;
-		auto trailing = i - m_stats.begin();
-		if (trailing <= 500)
-			std::copy(m_stats.begin(), m_stats.begin() + 1000, std::back_inserter(result));
-		else if (tail < 500)
-			std::copy(m_stats.end() - 1000, m_stats.end(), std::back_inserter(result));
+		if (i2 - i1 >= 1000)
+		{
+			result.reserve(i2 - i1);
+			std::copy(i1, i2, std::back_inserter(result));
+		}
 		else
-		 	std::copy(i - 500, i + 500, std::back_inserter(result));
+		{
+			result.reserve(1000);
+			std::copy(i1, i2, std::back_inserter(result));
+
+			while (result.size() < 1000 and (i1 != m_stats.begin() or i2 != m_stats.end()))
+			{
+				if (i1 == m_stats.begin())
+				{
+					result.emplace_back(*i2++);
+					continue;
+				}
+
+				if (i2 == m_stats.end())
+				{
+					result.emplace_back(*--i1);
+					continue;
+				}
+
+				auto d1 = ureso - i1->URESO;
+				auto d2 = i2->URESO - ureso;
+
+				if (d1 < d2)
+					result.emplace_back(*--i1);
+				else
+					result.emplace_back(*i2++);
+			}
+
+			std::sort(result.begin(), result.end());
+		}
 
 		return result;
 	}
