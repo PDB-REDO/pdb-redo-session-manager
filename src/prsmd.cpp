@@ -36,6 +36,7 @@
 #include <iostream>
 #include <mcfp/mcfp.hpp>
 #include <pqxx/pqxx>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <zeep/crypto.hpp>
@@ -957,6 +958,9 @@ zeep::http::reply DbController::handle_entry(const zeep::http::scope &scope, std
 
 	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json", attic);
 	std::ifstream dataJson(dataJsonFile);
+
+	if (not dataJson.is_open())
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
