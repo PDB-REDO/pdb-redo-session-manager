@@ -129,7 +129,7 @@ bool PasswordEncoder::matches(const std::string &raw_password, const std::string
 {
 	bool result = false;
 
-	if (stored_password[0] == '!')
+	if (not stored_password.empty() and stored_password[0] == '!')
 	{
 		std::string b = zeep::decode_base64(stored_password.substr(1));
 		std::string test = zeep::pbkdf2_hmac_sha1(b.substr(0, kSaltLength), raw_password, kIterations, kKeyLength / 8);
