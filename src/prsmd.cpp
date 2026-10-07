@@ -825,12 +825,12 @@ class DbController : public zeep::http::html_controller
 	{
 		zeep::to_lower(pdbID);
 
+		auto credentials = scope.get_credentials();
+		if (not credentials)
+			throw std::system_error(zeep::http::status_type::unauthorized, "You cannot request an update for this PDB-REDO entry since you are not logged in");
+
 		try
 		{
-			auto credentials = scope.get_credentials();
-			if (not credentials)
-				throw std::runtime_error("You cannot request an update for this PDB-REDO entry since you are not logged in");
-
 			User user = UserService::instance().getUser(credentials["username"].get<std::string>());
 			DataService::instance().requestUpdate(pdbID, user);
 

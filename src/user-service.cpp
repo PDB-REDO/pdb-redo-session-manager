@@ -347,8 +347,8 @@ void UserService::deleteUser(uint64_t id)
 	tx.commit();
 
 	auto userDir = RunService::instance().getRunsDir() / user.name;
+	
 	std::error_code ec;
-	std::filesystem::create_directories(userDir, ec);
 
 	if (std::filesystem::exists(userDir, ec))
 		std::ofstream touched(userDir / "deleted.txt");
