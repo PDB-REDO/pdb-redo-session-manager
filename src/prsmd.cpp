@@ -492,7 +492,7 @@ class JobController : public zeep::http::html_controller
 
 		if (r.status == RunStatus::ENDED)
 		{
-			auto entry = create_entry_data(r, "/job/output/" + std::to_string(job_id));
+			auto entry = create_entry_data(r, (get_context_path() / "job" / "output" / std::to_string(job_id)).string());
 
 			zeep::http::scope sub(scope);
 			sub.put("entry", entry);
@@ -516,7 +516,7 @@ class JobController : public zeep::http::html_controller
 		auto credentials = scope.get_credentials();
 		auto r = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id);
 
-		auto entry = create_entry_data(r, "/job/output/" + std::to_string(job_id));
+		auto entry = create_entry_data(r, (get_context_path() / "job" / "output" / std::to_string(job_id)).string());
 
 		zeep::http::scope sub(scope);
 		sub.put("entry", entry);
@@ -714,7 +714,7 @@ zeep::http::reply AdminController::job(const zeep::http::scope &scope, const std
 
 	if (run.status == RunStatus::ENDED)
 	{
-		auto entry = create_entry_data(run, "/admin/job/" + user + '/' + std::to_string(job_id) + "/output/");
+		auto entry = create_entry_data(run, (get_context_path() / "admin" / "job" / user / std::to_string(job_id) / "output").string());
 
 		zeep::http::scope sub(scope);
 		sub.put("entry", entry);
@@ -953,7 +953,7 @@ zeep::http::reply DbController::handle_show(const zeep::http::scope &scope, std:
 		auto data = ds.getData(pdbID);
 		if (data)
 		{
-			auto entry = create_entry_data(data, "/db/" + pdbID, ds.getFileList(pdbID));
+			auto entry = create_entry_data(data, (get_context_path() / "db" / pdbID).string(), ds.getFileList(pdbID));
 
 			entry["id"] = pdbID;
 			entry["dbEntry"] = true;
@@ -974,7 +974,7 @@ zeep::http::reply DbController::handle_show(const zeep::http::scope &scope, std:
 		try
 		{
 			auto data = ds.getData(pdbID, attic);
-			auto entry = create_entry_data(data, "/db/" + pdbID + "/attic/" + attic + '/', ds.getFileList(pdbID, attic));
+			auto entry = create_entry_data(data, (get_context_path() / "db" / pdbID / "attic" / attic).string(), ds.getFileList(pdbID, attic));
 
 			entry["id"] = pdbID;
 			entry["dbEntry"] = true;
@@ -1010,7 +1010,7 @@ zeep::http::reply DbController::handle_entry(const zeep::http::scope &scope, std
 
 	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
-	auto entry = create_entry_data(data, "/db/" + pdbID, DataService::instance().getFileList(pdbID));
+	auto entry = create_entry_data(data, (get_context_path() / "db" / pdbID).string(), DataService::instance().getFileList(pdbID));
 
 	zeep::http::scope sub(scope);
 	sub.put("entry", entry);

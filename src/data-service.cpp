@@ -316,7 +316,7 @@ std::filesystem::path DataService::getFile(const std::string &pdbID, const std::
 	if (not fs::exists(entry_dir))
 		throw std::system_error(zeep::http::status_type::not_found);
 
-	return entry_dir / file;
+	return sanitizePath(entry_dir, file);
 }
 
 zeep::el::object DataService::getData(const std::string &pdbID, const std::optional<std::string> &attic)
