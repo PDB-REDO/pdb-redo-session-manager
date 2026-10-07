@@ -1,3 +1,12 @@
+Version 2.2.1
+- Reject expired API tokens
+- Sanitize result file paths
+- Handle invalid PDB IDs with a proper 404/422 response
+- Fix lookup of pdb_ prefixed entries
+- Include context path in generated download links
+- Fix attic entry file links
+- Return an error for non-existing jobs
+
 Version 2.2.0
 - Major clean up
 - output of nextUpdateRequest extended with user name

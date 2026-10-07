@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.31)
 
 # set the project name
-project(prsmd VERSION 2.2.0 LANGUAGES CXX)
+project(prsmd VERSION 2.2.1 LANGUAGES CXX)
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
     cmake_policy(SET CMP0167 NEW)
