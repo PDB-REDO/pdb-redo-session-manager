@@ -87,7 +87,7 @@ struct User
 class PasswordEncoder : public zeep::http::password_encoder
 {
   public:
-	static constexpr const char *name() { return "old"; };
+	static constexpr const char *name() { return ""; };
 
 	[[nodiscard]] std::string encode(const std::string &password) const override;
 	[[nodiscard]] bool matches(const std::string &raw_password, const std::string &stored_password) const override;
