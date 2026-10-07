@@ -34,8 +34,10 @@
 #include <algorithm>
 #include <charconv>
 #include <iostream>
+#include <iterator>
 #include <mcfp/mcfp.hpp>
 #include <pqxx/pqxx>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <zeep/crypto.hpp>
@@ -58,7 +60,9 @@ class entry_class_expression_object : public zeep::http::expression_utility_obje
 	static constexpr const char *name() { return "entry"; }
 
   protected:
-	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope & /*scope*/, const std::string &methodName,
+	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope
+												  & /*scope*/,
+		const std::string &methodName,
 		const std::vector<zeep::http::object> &parameters) const override
 	{
 		zeep::http::object result;
@@ -153,7 +157,9 @@ class version_format_expression_object : public zeep::http::expression_utility_o
 	static constexpr const char *name() { return "version"; }
 
   protected:
-	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope & /*scope*/, const std::string &methodName,
+	[[nodiscard]] zeep::http::object evaluate(const zeep::http::scope
+												  & /*scope*/,
+		const std::string &methodName,
 		const std::vector<zeep::http::object> &parameters) const override
 	{
 		zeep::http::object result;
@@ -254,7 +260,7 @@ json create_entry_data(Run &run, const fs::path &basePath)
 	std::ifstream dataJson(dataJsonFile);
 
 	if (not dataJson.is_open())
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
@@ -282,10 +288,22 @@ struct Stats
 	Stats(const Stats &) = default;
 	Stats &operator=(const Stats &) = default;
 
+	auto operator<=>(const Stats &rhs) const noexcept
+	{
+		return URESO <=> rhs.URESO;
+	}
+
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar &zeem::name_value_pair("RFREE", RFREE) & zeem::name_value_pair("RFFIN", RFFIN) & zeem::name_value_pair("OZRAMA", OZRAMA) & zeem::name_value_pair("FZRAMA", FZRAMA) & zeem::name_value_pair("OCHI12", OCHI12) & zeem::name_value_pair("FCHI12", FCHI12) & zeem::name_value_pair("URESO", URESO);
+		// clang-format off
+		ar & zeem::name_value_pair("RFREE", RFREE)
+		   & zeem::name_value_pair("RFFIN", RFFIN)
+		   & zeem::name_value_pair("OZRAMA", OZRAMA)
+		   & zeem::name_value_pair("FZRAMA", FZRAMA)
+		   & zeem::name_value_pair("OCHI12", OCHI12)
+		   & zeem::name_value_pair("FCHI12", FCHI12)
+		   & zeem::name_value_pair("URESO", URESO);
 	}
 };
 
@@ -296,10 +314,7 @@ class GFXRESTController : public zeep::http::controller
 		: zeep::http::controller("gfx")
 	{
 		map_get_request("statistics-for-box-plot", &GFXRESTController::get_statistics_for_box_plot, "ureso");
-	}
 
-	std::vector<Stats> get_statistics_for_box_plot(double ureso)
-	{
 		auto &config = mcfp::config::instance();
 		fs::path toolsDir = config.get<std::string>("pdb-redo-tools-dir");
 		std::ifstream f(toolsDir / "pdb_redo_stats.csv");
@@ -309,40 +324,65 @@ class GFXRESTController : public zeep::http::controller
 		std::string line;
 		getline(f, line); // skip first
 
-		std::vector<Stats> stats;
-
 		while (getline(f, line))
 		{
 			std::vector<std::string> fld;
 			zeep::split(fld, line, ",");
 			if (fld.size() != 7)
 				continue;
-			stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
+			m_stats.emplace_back(stod(fld[0]), stod(fld[1]), stod(fld[2]), stod(fld[3]), stod(fld[4]), stod(fld[5]), stod(fld[6]));
+		}
+	}
+	
+	std::vector<Stats> get_statistics_for_box_plot(double ureso)
+	{
+		std::vector<Stats> result;
+
+		Stats test{};
+		test.URESO = ureso;
+		auto i1 = std::lower_bound(m_stats.begin(), m_stats.end(), test);
+		auto i2 = std::upper_bound(m_stats.begin(), m_stats.end(), test);
+
+		if (i2 - i1 >= 1000)
+		{
+			result.reserve(i2 - i1);
+			std::copy(i1, i2, std::back_inserter(result));
+		}
+		else
+		{
+			result.reserve(1000);
+			std::copy(i1, i2, std::back_inserter(result));
+
+			while (result.size() < 1000 and (i1 != m_stats.begin() or i2 != m_stats.end()))
+			{
+				if (i1 == m_stats.begin())
+				{
+					result.emplace_back(*i2++);
+					continue;
+				}
+
+				if (i2 == m_stats.end())
+				{
+					result.emplace_back(*--i1);
+					continue;
+				}
+
+				auto d1 = ureso - i1->URESO;
+				auto d2 = i2->URESO - ureso;
+
+				if (d1 < d2)
+					result.emplace_back(*--i1);
+				else
+					result.emplace_back(*i2++);
+			}
+
+			std::sort(result.begin(), result.end());
 		}
 
-		std::ranges::sort(stats, [ureso](const Stats &a, const Stats &b)
-			{
-			auto ad = (a.URESO - ureso) * (a.URESO - ureso);
-			auto bd = (b.URESO - ureso) * (b.URESO - ureso);
-			return ad < bd; });
-
-		auto mm = std::accumulate(stats.begin(), stats.begin() + 1000,
-			std::tuple<double, double>{ std::numeric_limits<double>::max(), std::numeric_limits<double>::min() },
-			[](std::tuple<double, double> cur, const Stats &stat)
-			{
-				if (std::get<0>(cur) > stat.URESO)
-					std::get<0>(cur) = stat.URESO;
-				if (std::get<1>(cur) < stat.URESO)
-					std::get<1>(cur) = stat.URESO;
-				return cur;
-			});
-
-		std::erase_if(stats,
-			[mmin = std::get<0>(mm), mmax = std::get<1>(mm)](const Stats &stat)
-			{ return stat.URESO < mmin or stat.URESO > mmax; });
-
-		return stats;
+		return result;
 	}
+
+	std::vector<Stats> m_stats;
 };
 
 // --------------------------------------------------------------------
@@ -394,7 +434,7 @@ class JobController : public zeep::http::html_controller
 
 		auto r = RunService::instance().submit(credentials["username"].get<std::string>(), coordinates, diffractionData, restraints, sequence, params);
 
-		return zeep::http::reply::redirect("/job", zeep::http::see_other);
+		return zeep::http::reply::redirect("job", zeep::http::status_type::see_other);
 	}
 
 	zeep::http::reply getOutputFile(const zeep::http::scope &scope, uint64_t job_id, const std::string &file)
@@ -402,13 +442,13 @@ class JobController : public zeep::http::html_controller
 		auto credentials = scope.get_credentials();
 		auto run = RunService::instance().getRun(credentials["username"].get<std::string>(), job_id);
 
-		zeep::http::reply result(zeep::http::ok);
+		zeep::http::reply result(zeep::http::status_type::ok);
 
 		if (file == "zipped")
 		{
 			auto [f, name] = run.getZippedResultFile();
-			result.set_content(f, "application/zip");
-			result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
+			result.set_content(std::move(f), "application/zip");
+			result.set_header("content-disposition", "attachment; filename = \"" + name + "\"");
 		}
 		else
 		{
@@ -416,10 +456,10 @@ class JobController : public zeep::http::html_controller
 
 			std::error_code ec;
 			if (not fs::exists(f, ec))
-				return zeep::http::reply::stock_reply(zeep::http::not_found);
+				return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-			result.set_content(new std::ifstream(f), "application/octet-stream");
-			result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+			result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
+			result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 		}
 
 		return result;
@@ -433,10 +473,10 @@ class JobController : public zeep::http::html_controller
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f, std::ios::in | std::ios::binary), "image/png");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f, std::ios::in | std::ios::binary), "image/png");
 		return result;
 	}
 
@@ -489,7 +529,7 @@ class JobController : public zeep::http::html_controller
 		auto credentials = scope.get_credentials();
 		RunService::instance().deleteRun(credentials["username"].get<std::string>(), job_id);
 
-		return zeep::http::reply::stock_reply(zeep::http::ok);
+		return zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 	}
 
 	zeep::http::reply getStatus(const zeep::http::scope &scope, const std::vector<uint64_t> &job_ids)
@@ -504,7 +544,7 @@ class JobController : public zeep::http::html_controller
 			status.emplace_back(r.status);
 		}
 
-		zeep::http::reply reply(zeep::http::ok);
+		zeep::http::reply reply(zeep::http::status_type::ok);
 		reply.set_content(status);
 		return reply;
 	}
@@ -512,7 +552,7 @@ class JobController : public zeep::http::html_controller
 
 // --------------------------------------------------------------------
 
-class RootController : public zeep::http::html_controller_v1
+class RootController : public zeep::http::html_controller
 {
   public:
 	explicit RootController(const fs::path &pdb_db_dir)
@@ -525,11 +565,11 @@ class RootController : public zeep::http::html_controller_v1
 		map_get_simple("license", "license");
 		map_get_simple("api-doc", "api-doc");
 
-		mount("client-api/**", &RootController::handle_client_api_file);
+		map_get("client-api/**", &RootController::handle_client_api_file);
 
 		map_get_file("{css,scripts,fonts,images}/");
 
-		mount("{others,schema}/**", &RootController::handle_others);
+		map_get("{others,schema}/**", &RootController::handle_others);
 
 		map_post("entry", &RootController::handle_entry, "data.json", "link-url");
 
@@ -540,12 +580,12 @@ class RootController : public zeep::http::html_controller_v1
 	zeep::http::reply handle_entry(const zeep::http::scope &scope, const zeep::el::object &data, const std::optional<std::string> &link_url);
 
 	// For the 'others' directory
-	void handle_others(const zeep::http::request & /*request*/, const zeep::http::scope &scope, zeep::http::reply &reply)
+	zeep::http::reply handle_others(const zeep::http::scope &scope)
 	{
-		reply = m_db_dir.create_reply_for_get_file(scope);
+		return m_db_dir.create_reply_for_get_file(scope);
 	}
 
-	void handle_client_api_file(const zeep::http::request &request, const zeep::http::scope &scope, zeep::http::reply &reply);
+	zeep::http::reply handle_client_api_file(const zeep::http::scope &scope);
 
 	zeep::http::reply nextUpdateRequest(const zeep::http::scope &scope);
 
@@ -593,27 +633,29 @@ zeep::http::reply RootController::handle_entry(const zeep::http::scope &scope, c
 	return get_template_processor().create_reply_from_template("entry::tables", sub);
 }
 
-void RootController::handle_client_api_file(const zeep::http::request & /*request*/, const zeep::http::scope &scope, zeep::http::reply &reply)
+zeep::http::reply RootController::handle_client_api_file(const zeep::http::scope &scope)
 {
 	fs::path file = fs::path(scope["baseuri"].get<std::string>()).lexically_relative("client-api");
 
 	mrsrc::rsrc data(file.string());
 
 	if (not data)
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
-	reply = zeep::http::reply::stock_reply(zeep::http::ok);
-	reply.set_content(new mrsrc::istream(data), "text/plain");
+	auto reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
+	reply.set_content(std::make_unique<mrsrc::istream>(data), "text/plain");
+	return reply;
 }
 
-zeep::http::reply RootController::nextUpdateRequest(const zeep::http::scope & /*scope*/)
+zeep::http::reply RootController::nextUpdateRequest(const zeep::http::scope
+		& /*scope*/)
 {
 	std::ostringstream os;
 
 	for (const auto &ur : DataService::instance().getAllUpdateRequests())
 		os << ur.pdb_id << ',' << ur.user << '\n';
 
-	zeep::http::reply result(zeep::http::ok);
+	zeep::http::reply result(zeep::http::status_type::ok);
 	result.set_content(os.str(), "text/plain");
 	return result;
 }
@@ -629,16 +671,20 @@ class AdminController : public zeep::http::html_controller
 		map_get("", &AdminController::admin, "tab");
 		map_get("job/{user}/{id}/output/{file}", &AdminController::handle_get_job_file, "user", "id", "file");
 		map_get("job/{user}/{id}", &AdminController::job, "user", "id");
-		map_get("delete/jobs/{user}/{id}", &AdminController::handle_delete_job, "user", "id");
-		map_get("delete/{tab}/{id}", &AdminController::handle_delete, "tab", "id");
+		map_delete_request("job/{user}/{id}", &AdminController::handle_delete_job, "user", "id");
+		map_delete_request("user/{id}", &AdminController::handle_delete_user, "id");
+		map_delete_request("token/{id}", &AdminController::handle_delete_token, "id");
+		map_delete_request("update/{id}", &AdminController::handle_delete_update, "id");
 	}
 
 	zeep::http::reply admin(const zeep::http::scope &scope, const std::optional<std::string> &tab);
 	zeep::http::reply job(const zeep::http::scope &scope, const std::string &user, uint64_t id);
 	zeep::http::reply handle_get_job_file(const zeep::http::scope &scope, const std::string &user, uint64_t id, const std::string &file);
 
-	zeep::http::reply handle_delete(const zeep::http::scope &scope, const std::string &tab, uint64_t id);
-	zeep::http::reply handle_delete_job(const zeep::http::scope &scope, const std::string &user, uint64_t id);
+	void handle_delete_job(const std::string &user, uint64_t id);
+	void handle_delete_user(const zeep::http::scope &scope, uint64_t id);
+	void handle_delete_token(uint64_t id);
+	void handle_delete_update(uint64_t id);
 };
 
 zeep::http::reply AdminController::admin(const zeep::http::scope &scope, const std::optional<std::string> &tab)
@@ -681,25 +727,26 @@ zeep::http::reply AdminController::job(const zeep::http::scope &scope, const std
 	std::error_code ec;
 	if (fs::exists(f, ec))
 	{
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f), "text/plain");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f), "text/plain");
 		return result;
 	}
 
-	return zeep::http::reply::stock_reply(zeep::http::not_found);
+	return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 }
 
-zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope & /*scope*/, const std::string &user, uint64_t job_id, const std::string &file)
+zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope
+		& /*scope*/, const std::string &user, uint64_t job_id, const std::string &file)
 {
 	auto run = RunService::instance().getRun(user, job_id);
 
-	zeep::http::reply result(zeep::http::ok);
+	zeep::http::reply result(zeep::http::status_type::ok);
 
 	if (file == "zipped")
 	{
 		auto [f, name] = run.getZippedResultFile();
-		result.set_content(f, "application/zip");
-		result.set_header("content-disposition", "attachement; filename = \"" + name + "\"");
+		result.set_content(std::move(f), "application/zip");
+		result.set_header("content-disposition", "attachment; filename = \"" + name + "\"");
 	}
 	else
 	{
@@ -707,41 +754,38 @@ zeep::http::reply AdminController::handle_get_job_file(const zeep::http::scope &
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		result.set_content(new std::ifstream(f), "application/octet-stream");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
+		result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 	}
 
 	return result;
 }
 
-zeep::http::reply AdminController::handle_delete(const zeep::http::scope &scope, const std::string &tab, uint64_t id)
-{
-	if (tab == "users")
-	{
-		auto &user_service = UserService::instance();
-
-		auto me = user_service.getUser(scope.get_credentials()["username"].get<std::string>());
-		if (me.id == id)
-			throw std::runtime_error("Are you serious, do you want to throw away yourself?");
-
-		user_service.deleteUser(id);
-	}
-	// else if (tab == "jobs")
-	// 	RunService::instance().deleteRun();
-	else if (tab == "tokens")
-		TokenService::instance().deleteToken(id);
-	else if (tab == "updates")
-		DataService::instance().deleteUpdateRequest(id);
-
-	return zeep::http::reply::redirect("/admin?tab=" + tab);
-}
-
-zeep::http::reply AdminController::handle_delete_job(const zeep::http::scope & /*scope*/, const std::string &user, uint64_t id)
+void AdminController::handle_delete_job(const std::string &user, uint64_t id)
 {
 	RunService::instance().deleteRun(user, id);
-	return zeep::http::reply::redirect("/admin?tab=jobs");
+}
+
+void AdminController::handle_delete_user(const zeep::http::scope &scope, uint64_t id)
+{
+	auto &user_service = UserService::instance();
+	auto me = user_service.getUser(scope.get_credentials()["username"].get<std::string>());
+	if (me.id == id)
+		throw std::runtime_error("Are you serious, do you want to throw away yourself?");
+
+	user_service.deleteUser(id);
+}
+
+void AdminController::handle_delete_token(uint64_t id)
+{
+	TokenService::instance().deleteToken(id);
+}
+
+void AdminController::handle_delete_update(uint64_t id)
+{
+	DataService::instance().deleteUpdateRequest(id);
 }
 
 // --------------------------------------------------------------------
@@ -798,15 +842,16 @@ class DbController : public zeep::http::html_controller
 		}
 	}
 
-	zeep::http::reply handle_zipped(const zeep::http::scope & /*scope*/, std::string pdbID)
+	zeep::http::reply handle_zipped(const zeep::http::scope
+			& /*scope*/, std::string pdbID)
 	{
 		zeep::to_lower(pdbID);
 
-		const auto &[is, name] = DataService::instance().getZipFile(pdbID);
+		auto &&[is, name] = DataService::instance().getZipFile(pdbID);
 
-		zeep::http::reply rep{ zeep::http::ok };
-		rep.set_content(is, "application/zip");
-		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+		zeep::http::reply rep{ zeep::http::status_type::ok };
+		rep.set_content(std::move(is), "application/zip");
+		rep.set_header("content-disposition", "attachment; filename = \"" + name + '"');
 
 		return rep;
 	}
@@ -826,7 +871,8 @@ class DbController : public zeep::http::html_controller
 		return handle_pdb_file(scope, std::move(pdbID), fs::path("wc") / file);
 	}
 
-	zeep::http::reply handle_pdb_file(const zeep::http::scope & /*scope*/, std::string pdbID, std::string file)
+	zeep::http::reply handle_pdb_file(const zeep::http::scope
+			& /*scope*/, std::string pdbID, std::string file)
 	{
 		zeep::to_lower(pdbID);
 
@@ -840,28 +886,30 @@ class DbController : public zeep::http::html_controller
 		}
 
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f), "application/octet-stream");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
+		result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
 
-	zeep::http::reply handle_zipped_attic(const zeep::http::scope & /*scope*/, std::string pdbID, const std::string &attic)
+	zeep::http::reply handle_zipped_attic(const zeep::http::scope
+			& /*scope*/, std::string pdbID, const std::string &attic)
 	{
 		zeep::to_lower(pdbID);
 
-		const auto &[is, name] = DataService::instance().getZipFile(pdbID, attic);
+		auto &&[is, name] = DataService::instance().getZipFile(pdbID, attic);
 
-		zeep::http::reply rep{ zeep::http::ok };
-		rep.set_content(is, "application/zip");
-		rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
+		zeep::http::reply rep{ zeep::http::status_type::ok };
+		rep.set_content(std::move(is), "application/zip");
+		rep.set_header("content-disposition", "attachment; filename = \"" + name + '"');
 
 		return rep;
 	}
 
-	zeep::http::reply handle_file_attic(const zeep::http::scope & /*scope*/, std::string pdbID, const std::string &file, const std::string &attic)
+	zeep::http::reply handle_file_attic(const zeep::http::scope
+			& /*scope*/, std::string pdbID, const std::string &file, const std::string &attic)
 	{
 		zeep::to_lower(pdbID);
 
@@ -869,23 +917,22 @@ class DbController : public zeep::http::html_controller
 
 		std::error_code ec;
 		if (not fs::exists(f, ec))
-			return zeep::http::reply::stock_reply(zeep::http::not_found);
+			return zeep::http::reply::stock_reply(zeep::http::status_type::not_found);
 
-		zeep::http::reply result(zeep::http::ok);
-		result.set_content(new std::ifstream(f), "application/octet-stream");
-		result.set_header("content-disposition", "attachement; filename = \"" + f.filename().string() + "\"");
+		zeep::http::reply result(zeep::http::status_type::ok);
+		result.set_content(std::make_unique<std::ifstream>(f), "application/octet-stream");
+		result.set_header("content-disposition", "attachment; filename = \"" + f.filename().string() + "\"");
 		return result;
 	}
 };
 
-zeep::http::reply DbController::handle_get(const zeep::http::scope & /*scope*/, std::string pdbID)
+zeep::http::reply DbController::handle_get(const zeep::http::scope
+		& /*scope*/, std::string pdbID)
 {
-	// const std::regex rx(R"((pdb_)?[0-9][0-9a-z]{3,7})", std::regex::icase);
-	// if (not std::regex_match(pdbID, rx))
-	// 	throw std::system_error(std::error_code(zeep::http::unprocessable_entity, zeep::http::status_type_category()));
+	DataService::validatePDBID(pdbID);
 
 	zeep::to_lower(pdbID);
-	return zeep::http::reply::redirect(pdbID, zeep::http::see_other);
+	return zeep::http::reply::redirect(pdbID, zeep::http::status_type::see_other);
 }
 
 zeep::http::reply DbController::handle_show(const zeep::http::scope &scope, std::string pdbID)
@@ -958,6 +1005,9 @@ zeep::http::reply DbController::handle_entry(const zeep::http::scope &scope, std
 	auto dataJsonFile = DataService::instance().getFile(pdbID, "data.json", attic);
 	std::ifstream dataJson(dataJsonFile);
 
+	if (not dataJson.is_open())
+		throw std::system_error(zeep::http::status_type::not_found);
+
 	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
 	auto entry = create_entry_data(data, "/db/" + pdbID, DataService::instance().getFileList(pdbID));
@@ -983,14 +1033,14 @@ class pdb_entry_error_handler : public zeep::http::error_handler
 		}
 		catch (const zeep::http::status_type &err)
 		{
-			if (err == zeep::http::unprocessable_entity)
+			if (err == zeep::http::status_type::unprocessable_entity)
 			{
 				auto pdb_id = req.get_parameter("pdb-id");
 				zeep::http::scope scope(m_server, req);
 				if (pdb_id.has_value())
 					scope.put("pdb-id", *pdb_id);
 				reply = m_server->get_template_processor().create_reply_from_template("entry-not-found", scope);
-				reply.set_status(zeep::http::unprocessable_entity);
+				reply.set_status(zeep::http::status_type::unprocessable_entity);
 				result = true;
 			}
 		}
@@ -1004,78 +1054,98 @@ class pdb_entry_error_handler : public zeep::http::error_handler
 
 // --------------------------------------------------------------------
 
-int a_main(int argc, char *const argv[])
+// recursively print exception whats:
+void print_what(const std::exception &e)
 {
-	using namespace std::literals;
+	std::cerr << e.what() << '\n';
+	try
+	{
+		std::rethrow_if_nested(e);
+	}
+	catch (const std::exception &nested)
+	{
+		std::cerr << " >> ";
+		print_what(nested);
+	}
+}
 
+// --------------------------------------------------------------------
+
+int main(int argc, char *const argv[])
+{
 	int result = 0;
 
-	auto &config = mcfp::config::instance();
-
-	config.init(
-		"usage: prsmd command [options]\n       (where command is one of 'start', 'stop', 'status' or 'reload'",
-		mcfp::make_option("help,h", "Display help message"),
-		mcfp::make_option("verbose,v", "Verbose output"),
-		mcfp::make_option("no-daemon,F", "Do not fork into background"),
-		mcfp::make_option<std::string>("config", "Specify the config file to use"),
-		mcfp::make_option("version", "Print version and exit"),
-
-		mcfp::make_option<std::string>("pdb-redo-db-dir", "Directory containing PDB-REDO databank"),
-		mcfp::make_option<std::string>("pdb-redo-tools-dir", "Directory containing PDB-REDO tools (and files)"),
-		mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
-		mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
-		mcfp::make_option<std::string>("ccp4-dir", "CCP4 directory, if not specified the environmental variable CCP4 will be used (and should be available)"),
-		mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
-		mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
-		mcfp::make_option<std::string>("context", "The outside base url for this service"),
-		mcfp::make_option<std::string>("user,u", "User to run the daemon"),
-		mcfp::make_option<std::string>("db-host", "Database host"),
-		mcfp::make_option<std::string>("db-port", "Database port"),
-		mcfp::make_option<std::string>("db-dbname", "Database name"),
-		mcfp::make_option<std::string>("db-user", "Database user name"),
-		mcfp::make_option<std::string>("db-password", "Database password"),
-		mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
-		mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"),
-
-		mcfp::make_option<std::string>("smtp-user", "user name of SMTP server used for resetting password"),
-		mcfp::make_option<std::string>("smtp-password", "password of SMTP server used for resetting password"),
-		mcfp::make_option<std::string>("smtp-host", "host of SMTP server used for resetting password"),
-		mcfp::make_option<uint16_t>("smtp-port", "port of SMTP server used for resetting password"),
-
-		mcfp::make_option<std::string>("ebi-coord-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/pdb${id}.ent", "Link template for coord file at the EBI"),
-		mcfp::make_option<std::string>("ebi-sf-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/r${id}sf.ent", "Link template for sf file at the EBI"),
-
-		// for rama-angles
-		mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
-		mcfp::make_option<std::string>("final-file-pattern", "${id}_final.cif", "Pattern for the final xyzin file"));
-
-	std::error_code ec;
-	config.parse(argc, argv, ec);
-	if (ec)
-		throw std::runtime_error("Error parsing arguments: " + ec.message());
-
-	if (config.has("version"))
+	try
 	{
-		write_version_string(std::cout, config.has("verbose"));
-		exit(0);
-	}
+		using namespace std::literals;
 
-	if (config.has("help"))
-	{
-		std::cerr << config << '\n';
-		exit(config.has("help") ? 0 : 1);
-	}
+		auto &config = mcfp::config::instance();
 
-	config.parse_config_file("config", "prsmd.conf", { fs::current_path().string(), "/etc/" }, ec);
-	if (ec)
-		throw std::runtime_error("Error parsing config file: " + ec.message());
+		config.init(
+			"usage: prsmd command [options]\n       (where command is one of 'start', 'stop', 'status' or 'reload'",
+			mcfp::make_option("help,h", "Display help message"),
+			mcfp::make_option("verbose,v", "Verbose output"),
+			mcfp::make_option("no-daemon,F", "Do not fork into background"),
+			mcfp::make_option<std::string>("config", "Specify the config file to use"),
+			mcfp::make_option("version", "Print version and exit"),
 
-	// --------------------------------------------------------------------
+			mcfp::make_option<std::string>("pdb-redo-db-dir", "Directory containing PDB-REDO databank"),
+			mcfp::make_option<std::string>("pdb-redo-tools-dir", "Directory containing PDB-REDO tools (and files)"),
+			mcfp::make_option<std::string>("pdb-redo-services-dir", "Directory containing PDB-REDO server data"),
+			mcfp::make_option<std::string>("runs-dir", "Directory containing PDB-REDO server run directories"),
+			mcfp::make_option<std::string>("ccp4-dir", "CCP4 directory, if not specified the environmental variable CCP4 will be used (and should be available)"),
+			mcfp::make_option<std::string>("address", "0.0.0.0", "External address"),
+			mcfp::make_option<uint16_t>("port", 10339, "Port to listen to"),
+			mcfp::make_option<std::string>("context", "The outside base url for this service"),
+			mcfp::make_option<std::string>("allow-origin", "*", "The value for the CORS header Access-Control-Allow-Origin"),
+			mcfp::make_option<std::string>("user,u", "User to run the daemon"),
+			mcfp::make_option<std::string>("db-host", "Database host"),
+			mcfp::make_option<std::string>("db-port", "Database port"),
+			mcfp::make_option<std::string>("db-dbname", "Database name"),
+			mcfp::make_option<std::string>("db-user", "Database user name"),
+			mcfp::make_option<std::string>("db-password", "Database password"),
+			mcfp::make_option<std::string>("admin", "Administrators, list of usernames separated by comma"),
+			mcfp::make_option<std::string>("secret", "Secret value, used in signing access tokens"),
 
-	if (config.has("help") or config.operands().empty())
-	{
-		std::cerr << config << '\n'
-				  << R"(
+			mcfp::make_option<std::string>("smtp-user", "user name of SMTP server used for resetting password"),
+			mcfp::make_option<std::string>("smtp-password", "password of SMTP server used for resetting password"),
+			mcfp::make_option<std::string>("smtp-host", "host of SMTP server used for resetting password"),
+			mcfp::make_option<uint16_t>("smtp-port", "port of SMTP server used for resetting password"),
+
+			mcfp::make_option<std::string>("ebi-coord-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/pdb${id}.ent", "Link template for coord file at the EBI"),
+			mcfp::make_option<std::string>("ebi-sf-template", "https://www.ebi.ac.uk/pdbe/entry-files/download/r${id}sf.ent", "Link template for sf file at the EBI"),
+
+			// for rama-angles
+			mcfp::make_option<std::string>("original-file-pattern", "${id}_0cyc.pdb.gz", "Pattern for the original xyzin file"),
+			mcfp::make_option<std::string>("final-file-pattern", "${id}_final.cif", "Pattern for the final xyzin file"));
+
+		std::error_code ec;
+		config.parse(argc, argv, ec);
+		if (ec)
+			throw std::runtime_error("Error parsing arguments: " + ec.message());
+
+		if (config.has("version"))
+		{
+			write_version_string(std::cout, config.has("verbose"));
+			return 0;
+		}
+
+		if (config.has("help"))
+		{
+			std::cerr << config << '\n';
+			return config.has("help") ? 0 : 1;
+		}
+
+		config.parse_config_file("config", "prsmd.conf", { fs::current_path().string(), "/etc/" }, ec);
+		if (ec)
+			throw std::runtime_error("Error parsing config file: " + ec.message());
+
+		// --------------------------------------------------------------------
+
+		if (config.has("help") or config.operands().empty())
+		{
+			std::cerr << config << '\n'
+					  << R"(
 Command should be either:
 
   start     start a new server
@@ -1084,19 +1154,17 @@ Command should be either:
   reload    restart a running server with new options
 
   )";
-		exit(config.has("help") ? 0 : 1);
-	}
+			return config.has("help") ? 0 : 1;
+		}
 
-	for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir", "pdb-redo-tools-dir" })
-	{
-		if (config.has(option))
-			continue;
-		std::cerr << "Missing " << option << " option\n";
-		exit(1);
-	}
+		for (const char *option : { "pdb-redo-services-dir", "pdb-redo-db-dir", "pdb-redo-tools-dir" })
+		{
+			if (config.has(option))
+				continue;
+			std::cerr << "Missing " << option << " option\n";
+			return 1;
+		}
 
-	try
-	{
 		std::stringstream vConn;
 		for (std::string opt : { "db-host", "db-port", "db-dbname", "db-user", "db-password" })
 		{
@@ -1132,7 +1200,9 @@ Command should be either:
 		if (config.has("context"))
 			context = config.get<std::string>("context");
 
-		zeep::http::daemon server([secret, context, &config]()
+		std::string allow_origin = config.get("allow-origin");
+
+		zeep::http::daemon server([secret, context, allow_origin, &config]()
 			{
 			auto sc = new zeep::http::security_context(secret, UserService::instance());
 			sc->add_rule("/admin", { "ADMIN" });
@@ -1150,13 +1220,13 @@ Command should be either:
 
 			auto s = new zeep::http::server(sc);
 
-			auto access_control = new zeep::http::access_control("*", true);
+			auto access_control = new zeep::http::access_control(allow_origin, true);
 			access_control->add_allowed_header("X-PDB-REDO-Date");
 			access_control->add_allowed_header("Authorization");
 			s->set_access_control(access_control);
 	
 			if (not context.empty())
-				s->set_context_name(context);
+				s->set_context_path(context);
 
 			s->add_error_handler(new prsm_db_error_handler());
 			s->add_error_handler(new pdb_entry_error_handler());
@@ -1171,7 +1241,6 @@ Command should be either:
 			s->add_controller(new UserHTMLController());
 			s->add_controller(new AdminController());
 			s->add_controller(new DbController());
-			// s->add_controller(new TokenRESTController());
 			s->add_controller(new APIRESTController_v1());
 			s->add_controller(new APIRESTController_v2());
 
@@ -1222,45 +1291,8 @@ Command should be either:
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "exception:\n"
-				  << ex.what() << '\n';
-		result = 1;
-	}
-
-	return result;
-}
-
-// --------------------------------------------------------------------
-
-// recursively print exception whats:
-void print_what(const std::exception &e)
-{
-	std::cerr << e.what() << '\n';
-	try
-	{
-		std::rethrow_if_nested(e);
-	}
-	catch (const std::exception &nested)
-	{
-		std::cerr << " >> ";
-		print_what(nested);
-	}
-}
-
-// --------------------------------------------------------------------
-
-int main(int argc, char *const argv[])
-{
-	int result = 0;
-
-	try
-	{
-		result = a_main(argc, argv);
-	}
-	catch (const std::exception &ex)
-	{
 		print_what(ex);
-		exit(1);
+		return 1;
 	}
 
 	return result;

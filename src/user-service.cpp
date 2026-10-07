@@ -41,6 +41,7 @@
 #include <mailio/smtp.hpp>
 #include <mcfp/mcfp.hpp>
 #include <random>
+#include <stdexcept>
 #include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
@@ -77,7 +78,39 @@ User::User(const pqxx::row &row)
 		lastJobDate = parse_timestamp(*v);
 	lastJobNr = row.at("last_job_nr").get<int>();
 	if (auto v = row.at("last_job_status").get<std::string>(); v)
-		lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
+	{
+		try
+		{
+			lastJobStatus = zeep::value_serializer<RunStatus>::from_string(*v);
+		}
+		catch (const std::invalid_argument &ex)
+		{
+			auto s = *v;
+			int vi;
+			auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.length(), vi);
+			if (ptr == s.data() + s.length() and ec == std::errc{} and vi >= 0 and vi < static_cast<int>(RunStatus::DELETING))
+				lastJobStatus = static_cast<RunStatus>(vi);
+		}
+	}
+}
+
+
+bool User::shouldRenewPassword() const
+{
+	bool result = true;
+
+	auto parts = zeep::split(password, "$");
+	
+	if (parts.size() == 4 and parts.front() == "pbkdf2_sha256")
+	{
+		int iterations;
+		const auto &[ptr, ec] = std::from_chars(parts[1].data(), parts[1].data() + parts[1].size(), iterations);
+
+		if (ec == std::errc{} and ptr == parts[1].data() + parts[1].length() and iterations >= 100'000)
+			result = false;
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -96,15 +129,13 @@ bool PasswordEncoder::matches(const std::string &raw_password, const std::string
 {
 	bool result = false;
 
-	if (stored_password[0] == '!')
+	if (not stored_password.empty() and stored_password[0] == '!')
 	{
 		std::string b = zeep::decode_base64(stored_password.substr(1));
 		std::string test = zeep::pbkdf2_hmac_sha1(b.substr(0, kSaltLength), raw_password, kIterations, kKeyLength / 8);
 
 		result = b.substr(kSaltLength) == test;
 	}
-	else
-		result = zeep::encode_base64(zeep::md5(raw_password)) == stored_password;
 
 	return result;
 }
@@ -356,10 +387,10 @@ auto UserService::isValidNewUser(const User &user) const -> UserService::UserVal
 			R"(SELECT COUNT(*) FROM redo.user WHERE email = )" + tx.quote(user.email)) == 0;
 	}
 
-#ifndef NDEBUG
-	if (valid and user.name == "scott" and user.password == "tiger")
-		return valid;
-#endif
+// #ifndef NDEBUG
+// 	if (valid and user.name == "scott" and user.password == "tiger")
+// 		return valid;
+// #endif
 
 	if (valid)
 		valid.validPassword = isValidPassword(user.password);
@@ -678,7 +709,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri.string());
 
-		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content(doc);
 		return rep;
 	}
@@ -697,7 +728,7 @@ zeep::http::reply UserHTMLController::post_register(const zeep::http::scope &sco
 
 zeep::http::reply UserHTMLController::get_is_valid_password(const zeep::http::scope & /*scope*/, const std::string &password)
 {
-	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::ok);
+	zeep::http::reply rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 	zeep::el::object e = isValidPassword(password);
 	rep.set_content(e);
 	return rep;
@@ -781,7 +812,7 @@ zeep::http::reply UserHTMLController::post_change_pw(const zeep::http::scope &sc
 	for (auto i_uri : doc.find("//input[@name='uri']"))
 		i_uri->set_attribute("value", uri.string());
 
-	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::internal_server_error);
 	rep.set_content(doc);
 	return rep;
 }
@@ -848,7 +879,7 @@ zeep::http::reply UserHTMLController::post_update_info(const zeep::http::scope &
 	for (auto i_uri : doc.find("//input[@name='uri']"))
 		i_uri->set_attribute("value", uri.string());
 
-	auto rep = zeep::http::reply::stock_reply(zeep::http::internal_server_error);
+	auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::internal_server_error);
 	rep.set_content(doc);
 	return rep;
 }
@@ -903,11 +934,11 @@ zeep::http::reply UserHTMLController::deleteToken(const zeep::http::scope &scope
 	Token s = TokenService::instance().getTokenByID(id);
 
 	if (s.user != username)
-		throw std::system_error(std::error_code(zeep::http::forbidden, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::forbidden);
 
 	TokenService::instance().deleteToken(id);
 
-	return zeep::http::reply::stock_reply(zeep::http::ok);
+	return zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 }
 
 zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope, std::string name)
@@ -923,7 +954,7 @@ zeep::http::reply UserHTMLController::createToken(const zeep::http::scope &scope
 
 	TokenService::instance().create(name, username);
 
-	return zeep::http::reply::redirect("/token", zeep::http::see_other);
+	return zeep::http::reply::redirect("/token", zeep::http::status_type::see_other);
 }
 
 zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scope, std::string name)
@@ -938,7 +969,7 @@ zeep::http::reply UserHTMLController::requestToken(const zeep::http::scope &scop
 		name = "<untitled>";
 
 	auto token = TokenService::instance().create(name, username);
-	zeep::http::reply reply(zeep::http::ok);
+	zeep::http::reply reply(zeep::http::status_type::ok);
 	reply.set_content(zeep::el::serializer<Token>::serialize(token));
 
 	return reply;

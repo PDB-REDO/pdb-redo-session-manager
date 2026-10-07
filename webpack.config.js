@@ -59,6 +59,7 @@ module.exports = (env) => {
 										"color-functions",
 										"global-builtin",
 										"import",
+										"if-function"
 									]
 								}
 							}

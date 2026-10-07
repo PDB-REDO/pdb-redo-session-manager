@@ -61,10 +61,7 @@ find_package(Threads)
 
 find_package(nlohmann_json REQUIRED)
 find_package(LibArchive REQUIRED)
-
 find_package(Boost 1.74 REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(mrc REQUIRED)
 
 CPMFindPackage(NAME libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
@@ -84,8 +81,8 @@ CPMFindPackage(
 CPMFindPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://forge.hekkelman.net/maarten/gxrio.git
-	GIT_TAG v1.0.2
-	VERSION 1.0.2
+	GIT_TAG v1.2.0
+	VERSION 1.2.0
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
 	"BUILD_TESTING NO")
@@ -101,7 +98,7 @@ CPMFindPackage(NAME mailio
 
 CPMFindPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG v7.3.1
+	GIT_TAG v8.4.0
 	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)
@@ -111,8 +108,6 @@ add_executable(prsmd
 	${CMAKE_CURRENT_SOURCE_DIR}/src/api-controller.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/data-service.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/https-client.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/https-client.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/run-service.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/user-service.cpp

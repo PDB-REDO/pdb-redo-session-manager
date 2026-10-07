@@ -26,15 +26,55 @@
 
 #include "data-service.hpp"
 
-#include "https-client.hpp"
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
+#include <filesystem>
 #include <iostream>
 #include <mcfp/mcfp.hpp>
+#include <zeep/http/client.hpp>
 #include <zeep/http/reply.hpp>
 
 namespace fs = std::filesystem;
+
+// --------------------------------------------------------------------
+
+auto sanitizePath(const fs::path &dir, const fs::path &file) -> fs::path
+{
+	std::error_code ec;
+
+	auto result = fs::weakly_canonical(dir / file, ec);
+	auto s = result.generic_string();
+
+	auto dirStr = dir.generic_string();
+	if (not dirStr.empty() and dirStr.back() != '/')
+		dirStr += '/';
+	if (ec or not s.starts_with(dirStr))
+		result.clear();
+
+		return result;
+}
+
+void DataService::validatePDBID(std::string_view pdbID)
+{
+	auto test = pdbID.starts_with("pdb_") ? pdbID.substr(4) : pdbID;
+
+	bool valid = test.length() == 4 or test.length() == 8;
+	if (valid)
+	{
+		for (auto ch : test)
+		{
+			if (not std::isalnum(static_cast<uint8_t>(ch)))
+			{
+				valid = false;
+				break;
+			}
+		}
+	}
+
+	if (not valid)
+		throw InvalidPDBIDError(pdbID);
+}
 
 // --------------------------------------------------------------------
 
@@ -66,6 +106,8 @@ DataService::DataService()
 
 UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 {
+	validatePDBID(pdbID);
+
 	UpdateStatus status;
 
 	auto data = getData(pdbID);
@@ -84,6 +126,8 @@ UpdateStatus DataService::getUpdateStatus(const std::string &pdbID)
 
 void DataService::requestUpdate(const std::string &pdbID, const User &user)
 {
+	validatePDBID(pdbID);
+
 	pqxx::transaction tx(prsm_db_connection::instance());
 	tx.exec(R"(
 		INSERT INTO redo.update_request(pdb_id, user_id, version)
@@ -154,20 +198,15 @@ float DataService::version() const
 	return result;
 }
 
-std::filesystem::path DataService::getSubdir(std::string pdbID) const
+std::filesystem::path DataService::getSubdir(std::string_view pdbID) const
 {
-	if (pdbID.starts_with("pdb_"))
-		pdbID.erase(0, 4);
-
-	if (pdbID.length() == 4)
-		pdbID = "0000" + pdbID;
-
+	validatePDBID(pdbID);
 	return m_data_dir / pdbID.substr(pdbID.length() - 3, 2);
 }
 
-
 bool DataService::exists(const std::string &pdbID) const
 {
+	validatePDBID(pdbID);
 	auto entry_dir = getSubdir(pdbID) / pdbID;
 
 	std::error_code ec;
@@ -176,6 +215,8 @@ bool DataService::exists(const std::string &pdbID) const
 
 std::string DataService::getWhyNot(const std::string &pdbID)
 {
+	validatePDBID(pdbID);
+
 	std::string whynot("The PDB-REDO entry is being created");
 
 	std::ifstream whyNotFile(m_data_dir / "whynot" / (pdbID + ".txt"));
@@ -194,7 +235,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 		for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
 			uri.replace(i, 5, pdbID);
 
-		if (not head_request(uri))
+		if (not zeep::http::head_request(uri))
 			whynot = "PDB Entry does not exist";
 		else
 		{
@@ -202,7 +243,7 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
 				uri.replace(i, 5, pdbID);
 
-			if (not head_request(uri))
+			if (not zeep::http::head_request(uri))
 				whynot = "No reflection data available";
 		}
 	}
@@ -212,6 +253,8 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 
 std::string DataService::getLatestAttic(const std::string &pdbID)
 {
+	validatePDBID(pdbID);
+
 	using namespace std::chrono;
 
 	std::string result;
@@ -241,12 +284,14 @@ std::string DataService::getLatestAttic(const std::string &pdbID)
 
 std::vector<std::string> DataService::getFileList(const std::string &pdbID, const std::optional<std::string> &attic)
 {
+	validatePDBID(pdbID);
+
 	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
-		entry_dir /= fs::path("attic") / *attic;
+		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
 	if (not fs::exists(entry_dir))
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	std::vector<std::string> result;
 	for (const auto &f : fs::recursive_directory_iterator(entry_dir))
@@ -262,23 +307,27 @@ std::vector<std::string> DataService::getFileList(const std::string &pdbID, cons
 
 std::filesystem::path DataService::getFile(const std::string &pdbID, const std::string &file, const std::optional<std::string> &attic)
 {
+	validatePDBID(pdbID);
+
 	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
-		entry_dir /= fs::path("attic") / *attic;
+		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
 	if (not fs::exists(entry_dir))
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	return entry_dir / file;
 }
 
 zeep::el::object DataService::getData(const std::string &pdbID, const std::optional<std::string> &attic)
 {
+	validatePDBID(pdbID);
+
 	zeep::el::object data;
 
 	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
-		entry_dir /= fs::path("attic") / *attic;
+		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
 	if (fs::exists(entry_dir))
 	{
@@ -303,14 +352,16 @@ zeep::el::object DataService::getData(const std::string &pdbID, const std::optio
 	return data;
 }
 
-std::tuple<std::istream *, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> &attic)
+std::tuple<std::unique_ptr<std::istream>, std::string> DataService::getZipFile(const std::string &pdbID, const std::optional<std::string> &attic)
 {
+	validatePDBID(pdbID);
+
 	auto entry_dir = getSubdir(pdbID) / pdbID;
 	if (attic)
-		entry_dir /= fs::path("attic") / *attic;
+		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
 	if (not fs::exists(entry_dir))
-		throw std::system_error(std::error_code(zeep::http::not_found, zeep::http::status_type_category()));
+		throw std::system_error(zeep::http::status_type::not_found);
 
 	ZipWriter zw;
 

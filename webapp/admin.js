@@ -90,12 +90,25 @@ window.addEventListener('load', () => {
 
 	[...document.querySelectorAll('a.delete-a')]
 		.forEach(btn => {
-			btn.addEventListener('click', (e) => {
+			btn.addEventListener('click', async (e) => {
 				e.preventDefault();
 				e.stopPropagation();
 
 				if (confirm(`Are you sure you want to delete row ${btn.dataset.nr}?`))
-					window.location = `admin/delete/${tab}/${btn.dataset.id}`;
+				{
+					const url = `admin/${tab.substring(0, tab.length - 1)}/${btn.dataset.id}`;
+					const r = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"X-CSRF-Token": _csrf
+						}
+					})
+
+					if (! r.ok)
+						alert("Delete failed")
+					else
+						window.location.reload();
+				}
 			});
 		});
 });

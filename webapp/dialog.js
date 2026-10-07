@@ -37,10 +37,14 @@ class CCP4TokenDialog extends Dialog {
 
 		const uri = this.form.elements['cburl'].value;
 		const reqid = this.form.elements['reqid'].value;
+		const _csrf = this.form.elements['_csrf'].value;
 
 		fetch(`token-request?name=${reqid}`, {
 			method: 'post',
-			credentials: 'include'
+			credentials: 'include',
+			headers: {
+				'X-CSRF-Token': _csrf
+			}
 		}).then(r => {
 			if (!r.ok)
 				throw "Requesting a token failed";

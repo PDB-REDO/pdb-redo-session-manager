@@ -3,8 +3,8 @@ import { LitElement, html, css } from 'lit';
 import * as d3 from 'd3';
 
 const BackgroundTypes = Object.freeze({
-	"contour": { name: "Contour", nr: 2, img: "line", alhpa: 1 },
-	"heatmap": { name: "Heatmap", nr: 1, img: "heatmap", alhpa: 0.6 }
+	"contour": { name: "Contour", nr: 2, img: "line", alpha: 1 },
+	"heatmap": { name: "Heatmap", nr: 1, img: "heatmap", alpha: 0.6 }
 });
 const RamaSubset = Object.freeze({
 	"general": { name: "General case", nr: 1, img: 'GeneralContour' },
@@ -583,7 +583,7 @@ export class RamachandranPlot extends LitElement {
 			const height = width;
 
 			// const imgBackgroundType = BackgroundTypes.contour.img;
-			const imgBackgroundAlpha = BackgroundTypes.contour.alhpa;
+			const imgBackgroundAlpha = BackgroundTypes.contour.alpha;
 	
 			const context = this.shadowRoot.querySelector('canvas').getContext('2d');
 			context.globalAlpha = imgBackgroundAlpha;

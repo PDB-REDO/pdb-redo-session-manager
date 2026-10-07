@@ -95,8 +95,8 @@ class PDBRedoResult extends HTMLElement {
 				break;
 
 			case 'pdb-redo-url':
-				if (this.data_url !== newValue) {
-					this.data_url = newValue;
+				if (this.pdb_redo_url !== newValue) {
+					this.pdb_redo_url = newValue;
 					needReload = true;
 				}
 				break;
