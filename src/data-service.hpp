@@ -128,7 +128,8 @@ class DataService
 	DataService();
 
 	void checkUpdateRequests();
-	[[nodiscard]] std::filesystem::path getSubdir(std::string_view pdbID) const;
+	[[nodiscard]] std::filesystem::path getSubDir(std::string_view pdbID) const;
+	[[nodiscard]] std::filesystem::path getEntryDir(std::string_view pdbID) const;
 
 	std::filesystem::path m_data_dir;
 	std::mutex m_mutex;

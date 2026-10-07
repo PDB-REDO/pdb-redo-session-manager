@@ -1010,7 +1010,11 @@ zeep::http::reply DbController::handle_entry(const zeep::http::scope &scope, std
 
 	zeep::el::object data = zeep::el::object::parse_JSON(dataJson);
 
-	auto entry = create_entry_data(data, (get_context_path() / "db" / pdbID).string(), DataService::instance().getFileList(pdbID));
+	auto path = get_context_path() / "db" / pdbID;
+	if (attic)
+		path = path / "attic" / *attic;
+
+	auto entry = create_entry_data(data, path.string(), DataService::instance().getFileList(pdbID, attic));
 
 	zeep::http::scope sub(scope);
 	sub.put("entry", entry);

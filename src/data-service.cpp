@@ -198,16 +198,23 @@ float DataService::version() const
 	return result;
 }
 
-std::filesystem::path DataService::getSubdir(std::string_view pdbID) const
+std::filesystem::path DataService::getSubDir(std::string_view pdbID) const
 {
 	validatePDBID(pdbID);
 	return m_data_dir / pdbID.substr(pdbID.length() - 3, 2);
 }
 
+std::filesystem::path DataService::getEntryDir(std::string_view pdbID) const
+{
+	if (pdbID.starts_with("pdb_"))
+		pdbID = pdbID.substr(4);
+	return getSubDir(pdbID) / pdbID;
+}
+
 bool DataService::exists(const std::string &pdbID) const
 {
 	validatePDBID(pdbID);
-	auto entry_dir = getSubdir(pdbID) / pdbID;
+	auto entry_dir = getEntryDir(pdbID);
 
 	std::error_code ec;
 	return fs::is_directory(entry_dir, ec);
@@ -259,7 +266,7 @@ std::string DataService::getLatestAttic(const std::string &pdbID)
 
 	std::string result;
 
-	auto attic_dir = getSubdir(pdbID) / pdbID / "attic";
+	auto attic_dir = getEntryDir(pdbID) / "attic";
 
 	system_clock::time_point t{};
 
@@ -286,7 +293,7 @@ std::vector<std::string> DataService::getFileList(const std::string &pdbID, cons
 {
 	validatePDBID(pdbID);
 
-	auto entry_dir = getSubdir(pdbID) / pdbID;
+	auto entry_dir = getEntryDir(pdbID);
 	if (attic)
 		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
@@ -309,7 +316,7 @@ std::filesystem::path DataService::getFile(const std::string &pdbID, const std::
 {
 	validatePDBID(pdbID);
 
-	auto entry_dir = getSubdir(pdbID) / pdbID;
+	auto entry_dir = getEntryDir(pdbID);
 	if (attic)
 		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
@@ -321,11 +328,9 @@ std::filesystem::path DataService::getFile(const std::string &pdbID, const std::
 
 zeep::el::object DataService::getData(const std::string &pdbID, const std::optional<std::string> &attic)
 {
-	validatePDBID(pdbID);
-
 	zeep::el::object data;
 
-	auto entry_dir = getSubdir(pdbID) / pdbID;
+	auto entry_dir = getEntryDir(pdbID);
 	if (attic)
 		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
@@ -356,7 +361,7 @@ std::tuple<std::unique_ptr<std::istream>, std::string> DataService::getZipFile(c
 {
 	validatePDBID(pdbID);
 
-	auto entry_dir = getSubdir(pdbID) / pdbID;
+	auto entry_dir = getEntryDir(pdbID);
 	if (attic)
 		entry_dir = sanitizePath(entry_dir / "attic", *attic);
 
