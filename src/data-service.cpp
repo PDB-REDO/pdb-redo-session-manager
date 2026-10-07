@@ -29,16 +29,9 @@
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
-#include <condition_variable>
 #include <filesystem>
-#include <future>
 #include <iostream>
 #include <mcfp/mcfp.hpp>
-#include <memory>
-#include <mutex>
-#include <stop_token>
-#include <system_error>
-#include <thread>
 #include <zeep/http/client.hpp>
 #include <zeep/http/reply.hpp>
 
@@ -59,7 +52,7 @@ auto sanitizePath(const fs::path &dir, const fs::path &file) -> fs::path
 	if (ec or not s.starts_with(dirStr))
 		result.clear();
 
-	return result;
+		return result;
 }
 
 void DataService::validatePDBID(std::string_view pdbID)
@@ -243,53 +236,22 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 	}
 	else
 	{
-		using namespace std::chrono_literals;
+		auto &config = mcfp::config::instance();
 
-		std::condition_variable cv;
-		std::mutex m;
+		auto uri = config.get("ebi-coord-template");
+		for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+			uri.replace(i, 5, pdbID);
 
-		std::jthread t([=, &cv, &whynot](std::stop_token stop)
-			{
-			auto &config = mcfp::config::instance();
-
-			auto uri = config.get("ebi-coord-template");
-			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
-				uri.replace(i, 5, pdbID);
-
-			if (not zeep::http::head_request(uri))
-			{
-				if (not stop.stop_requested())
-				{
-					whynot = "PDB Entry does not exist";
-					cv.notify_one();
-				}
-				return;
-			}
-
-			uri = config.get("ebi-sf-template");
-			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
-				uri.replace(i, 5, pdbID);
-
-			if (not zeep::http::head_request(uri))
-			{
-				if (not stop.stop_requested())
-				{
-					whynot = "PDB Entry does not exist";
-					cv.notify_one();
-				}
-				return;
-			} 
-
-			cv.notify_one();
-		});
-
-		std::unique_lock lock(m);
-		if (cv.wait_for(lock, 500ms) == std::cv_status::timeout)
+		if (not zeep::http::head_request(uri))
+			whynot = "PDB Entry does not exist";
+		else
 		{
-			t.request_stop();
-			t.detach();
+			auto uri = config.get("ebi-sf-template");
+			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+				uri.replace(i, 5, pdbID);
 
-			whynot = "The PDB-REDO entry status is unknown";
+			if (not zeep::http::head_request(uri))
+				whynot = "No reflection data available";
 		}
 	}
 
