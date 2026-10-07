@@ -25,6 +25,7 @@
  */
 
 #include "api-controller.hpp"
+#include "token-service.hpp"
 
 #include <algorithm>
 #include <zeep/crypto.hpp>
@@ -172,10 +173,12 @@ bool APIRESTController_v2::handle_request(zeep::http::request &req, zeep::http::
 			auto stringToSign = ss2.str();
 
 			auto tokenid = credentials[0];
-			auto date = credentials[1];
+			auto token = TokenService::instance().getTokenByID(std::stol(tokenid));
+			if (token.expired())
+				throw zeep::http::unauthorized_exception();
 
-			auto secret = TokenService::instance().getTokenByID(std::stoul(tokenid)).secret;
-			auto keyString = "PDB-REDO" + secret;
+			auto date = credentials[1];
+			auto keyString = "PDB-REDO" + token.secret;
 
 			auto key = zeep::hmac_sha256(date, keyString);
 			if (zeep::hmac_sha256(stringToSign, key) != signature)
