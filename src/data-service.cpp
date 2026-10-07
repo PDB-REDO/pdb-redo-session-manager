@@ -29,9 +29,15 @@
 #include "prsm-db-connection.hpp"
 #include "zip-support.hpp"
 
+#include <condition_variable>
 #include <filesystem>
+#include <future>
 #include <iostream>
 #include <mcfp/mcfp.hpp>
+#include <memory>
+#include <mutex>
+#include <stop_token>
+#include <thread>
 #include <zeep/http/client.hpp>
 #include <zeep/http/reply.hpp>
 
@@ -52,7 +58,7 @@ auto sanitizePath(const fs::path &dir, const fs::path &file) -> fs::path
 	if (ec or not s.starts_with(dirStr))
 		result.clear();
 
-		return result;
+	return result;
 }
 
 void DataService::validatePDBID(std::string_view pdbID)
@@ -236,23 +242,34 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 	}
 	else
 	{
-		auto &config = mcfp::config::instance();
+		using namespace std::chrono_literals;
 
-		auto uri = config.get("ebi-coord-template");
-		for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
-			uri.replace(i, 5, pdbID);
+		std::future<std::string> f = std::async(std::launch::async, [=]() -> std::string
+			{
+				auto &config = mcfp::config::instance();
 
-		if (not zeep::http::head_request(uri))
-			whynot = "PDB Entry does not exist";
+				auto uri = config.get("ebi-coord-template");
+				for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+					uri.replace(i, 5, pdbID);
+
+				if (not zeep::http::head_request(uri))
+					return "PDB Entry does not exist";
+				else
+				{
+					auto uri = config.get("ebi-sf-template");
+					for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+						uri.replace(i, 5, pdbID);
+
+					if (not zeep::http::head_request(uri))
+						return "No reflection data available";
+
+				}
+				return whynot; });
+
+		if (f.valid() and f.wait_for(500ms) == std::future_status::ready)
+			whynot = f.get();
 		else
-		{
-			auto uri = config.get("ebi-sf-template");
-			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
-				uri.replace(i, 5, pdbID);
-
-			if (not zeep::http::head_request(uri))
-				whynot = "No reflection data available";
-		}
+			whynot = "The PDB-REDO entry status is unknown";
 	}
 
 	return whynot;
