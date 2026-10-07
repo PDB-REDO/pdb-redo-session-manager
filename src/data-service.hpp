@@ -41,8 +41,11 @@ class InvalidPDBIDError : public std::runtime_error
   public:
 	explicit InvalidPDBIDError(std::string_view pdbID)
 		: std::runtime_error(std::format("'{}' is not a valid PDB ID", pdbID))
+		, m_pdb_id(pdbID)
 	{
 	}
+
+	std::string m_pdb_id;
 };
 
 // --------------------------------------------------------------------

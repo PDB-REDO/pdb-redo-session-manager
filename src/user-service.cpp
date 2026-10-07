@@ -116,7 +116,7 @@ bool User::shouldRenewPassword() const
 // --------------------------------------------------------------------
 
 const int
-	kIterations = 10000,
+	kIterations = 10'000,
 	kSaltLength = 16,
 	kKeyLength = 256;
 

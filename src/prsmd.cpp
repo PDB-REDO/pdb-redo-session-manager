@@ -1031,6 +1031,14 @@ class pdb_entry_error_handler : public zeep::http::error_handler
 		{
 			std::rethrow_exception(eptr);
 		}
+		catch (const InvalidPDBIDError &ex)
+		{
+			zeep::http::scope scope(m_server, req);
+			scope.put("pdb-id", ex.m_pdb_id);
+			reply = m_server->get_template_processor().create_reply_from_template("entry-not-found", scope);
+			reply.set_status(zeep::http::status_type::unprocessable_entity);
+			result = true;
+		}
 		catch (const zeep::http::status_type &err)
 		{
 			if (err == zeep::http::status_type::unprocessable_entity)
