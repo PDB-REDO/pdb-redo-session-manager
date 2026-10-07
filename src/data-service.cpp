@@ -37,6 +37,7 @@
 #include <memory>
 #include <mutex>
 #include <stop_token>
+#include <system_error>
 #include <thread>
 #include <zeep/http/client.hpp>
 #include <zeep/http/reply.hpp>
@@ -244,32 +245,52 @@ std::string DataService::getWhyNot(const std::string &pdbID)
 	{
 		using namespace std::chrono_literals;
 
-		std::future<std::string> f = std::async(std::launch::async, [=]() -> std::string
+		std::condition_variable cv;
+		std::mutex m;
+
+		std::jthread t([=, &cv, &whynot](std::stop_token stop)
 			{
-				auto &config = mcfp::config::instance();
+			auto &config = mcfp::config::instance();
 
-				auto uri = config.get("ebi-coord-template");
-				for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
-					uri.replace(i, 5, pdbID);
+			auto uri = config.get("ebi-coord-template");
+			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+				uri.replace(i, 5, pdbID);
 
-				if (not zeep::http::head_request(uri))
-					return "PDB Entry does not exist";
-				else
+			if (not zeep::http::head_request(uri))
+			{
+				if (not stop.stop_requested())
 				{
-					auto uri = config.get("ebi-sf-template");
-					for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
-						uri.replace(i, 5, pdbID);
-
-					if (not zeep::http::head_request(uri))
-						return "No reflection data available";
-
+					whynot = "PDB Entry does not exist";
+					cv.notify_one();
 				}
-				return whynot; });
+				return;
+			}
 
-		if (f.valid() and f.wait_for(500ms) == std::future_status::ready)
-			whynot = f.get();
-		else
+			uri = config.get("ebi-sf-template");
+			for (auto i = uri.find("${id}"); i != std::string::npos; i = uri.find("${id}", i))
+				uri.replace(i, 5, pdbID);
+
+			if (not zeep::http::head_request(uri))
+			{
+				if (not stop.stop_requested())
+				{
+					whynot = "PDB Entry does not exist";
+					cv.notify_one();
+				}
+				return;
+			} 
+
+			cv.notify_one();
+		});
+
+		std::unique_lock lock(m);
+		if (cv.wait_for(lock, 500ms) == std::cv_status::timeout)
+		{
+			t.request_stop();
+			t.detach();
+
 			whynot = "The PDB-REDO entry status is unknown";
+		}
 	}
 
 	return whynot;
