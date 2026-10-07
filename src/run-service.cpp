@@ -368,7 +368,8 @@ std::vector<Run> RunService::getAllRuns()
 		if (not userdir->is_directory())
 			continue;
 
-		for (auto i = fs::directory_iterator(*userdir); i != fs::directory_iterator(); ++i)
+		std::error_code ec;
+		for (auto i = fs::directory_iterator(*userdir, ec); ec == std::errc{} and i != fs::directory_iterator(); ++i)
 		{
 			if (not i->is_directory())
 				continue;
