@@ -184,7 +184,7 @@ bool APIRESTController_v2::handle_request(zeep::http::request &req, zeep::http::
 			if (zeep::hmac_sha256(stringToSign, key) != signature)
 				throw zeep::http::unauthorized_exception();
 			
-			s_token_id = stoi(credentials[0]);
+			s_token_id = token.id;
 
 			result = zeep::http::controller::handle_request(req, rep);
 		}

@@ -36,6 +36,8 @@
 #include <iostream>
 #include <regex>
 #include <stdexcept>
+#include <system_error>
+#include <zeep/http/status.hpp>
 #include <zeep/streambuf.hpp>
 
 namespace fs = std::filesystem;
@@ -347,14 +349,14 @@ Run RunService::getRun(const std::string &username, uint64_t runID)
 
 	auto dir = m_runsdir / username;
 
-	if (fs::exists(dir))
-	{
-		std::ostringstream s;
-		s << std::setw(10) << std::setfill('0') << runID;
+	if (not fs::exists(dir))
+		throw std::system_error(zeep::http::status_type::not_found);
 
-		if (fs::exists(dir / s.str()))
-			result = Run::create(dir / s.str(), username);
-	}
+	std::ostringstream s;
+	s << std::setw(10) << std::setfill('0') << runID;
+
+	if (fs::exists(dir / s.str()))
+		result = Run::create(dir / s.str(), username);
 
 	return result;
 }
